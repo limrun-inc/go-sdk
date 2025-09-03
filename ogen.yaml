@@ -1,0 +1,21 @@
+generator:
+  # `auto` (default) generates `NewError` if possible
+  # `on` tells generator to fail if spec does not meet requirements
+  # `off` disables `Convenient errors` at all
+  convenient_errors: "on"
+  features:
+    disable:
+      # Disables validation of server responses
+      - 'server/response/validation'
+      # Disables OpenTelemetry integration
+      - 'ogen/otel'
+      # Disables stub Handler generation
+      - 'ogen/unimplemented'
+      # Disables example tests generation
+      - 'debug/example_tests'
+      # Disables paths server generation
+      - 'paths/server'
+      # Disables webhooks server generation
+      - 'webhooks/server'
+      # Disables client usage in security source implementations
+      - 'client/security/reentrant'
