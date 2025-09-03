@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -29,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create an android instance: %s", err)
 	}
-	fmt.Printf("Instance created in %s\n", time.Since(init))
+	log.Printf("Instance created in %s\n", time.Since(init))
 
 	t, err := tunnel.New(instance.Status.AdbWebSocketUrl.Value, instance.Status.Token)
 	if err != nil {

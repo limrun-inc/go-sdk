@@ -10,8 +10,16 @@ to Android instances.
 ## Getting Started
 
 Import the SDK to your Go program:
+
 ```bash
 go get -u github.com/limrun-inc/go-sdk
+```
+
+Get your Organization ID and API token from Limrun Console.
+
+```bash
+export ORGANIZATION_ID=org_somevalue
+export LIM_TOKEN=lim_somevalue
 ```
 
 Create your first instance:
@@ -21,9 +29,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/limrun-inc/go-sdk/api"
 )
@@ -36,7 +44,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create limrun client: %s", err)
 	}
-
+	
+	init := time.Now()
 	instance, err := limrun.CreateAndroidInstance(context.TODO(), &api.AndroidInstanceCreate{}, api.CreateAndroidInstanceParams{
 		OrganizationId: organizationId,
 		Wait:           api.NewOptBool(true),
@@ -44,10 +53,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create an android instance: %s", err)
     }
-	fmt.Printf("Streaming URL: %s\n", instance.Status.EndpointWebSocketUrl.Value)
-	fmt.Printf("Instance Token: %s\n", instance.Status.Token)
+	log.Printf("Instance created in %s\n", time.Since(init))
+	log.Printf("Streaming URL: %s\n", instance.Status.EndpointWebSocketUrl.Value)
+	log.Printf("Instance Token: %s\n", instance.Status.Token)
 }
 ```
+
+The URL `https://edge.limrun.net` should be used as the URL for the API.
+
+It will redirect the request to the nearest region to get you the closest instance for low latency streaming.
+In addition, you can see [`server`](./examples/server) example where you can provide a ClientIP as scheduling clue so
+that it gives you an instance closest to that IP addresss, which is especially useful if you embed Limrun instances in
+your product for your end users.
 
 ## Examples
 
