@@ -63,7 +63,7 @@ The URL `https://edge.limrun.net` should be used as the URL for the API.
 
 It will redirect the request to the nearest region to get you the closest instance for low latency streaming.
 In addition, you can see [`server`](./examples/server) example where you can provide a ClientIP as scheduling clue so
-that it gives you an instance closest to that IP addresss, which is especially useful if you embed Limrun instances in
+that it gives you an instance closest to that IP address, which is especially useful if you embed Limrun instances in
 your product for your end users.
 
 ## Examples
