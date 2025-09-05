@@ -6,13 +6,13 @@ package api
 type OperationName = string
 
 const (
-	CheckAliveOperation             OperationName = "CheckAlive"
-	CheckReadyOperation             OperationName = "CheckReady"
-	CreateAndroidInstanceOperation  OperationName = "CreateAndroidInstance"
-	DeleteAndroidInstanceOperation  OperationName = "DeleteAndroidInstance"
-	GetAndroidInstanceOperation     OperationName = "GetAndroidInstance"
-	GetAssetOperation               OperationName = "GetAsset"
-	ListAndroidInstancesV1Operation OperationName = "ListAndroidInstancesV1"
-	ListAssetsOperation             OperationName = "ListAssets"
-	PutAssetOperation               OperationName = "PutAsset"
+	CheckAliveOperation            OperationName = "CheckAlive"
+	CheckReadyOperation            OperationName = "CheckReady"
+	CreateAndroidInstanceOperation OperationName = "CreateAndroidInstance"
+	DeleteAndroidInstanceOperation OperationName = "DeleteAndroidInstance"
+	GetAndroidInstanceOperation    OperationName = "GetAndroidInstance"
+	GetAssetOperation              OperationName = "GetAsset"
+	ListAndroidInstancesOperation  OperationName = "ListAndroidInstances"
+	ListAssetsOperation            OperationName = "ListAssets"
+	PutAssetOperation              OperationName = "PutAsset"
 )

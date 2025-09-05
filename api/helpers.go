@@ -6,14 +6,28 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 )
 
+// NewDefaultClient returns a client that uses the given token.
+// Most consumers should use this function over NewClient.
+func NewDefaultClient(token string, opts ...ClientOption) *Client {
+	// err is skipped because the URL is hard-coded.
+	u, _ := url.Parse("https://eu-staging.limrun.dev")
+	// err is skipped because it never returns non-nil.
+	c, _ := newClientConfig(append(opts, WithToken(token))...).baseClient()
+	return &Client{
+		serverURL:  u,
+		baseClient: c,
+	}
+}
+
 // PutAndUploadAsset makes sure the Asset is created and given file is uploaded. If the asset already exists, we compare
 // the MD5 of the uploaded file with our local file to prevent uploading the same file.
 // If the local file is different, we upload and override the existing file in the asset storage.
-func (c *Client) PutAndUploadAsset(ctx context.Context, filePath string, params PutAssetParams) (*Asset, error) {
+func (c *Client) PutAndUploadAsset(ctx context.Context, filePath string) (*Asset, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -21,7 +35,7 @@ func (c *Client) PutAndUploadAsset(ctx context.Context, filePath string, params 
 	defer file.Close()
 	result, err := c.PutAsset(ctx, &AssetPut{
 		Name: path.Base(filePath),
-	}, params)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to put asset: %w", err)
 	}

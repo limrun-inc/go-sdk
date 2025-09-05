@@ -37,37 +37,37 @@ type Invoker interface {
 	//
 	// Create an Android instance.
 	//
-	// POST /v1/organizations/{organizationId}/android.limrun.com/v1/instances
+	// POST /v1/android_instances
 	CreateAndroidInstance(ctx context.Context, request *AndroidInstanceCreate, params CreateAndroidInstanceParams) (*AndroidInstance, error)
 	// DeleteAndroidInstance invokes deleteAndroidInstance operation.
 	//
 	// Delete Android instance with given name.
 	//
-	// DELETE /v1/organizations/{organizationId}/android.limrun.com/v1/instances/{id}
+	// DELETE /v1/android_instances/{id}
 	DeleteAndroidInstance(ctx context.Context, params DeleteAndroidInstanceParams) error
 	// GetAndroidInstance invokes getAndroidInstance operation.
 	//
-	// Get Android instance with given name.
+	// Get Android instance with given ID.
 	//
-	// GET /v1/organizations/{organizationId}/android.limrun.com/v1/instances/{id}
+	// GET /v1/android_instances/{id}
 	GetAndroidInstance(ctx context.Context, params GetAndroidInstanceParams) (*AndroidInstance, error)
 	// GetAsset invokes getAsset operation.
 	//
 	// Get the asset with given ID.
 	//
-	// GET /v1/organizations/{organizationId}/assets/{id}
+	// GET /v1/assets/{assetId}
 	GetAsset(ctx context.Context, params GetAssetParams) (*Asset, error)
-	// ListAndroidInstancesV1 invokes listAndroidInstancesV1 operation.
+	// ListAndroidInstances invokes listAndroidInstances operation.
 	//
 	// List Android instances belonging to given organization.
 	//
-	// GET /v1/organizations/{organizationId}/android.limrun.com/v1/instances
-	ListAndroidInstancesV1(ctx context.Context, params ListAndroidInstancesV1Params) ([]AndroidInstance, error)
+	// GET /v1/android_instances
+	ListAndroidInstances(ctx context.Context, params ListAndroidInstancesParams) ([]AndroidInstance, error)
 	// ListAssets invokes listAssets operation.
 	//
 	// List organization's all assets with given filters. If none given, return all assets.
 	//
-	// GET /v1/organizations/{organizationId}/assets
+	// GET /v1/assets
 	ListAssets(ctx context.Context, params ListAssetsParams) ([]Asset, error)
 	// PutAsset invokes putAsset operation.
 	//
@@ -79,8 +79,8 @@ type Invoker interface {
 	// upload, e.g.
 	// we don't have the file in your organization folder.
 	//
-	// PUT /v1/organizations/{organizationId}/assets
-	PutAsset(ctx context.Context, request *AssetPut, params PutAssetParams) (*Asset, error)
+	// PUT /v1/assets
+	PutAsset(ctx context.Context, request *AssetPut) (*Asset, error)
 }
 
 // Client implements OAS client.
@@ -198,7 +198,7 @@ func (c *Client) sendCheckReady(ctx context.Context) (res *CheckReadyOK, err err
 //
 // Create an Android instance.
 //
-// POST /v1/organizations/{organizationId}/android.limrun.com/v1/instances
+// POST /v1/android_instances
 func (c *Client) CreateAndroidInstance(ctx context.Context, request *AndroidInstanceCreate, params CreateAndroidInstanceParams) (*AndroidInstance, error) {
 	res, err := c.sendCreateAndroidInstance(ctx, request, params)
 	return res, err
@@ -207,27 +207,8 @@ func (c *Client) CreateAndroidInstance(ctx context.Context, request *AndroidInst
 func (c *Client) sendCreateAndroidInstance(ctx context.Context, request *AndroidInstanceCreate, params CreateAndroidInstanceParams) (res *AndroidInstance, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/v1/organizations/"
-	{
-		// Encode "organizationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/android.limrun.com/v1/instances"
+	var pathParts [1]string
+	pathParts[0] = "/v1/android_instances"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	q := uri.NewQueryEncoder()
@@ -276,7 +257,7 @@ func (c *Client) sendCreateAndroidInstance(ctx context.Context, request *Android
 //
 // Delete Android instance with given name.
 //
-// DELETE /v1/organizations/{organizationId}/android.limrun.com/v1/instances/{id}
+// DELETE /v1/android_instances/{id}
 func (c *Client) DeleteAndroidInstance(ctx context.Context, params DeleteAndroidInstanceParams) error {
 	_, err := c.sendDeleteAndroidInstance(ctx, params)
 	return err
@@ -285,27 +266,8 @@ func (c *Client) DeleteAndroidInstance(ctx context.Context, params DeleteAndroid
 func (c *Client) sendDeleteAndroidInstance(ctx context.Context, params DeleteAndroidInstanceParams) (res *DeleteAndroidInstanceOK, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/v1/organizations/"
-	{
-		// Encode "organizationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/android.limrun.com/v1/instances/"
+	var pathParts [2]string
+	pathParts[0] = "/v1/android_instances/"
 	{
 		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -322,7 +284,7 @@ func (c *Client) sendDeleteAndroidInstance(ctx context.Context, params DeleteAnd
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -347,9 +309,9 @@ func (c *Client) sendDeleteAndroidInstance(ctx context.Context, params DeleteAnd
 
 // GetAndroidInstance invokes getAndroidInstance operation.
 //
-// Get Android instance with given name.
+// Get Android instance with given ID.
 //
-// GET /v1/organizations/{organizationId}/android.limrun.com/v1/instances/{id}
+// GET /v1/android_instances/{id}
 func (c *Client) GetAndroidInstance(ctx context.Context, params GetAndroidInstanceParams) (*AndroidInstance, error) {
 	res, err := c.sendGetAndroidInstance(ctx, params)
 	return res, err
@@ -358,27 +320,8 @@ func (c *Client) GetAndroidInstance(ctx context.Context, params GetAndroidInstan
 func (c *Client) sendGetAndroidInstance(ctx context.Context, params GetAndroidInstanceParams) (res *AndroidInstance, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/v1/organizations/"
-	{
-		// Encode "organizationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/android.limrun.com/v1/instances/"
+	var pathParts [2]string
+	pathParts[0] = "/v1/android_instances/"
 	{
 		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -395,7 +338,7 @@ func (c *Client) sendGetAndroidInstance(ctx context.Context, params GetAndroidIn
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -422,7 +365,7 @@ func (c *Client) sendGetAndroidInstance(ctx context.Context, params GetAndroidIn
 //
 // Get the asset with given ID.
 //
-// GET /v1/organizations/{organizationId}/assets/{id}
+// GET /v1/assets/{assetId}
 func (c *Client) GetAsset(ctx context.Context, params GetAssetParams) (*Asset, error) {
 	res, err := c.sendGetAsset(ctx, params)
 	return res, err
@@ -431,17 +374,17 @@ func (c *Client) GetAsset(ctx context.Context, params GetAssetParams) (*Asset, e
 func (c *Client) sendGetAsset(ctx context.Context, params GetAssetParams) (res *Asset, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/v1/organizations/"
+	var pathParts [2]string
+	pathParts[0] = "/v1/assets/"
 	{
-		// Encode "organizationId" parameter.
+		// Encode "assetId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
+			Param:   "assetId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
+			return e.EncodeValue(conv.StringToString(params.AssetId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -450,25 +393,6 @@ func (c *Client) sendGetAsset(ctx context.Context, params GetAssetParams) (res *
 			return res, errors.Wrap(err, "encode path")
 		}
 		pathParts[1] = encoded
-	}
-	pathParts[2] = "/assets/"
-	{
-		// Encode "id" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "id",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ID))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -528,40 +452,21 @@ func (c *Client) sendGetAsset(ctx context.Context, params GetAssetParams) (res *
 	return result, nil
 }
 
-// ListAndroidInstancesV1 invokes listAndroidInstancesV1 operation.
+// ListAndroidInstances invokes listAndroidInstances operation.
 //
 // List Android instances belonging to given organization.
 //
-// GET /v1/organizations/{organizationId}/android.limrun.com/v1/instances
-func (c *Client) ListAndroidInstancesV1(ctx context.Context, params ListAndroidInstancesV1Params) ([]AndroidInstance, error) {
-	res, err := c.sendListAndroidInstancesV1(ctx, params)
+// GET /v1/android_instances
+func (c *Client) ListAndroidInstances(ctx context.Context, params ListAndroidInstancesParams) ([]AndroidInstance, error) {
+	res, err := c.sendListAndroidInstances(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAndroidInstancesV1(ctx context.Context, params ListAndroidInstancesV1Params) (res []AndroidInstance, err error) {
+func (c *Client) sendListAndroidInstances(ctx context.Context, params ListAndroidInstancesParams) (res []AndroidInstance, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/v1/organizations/"
-	{
-		// Encode "organizationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/android.limrun.com/v1/instances"
+	var pathParts [1]string
+	pathParts[0] = "/v1/android_instances"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	q := uri.NewQueryEncoder()
@@ -629,7 +534,7 @@ func (c *Client) sendListAndroidInstancesV1(ctx context.Context, params ListAndr
 	}
 	defer resp.Body.Close()
 
-	result, err := decodeListAndroidInstancesV1Response(resp)
+	result, err := decodeListAndroidInstancesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -641,7 +546,7 @@ func (c *Client) sendListAndroidInstancesV1(ctx context.Context, params ListAndr
 //
 // List organization's all assets with given filters. If none given, return all assets.
 //
-// GET /v1/organizations/{organizationId}/assets
+// GET /v1/assets
 func (c *Client) ListAssets(ctx context.Context, params ListAssetsParams) ([]Asset, error) {
 	res, err := c.sendListAssets(ctx, params)
 	return res, err
@@ -650,27 +555,8 @@ func (c *Client) ListAssets(ctx context.Context, params ListAssetsParams) ([]Ass
 func (c *Client) sendListAssets(ctx context.Context, params ListAssetsParams) (res []Asset, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/v1/organizations/"
-	{
-		// Encode "organizationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/assets"
+	var pathParts [1]string
+	pathParts[0] = "/v1/assets"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	q := uri.NewQueryEncoder()
@@ -773,36 +659,17 @@ func (c *Client) sendListAssets(ctx context.Context, params ListAssetsParams) (r
 // upload, e.g.
 // we don't have the file in your organization folder.
 //
-// PUT /v1/organizations/{organizationId}/assets
-func (c *Client) PutAsset(ctx context.Context, request *AssetPut, params PutAssetParams) (*Asset, error) {
-	res, err := c.sendPutAsset(ctx, request, params)
+// PUT /v1/assets
+func (c *Client) PutAsset(ctx context.Context, request *AssetPut) (*Asset, error) {
+	res, err := c.sendPutAsset(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendPutAsset(ctx context.Context, request *AssetPut, params PutAssetParams) (res *Asset, err error) {
+func (c *Client) sendPutAsset(ctx context.Context, request *AssetPut) (res *Asset, err error) {
 
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/v1/organizations/"
-	{
-		// Encode "organizationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "organizationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OrganizationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/assets"
+	var pathParts [1]string
+	pathParts[0] = "/v1/assets"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	r, err := ht.NewRequest(ctx, "PUT", u)

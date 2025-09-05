@@ -11,12 +11,8 @@ import (
 )
 
 func main() {
-	organizationId := os.Getenv("ORGANIZATION_ID") // org_yourorg
-	token := os.Getenv("LIM_TOKEN")                // lim_yourtoken
-	limrun, err := api.NewClient("https://edge.limrun.net", api.WithToken(token))
-	if err != nil {
-		log.Fatalf("failed to create limrun client: %s", err)
-	}
+	token := os.Getenv("LIM_TOKEN") // lim_yourtoken
+	limrun := api.NewDefaultClient(token)
 
 	s := http.Server{
 		Addr: ":8081",
@@ -35,8 +31,7 @@ func main() {
 				log.Println("No client IP specified as scheduling clue")
 			}
 			instance, err := limrun.CreateAndroidInstance(r.Context(), body, api.CreateAndroidInstanceParams{
-				OrganizationId: organizationId,
-				Wait:           api.NewOptBool(true),
+				Wait: api.NewOptBool(true),
 			})
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

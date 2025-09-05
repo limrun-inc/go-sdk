@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -15,18 +14,12 @@ func main() {
 		log.Fatal("Need to provide a path to a file to run")
 	}
 	apkPath := os.Args[1]
-	organizationId := os.Getenv("ORGANIZATION_ID") // org_yourorg
-	token := os.Getenv("LIM_TOKEN")                // lim_yourtoken
-	ctx := context.TODO()
+	token := os.Getenv("LIM_TOKEN") // lim_yourtoken
+	limrun := api.NewDefaultClient(token)
 
-	limrun, err := api.NewClient("https://edge.limrun.net", api.WithToken(token))
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create limrun client: %w", err))
-	}
+	ctx := context.TODO()
 	initUpl := time.Now()
-	asset, err := limrun.PutAndUploadAsset(ctx, apkPath, api.PutAssetParams{
-		OrganizationId: organizationId,
-	})
+	asset, err := limrun.PutAndUploadAsset(ctx, apkPath)
 	if err != nil {
 		log.Fatalf("failed to upload asset to limrun: %s", err)
 	}
@@ -47,8 +40,7 @@ func main() {
 	}
 	init := time.Now()
 	instance, err := limrun.CreateAndroidInstance(ctx, body, api.CreateAndroidInstanceParams{
-		OrganizationId: organizationId,
-		Wait:           api.NewOptBool(true),
+		Wait: api.NewOptBool(true),
 	})
 	if err != nil {
 		log.Fatalf("failed to create android instance: %s", err)

@@ -4,44 +4,34 @@ package api
 
 // CreateAndroidInstanceParams is parameters of createAndroidInstance operation.
 type CreateAndroidInstanceParams struct {
-	// Organization ID the Android instances belong to.
-	OrganizationId string
 	// Return after the instance is ready to connect.
 	Wait OptBool
 }
 
 // DeleteAndroidInstanceParams is parameters of deleteAndroidInstance operation.
 type DeleteAndroidInstanceParams struct {
-	// Organization ID the Android instances belong to.
-	OrganizationId string
 	// Android instance ID, e.g. android_someid.
 	ID string
 }
 
 // GetAndroidInstanceParams is parameters of getAndroidInstance operation.
 type GetAndroidInstanceParams struct {
-	// Organization ID the Android instances belong to.
-	OrganizationId string
 	// Android instance ID, e.g. android_someid.
 	ID string
 }
 
 // GetAssetParams is parameters of getAsset operation.
 type GetAssetParams struct {
-	// Organization ID.
-	OrganizationId string
 	// Asset ID.
-	ID string
+	AssetId string
 	// Toggles whether a download URL should be included in the response.
 	IncludeDownloadUrl OptBool
 	// Toggles whether an upload URL should be included in the response.
 	IncludeUploadUrl OptBool
 }
 
-// ListAndroidInstancesV1Params is parameters of listAndroidInstancesV1 operation.
-type ListAndroidInstancesV1Params struct {
-	// Organization ID the Android instances belong to.
-	OrganizationId string
+// ListAndroidInstancesParams is parameters of listAndroidInstances operation.
+type ListAndroidInstancesParams struct {
 	// Region where the instance is scheduled on.
 	Region OptString
 	// State filter to apply to Android instances to return.
@@ -53,8 +43,6 @@ type ListAndroidInstancesV1Params struct {
 
 // ListAssetsParams is parameters of listAssets operation.
 type ListAssetsParams struct {
-	// Organization ID.
-	OrganizationId string
 	// Query by file md5.
 	Md5Filter OptString
 	// Query by file name.
@@ -63,10 +51,4 @@ type ListAssetsParams struct {
 	IncludeDownloadUrl OptBool
 	// Toggles whether an upload URL should be included in the response.
 	IncludeUploadUrl OptBool
-}
-
-// PutAssetParams is parameters of putAsset operation.
-type PutAssetParams struct {
-	// Organization ID.
-	OrganizationId string
 }

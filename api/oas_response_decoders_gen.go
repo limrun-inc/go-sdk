@@ -489,7 +489,7 @@ func decodeGetAssetResponse(resp *http.Response) (res *Asset, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeListAndroidInstancesV1Response(resp *http.Response) (res []AndroidInstance, _ error) {
+func decodeListAndroidInstancesResponse(resp *http.Response) (res []AndroidInstance, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
