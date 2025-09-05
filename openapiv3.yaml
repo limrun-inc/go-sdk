@@ -1,21 +1,13 @@
 openapi: "3.0.0"
 info:
-  version: 0.1.0
+  version: 1.0.0
   title: Limrun API
-servers:
-  - url: https://edge.limrun.net
 paths:
-  /v1/organizations/{organizationId}/android.limrun.com/v1/instances:
+  /v1/android_instances:
     get:
       summary: List Android instances belonging to given organization
-      operationId: listAndroidInstancesV1
+      operationId: listAndroidInstances
       parameters:
-        - name: organizationId
-          description: Organization ID the Android instances belong to.
-          required: true
-          in: path
-          schema:
-            type: string
         - name: region
           description: Region where the instance is scheduled on.
           required: false
@@ -56,12 +48,6 @@ paths:
       summary: Create an Android instance
       operationId: createAndroidInstance
       parameters:
-        - name: organizationId
-          description: Organization ID the Android instances belong to.
-          required: true
-          in: path
-          schema:
-            type: string
         - name: wait
           description: Return after the instance is ready to connect.
           required: false
@@ -87,17 +73,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIError"
-  /v1/organizations/{organizationId}/android.limrun.com/v1/instances/{id}:
+  /v1/android_instances/{id}:
     get:
-      summary: Get Android instance with given name
+      summary: Get Android instance with given ID
       operationId: getAndroidInstance
       parameters:
-        - name: organizationId
-          description: Organization ID the Android instances belong to.
-          required: true
-          in: path
-          schema:
-            type: string
         - name: id
           description: Android instance ID, e.g. android_someid
           required: true
@@ -121,12 +101,6 @@ paths:
       summary: Delete Android instance with given name
       operationId: deleteAndroidInstance
       parameters:
-        - name: organizationId
-          description: Organization ID the Android instances belong to.
-          required: true
-          in: path
-          schema:
-            type: string
         - name: id
           description: Android instance ID, e.g. android_someid
           required: true
@@ -142,18 +116,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIError"
-  /v1/organizations/{organizationId}/assets/{id}:
+  /v1/assets/{assetId}:
     get:
       summary: Get the asset with given ID.
       operationId: getAsset
       parameters:
-        - name: organizationId
-          description: Organization ID
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: id
+        - name: assetId
           description: Asset ID
           required: true
           in: path
@@ -184,17 +152,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIError"
-  /v1/organizations/{organizationId}/assets:
+  /v1/assets:
     get:
       summary: List organization's all assets with given filters. If none given, return all assets.
       operationId: listAssets
       parameters:
-        - name: organizationId
-          description: Organization ID
-          required: true
-          in: path
-          schema:
-            type: string
         - name: md5Filter
           description: Query by file md5
           required: false
@@ -242,13 +204,6 @@ paths:
         In all cases a signed download URL is returned but upload URL is returned only when you need to upload, e.g.
         we don't have the file in your organization folder.
       operationId: putAsset
-      parameters:
-        - name: organizationId
-          description: Organization ID
-          required: true
-          in: path
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -268,6 +223,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIError"
+
   /livez:
     get:
       summary: Check if the server is alive
