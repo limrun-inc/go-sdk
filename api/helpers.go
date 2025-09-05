@@ -15,7 +15,7 @@ import (
 // Most consumers should use this function over NewClient.
 func NewDefaultClient(token string, opts ...ClientOption) *Client {
 	// err is skipped because the URL is hard-coded.
-	u, _ := url.Parse("https://eu-staging.limrun.dev")
+	u, _ := url.Parse("https://api.limrun.com")
 	// err is skipped because it never returns non-nil.
 	c, _ := newClientConfig(append(opts, WithToken(token))...).baseClient()
 	return &Client{

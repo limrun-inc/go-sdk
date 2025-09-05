@@ -2,6 +2,8 @@ openapi: "3.0.0"
 info:
   version: 1.0.0
   title: Limrun API
+servers:
+  - url: "https://api.limrun.com"
 paths:
   /v1/android_instances:
     get:
