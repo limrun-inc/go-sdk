@@ -5,7 +5,6 @@ pre-installed.
 
 Run the example:
 ```bash
-ORGANIZATION_ID=org_somevalue
 LIM_TOKEN=lim_somevalue
 
 go run main.go <path to APK file>

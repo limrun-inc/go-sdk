@@ -5,7 +5,6 @@ Android tooling to recognize and use them.
 
 Run the example:
 ```bash
-ORGANIZATION_ID=org_somevalue
 LIM_TOKEN=lim_somevalue
 
 go run main.go
