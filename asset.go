@@ -36,18 +36,6 @@ func NewAssetService(opts ...option.RequestOption) (r AssetService) {
 	return
 }
 
-// Creates an asset and returns upload and download URLs. If there is a
-// corresponding file uploaded in the storage with given name, its MD5 is returned
-// so you can check if a re-upload is necessary. If no MD5 is returned, then there
-// is no corresponding file in the storage so downloading it directly or using it
-// in instances will fail until you use the returned upload URL to submit the file.
-func (r *AssetService) New(ctx context.Context, body AssetNewParams, opts ...option.RequestOption) (res *AssetNewResponse, err error) {
-	opts = append(r.Options[:], opts...)
-	path := "v1/assets"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
-	return
-}
-
 // Get the asset with given ID.
 func (r *AssetService) Get(ctx context.Context, assetID string, query AssetGetParams, opts ...option.RequestOption) (res *Asset, err error) {
 	opts = append(r.Options[:], opts...)
@@ -66,6 +54,18 @@ func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...
 	opts = append(r.Options[:], opts...)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return
+}
+
+// Creates an asset and returns upload and download URLs. If there is a
+// corresponding file uploaded in the storage with given name, its MD5 is returned
+// so you can check if a re-upload is necessary. If no MD5 is returned, then there
+// is no corresponding file in the storage so downloading it directly or using it
+// in instances will fail until you use the returned upload URL to submit the file.
+func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, opts ...option.RequestOption) (res *AssetGetOrNewResponse, err error) {
+	opts = append(r.Options[:], opts...)
+	path := "v1/assets"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
 	return
 }
 
@@ -94,7 +94,7 @@ func (r *Asset) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type AssetNewResponse struct {
+type AssetGetOrNewResponse struct {
 	ID                string `json:"id,required"`
 	Name              string `json:"name,required"`
 	SignedDownloadURL string `json:"signedDownloadUrl,required"`
@@ -114,21 +114,8 @@ type AssetNewResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r AssetNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *AssetNewResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type AssetNewParams struct {
-	Name string `json:"name,required"`
-	paramObj
-}
-
-func (r AssetNewParams) MarshalJSON() (data []byte, err error) {
-	type shadow AssetNewParams
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *AssetNewParams) UnmarshalJSON(data []byte) error {
+func (r AssetGetOrNewResponse) RawJSON() string { return r.JSON.raw }
+func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -166,4 +153,17 @@ func (r AssetListParams) URLQuery() (v url.Values, err error) {
 		ArrayFormat:  apiquery.ArrayQueryFormatComma,
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
+}
+
+type AssetGetOrNewParams struct {
+	Name string `json:"name,required"`
+	paramObj
+}
+
+func (r AssetGetOrNewParams) MarshalJSON() (data []byte, err error) {
+	type shadow AssetGetOrNewParams
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AssetGetOrNewParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
 }
