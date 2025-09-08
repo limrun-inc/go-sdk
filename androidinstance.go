@@ -152,8 +152,9 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceStatus struct {
-	Token                string `json:"token,required"`
-	State                any    `json:"state,required"`
+	Token string `json:"token,required"`
+	// Any of "unknown", "creating", "ready", "terminated".
+	State                string `json:"state,required"`
 	AdbWebSocketURL      string `json:"adbWebSocketUrl"`
 	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -293,7 +294,9 @@ type AndroidInstanceListParams struct {
 	// Region where the instance is scheduled on.
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
 	// State filter to apply to Android instances to return.
-	State any `query:"state,omitzero" json:"-"`
+	//
+	// Any of "unknown", "creating", "ready", "terminated".
+	State AndroidInstanceListParamsState `query:"state,omitzero" json:"-"`
 	paramObj
 }
 
@@ -305,3 +308,13 @@ func (r AndroidInstanceListParams) URLQuery() (v url.Values, err error) {
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
+
+// State filter to apply to Android instances to return.
+type AndroidInstanceListParamsState string
+
+const (
+	AndroidInstanceListParamsStateUnknown    AndroidInstanceListParamsState = "unknown"
+	AndroidInstanceListParamsStateCreating   AndroidInstanceListParamsState = "creating"
+	AndroidInstanceListParamsStateReady      AndroidInstanceListParamsState = "ready"
+	AndroidInstanceListParamsStateTerminated AndroidInstanceListParamsState = "terminated"
+)
