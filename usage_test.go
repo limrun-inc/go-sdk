@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-package limrunv1_test
+package limrun_test
 
 import (
 	"context"
@@ -20,13 +20,13 @@ func TestUsage(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	androidInstances, err := client.AndroidInstances.List(context.TODO(), limrunv1.AndroidInstanceListParams{})
+	androidInstance, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
 	if err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
-	t.Logf("%+v\n", androidInstances)
+	t.Logf("%+v\n", androidInstance.Metadata)
 }

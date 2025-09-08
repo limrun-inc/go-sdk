@@ -1,4 +1,4 @@
-# Limrun V1 Go API Library
+# Limrun Go API Library
 
 <!-- x-release-please-start-version -->
 
@@ -6,7 +6,7 @@
 
 <!-- x-release-please-end -->
 
-The Limrun V1 Go library provides convenient access to the Limrun V1 REST API
+The Limrun Go library provides convenient access to the Limrun REST API
 from applications written in Go.
 
 It is generated with [Stainless](https://www.stainless.com/).
@@ -17,7 +17,7 @@ It is generated with [Stainless](https://www.stainless.com/).
 
 ```go
 import (
-	"github.com/limrun-inc/go-sdk" // imported as limrunv1
+	"github.com/limrun-inc/go-sdk" // imported as limrun
 )
 ```
 
@@ -53,27 +53,27 @@ import (
 )
 
 func main() {
-	client := limrunv1.NewClient(
-		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LIMRUN_V1_API_KEY")
+	client := limrun.NewClient(
+		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LIM_TOKEN")
 	)
-	androidInstances, err := client.AndroidInstances.List(context.TODO(), limrunv1.AndroidInstanceListParams{})
+	androidInstance, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("%+v\n", androidInstances)
+	fmt.Printf("%+v\n", androidInstance.Metadata)
 }
 
 ```
 
 ### Request fields
 
-The limrunv1 library uses the [`omitzero`](https://tip.golang.org/doc/go1.24#encodingjsonpkgencodingjson)
+The limrun library uses the [`omitzero`](https://tip.golang.org/doc/go1.24#encodingjsonpkgencodingjson)
 semantics from the Go 1.24+ `encoding/json` release for request fields.
 
 Required primitive fields (`int64`, `string`, etc.) feature the tag <code>\`json:"...,required"\`</code>. These
 fields are always serialized, even their zero values.
 
-Optional primitive types are wrapped in a `param.Opt[T]`. These fields can be set with the provided constructors, `limrunv1.String(string)`, `limrunv1.Int(int64)`, etc.
+Optional primitive types are wrapped in a `param.Opt[T]`. These fields can be set with the provided constructors, `limrun.String(string)`, `limrun.Int(int64)`, etc.
 
 Any `param.Opt[T]`, map, slice, struct or string enum uses the
 tag <code>\`json:"...,omitzero"\`</code>. Its zero value is considered omitted.
@@ -81,17 +81,17 @@ tag <code>\`json:"...,omitzero"\`</code>. Its zero value is considered omitted.
 The `param.IsOmitted(any)` function can confirm the presence of any `omitzero` field.
 
 ```go
-p := limrunv1.ExampleParams{
-	ID:   "id_xxx",               // required property
-	Name: limrunv1.String("..."), // optional property
+p := limrun.ExampleParams{
+	ID:   "id_xxx",             // required property
+	Name: limrun.String("..."), // optional property
 
-	Point: limrunv1.Point{
-		X: 0,               // required field will serialize as 0
-		Y: limrunv1.Int(1), // optional field will serialize as 1
+	Point: limrun.Point{
+		X: 0,             // required field will serialize as 0
+		Y: limrun.Int(1), // optional field will serialize as 1
 		// ... omitted non-required fields will not be serialized
 	},
 
-	Origin: limrunv1.Origin{}, // the zero value of [Origin] is considered omitted
+	Origin: limrun.Origin{}, // the zero value of [Origin] is considered omitted
 }
 ```
 
@@ -120,7 +120,7 @@ p.SetExtraFields(map[string]any{
 })
 
 // Send a number instead of an object
-custom := param.Override[limrunv1.FooParams](12)
+custom := param.Override[limrun.FooParams](12)
 ```
 
 ### Request unions
@@ -261,12 +261,12 @@ This library uses the functional options pattern. Functions defined in the
 requests. For example:
 
 ```go
-client := limrunv1.NewClient(
+client := limrun.NewClient(
 	// Adds a header to every request made by the client
 	option.WithHeader("X-Some-Header", "custom_header_info"),
 )
 
-client.AndroidInstances.List(context.TODO(), ...,
+client.AndroidInstances.New(context.TODO(), ...,
 	// Override the header
 	option.WithHeader("X-Some-Header", "some_other_custom_header_info"),
 	// Add an undocumented field to the request body, using sjson syntax
@@ -290,16 +290,16 @@ with additional helper methods like `.GetNextPage()`, e.g.:
 ### Errors
 
 When the API returns a non-success status code, we return an error with type
-`*limrunv1.Error`. This contains the `StatusCode`, `*http.Request`, and
+`*limrun.Error`. This contains the `StatusCode`, `*http.Request`, and
 `*http.Response` values of the request, as well as the JSON of the error body
 (much like other response objects in the SDK).
 
 To handle errors, we recommend that you use the `errors.As` pattern:
 
 ```go
-_, err := client.AndroidInstances.List(context.TODO(), limrunv1.AndroidInstanceListParams{})
+_, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
 if err != nil {
-	var apierr *limrunv1.Error
+	var apierr *limrun.Error
 	if errors.As(err, &apierr) {
 		println(string(apierr.DumpRequest(true)))  // Prints the serialized HTTP request
 		println(string(apierr.DumpResponse(true))) // Prints the serialized HTTP response
@@ -322,9 +322,9 @@ To set a per-retry timeout, use `option.WithRequestTimeout()`.
 // This sets the timeout for the request, including all the retries.
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 defer cancel()
-client.AndroidInstances.List(
+client.AndroidInstances.New(
 	ctx,
-	limrunv1.AndroidInstanceListParams{},
+	limrun.AndroidInstanceNewParams{},
 	// This sets the per-retry timeout
 	option.WithRequestTimeout(20*time.Second),
 )
@@ -340,7 +340,7 @@ The file name and content-type can be customized by implementing `Name() string`
 string` on the run-time type of `io.Reader`. Note that `os.File` implements `Name() string`, so a
 file returned by `os.Open` will be sent with the file name on disk.
 
-We also provide a helper `limrunv1.File(reader io.Reader, filename string, contentType string)`
+We also provide a helper `limrun.File(reader io.Reader, filename string, contentType string)`
 which can be used to wrap any `io.Reader` with the appropriate file name and content type.
 
 ### Retries
@@ -353,14 +353,14 @@ You can use the `WithMaxRetries` option to configure or disable this:
 
 ```go
 // Configure the default for all requests:
-client := limrunv1.NewClient(
+client := limrun.NewClient(
 	option.WithMaxRetries(0), // default is 2
 )
 
 // Override per-request:
-client.AndroidInstances.List(
+client.AndroidInstances.New(
 	context.TODO(),
-	limrunv1.AndroidInstanceListParams{},
+	limrun.AndroidInstanceNewParams{},
 	option.WithMaxRetries(5),
 )
 ```
@@ -373,15 +373,15 @@ you need to examine response headers, status codes, or other details.
 ```go
 // Create a variable to store the HTTP response
 var response *http.Response
-androidInstances, err := client.AndroidInstances.List(
+androidInstance, err := client.AndroidInstances.New(
 	context.TODO(),
-	limrunv1.AndroidInstanceListParams{},
+	limrun.AndroidInstanceNewParams{},
 	option.WithResponseInto(&response),
 )
 if err != nil {
 	// handle error
 }
-fmt.Printf("%+v\n", androidInstances)
+fmt.Printf("%+v\n", androidInstance)
 
 fmt.Printf("Status Code: %d\n", response.StatusCode)
 fmt.Printf("Headers: %+#v\n", response.Header)
@@ -422,7 +422,7 @@ or the `option.WithJSONSet()` methods.
 params := FooNewParams{
     ID:   "id_xxxx",
     Data: FooNewParamsData{
-        FirstName: limrunv1.String("John"),
+        FirstName: limrun.String("John"),
     },
 }
 client.Foo.New(context.Background(), params, option.WithJSONSet("data.last_name", "Doe"))
@@ -457,7 +457,7 @@ func Logger(req *http.Request, next option.MiddlewareNext) (res *http.Response, 
     return res, err
 }
 
-client := limrunv1.NewClient(
+client := limrun.NewClient(
 	option.WithMiddleware(Logger),
 )
 ```

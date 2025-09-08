@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-package limrunv1
+package limrun
 
 import (
 	"github.com/limrun-inc/go-sdk/internal/apierror"
