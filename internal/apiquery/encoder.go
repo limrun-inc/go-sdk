@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stainless-sdks/limrun-v1-go/packages/param"
+	"github.com/limrun-inc/go-sdk/packages/param"
 )
 
 var encoders sync.Map // map[reflect.Type]encoderFunc

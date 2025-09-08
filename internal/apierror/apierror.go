@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/stainless-sdks/limrun-v1-go/internal/apijson"
-	"github.com/stainless-sdks/limrun-v1-go/packages/respjson"
+	"github.com/limrun-inc/go-sdk/internal/apijson"
+	"github.com/limrun-inc/go-sdk/packages/respjson"
 )
 
 // Error represents an error that originates from the API, i.e. when a request is

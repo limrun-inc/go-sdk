@@ -3,8 +3,8 @@ package respjson_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stainless-sdks/limrun-v1-go/internal/apijson"
-	rj "github.com/stainless-sdks/limrun-v1-go/packages/respjson"
+	"github.com/limrun-inc/go-sdk/internal/apijson"
+	rj "github.com/limrun-inc/go-sdk/packages/respjson"
 	"reflect"
 	"testing"
 )

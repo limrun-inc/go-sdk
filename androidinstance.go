@@ -10,12 +10,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/stainless-sdks/limrun-v1-go/internal/apijson"
-	"github.com/stainless-sdks/limrun-v1-go/internal/apiquery"
-	"github.com/stainless-sdks/limrun-v1-go/internal/requestconfig"
-	"github.com/stainless-sdks/limrun-v1-go/option"
-	"github.com/stainless-sdks/limrun-v1-go/packages/param"
-	"github.com/stainless-sdks/limrun-v1-go/packages/respjson"
+	"github.com/limrun-inc/go-sdk/internal/apijson"
+	"github.com/limrun-inc/go-sdk/internal/apiquery"
+	"github.com/limrun-inc/go-sdk/internal/requestconfig"
+	"github.com/limrun-inc/go-sdk/option"
+	"github.com/limrun-inc/go-sdk/packages/param"
+	"github.com/limrun-inc/go-sdk/packages/respjson"
 )
 
 // AndroidInstanceService contains methods and other services that help with

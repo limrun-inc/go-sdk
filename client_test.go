@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/limrun-v1-go"
-	"github.com/stainless-sdks/limrun-v1-go/internal"
-	"github.com/stainless-sdks/limrun-v1-go/option"
+	"github.com/limrun-inc/go-sdk"
+	"github.com/limrun-inc/go-sdk/internal"
+	"github.com/limrun-inc/go-sdk/option"
 )
 
 type closureTransport struct {

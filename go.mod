@@ -1,4 +1,4 @@
-module github.com/stainless-sdks/limrun-v1-go
+module github.com/limrun-inc/go-sdk
 
 go 1.21
 

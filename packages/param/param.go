@@ -2,7 +2,7 @@ package param
 
 import (
 	"encoding/json"
-	"github.com/stainless-sdks/limrun-v1-go/internal/encoding/json/sentinel"
+	"github.com/limrun-inc/go-sdk/internal/encoding/json/sentinel"
 	"reflect"
 )
 

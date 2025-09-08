@@ -8,9 +8,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stainless-sdks/limrun-v1-go"
-	"github.com/stainless-sdks/limrun-v1-go/internal/testutil"
-	"github.com/stainless-sdks/limrun-v1-go/option"
+	"github.com/limrun-inc/go-sdk"
+	"github.com/limrun-inc/go-sdk/internal/testutil"
+	"github.com/limrun-inc/go-sdk/option"
 )
 
 func TestAssetNew(t *testing.T) {
