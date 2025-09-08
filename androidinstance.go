@@ -45,18 +45,6 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 	return
 }
 
-// Get Android instance with given ID
-func (r *AndroidInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *AndroidInstance, err error) {
-	opts = append(r.Options[:], opts...)
-	if id == "" {
-		err = errors.New("missing required id parameter")
-		return
-	}
-	path := fmt.Sprintf("v1/android_instances/%s", id)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
-}
-
 // List Android instances belonging to given organization
 func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *[]AndroidInstance, err error) {
 	opts = append(r.Options[:], opts...)
@@ -75,6 +63,18 @@ func (r *AndroidInstanceService) Delete(ctx context.Context, id string, opts ...
 	}
 	path := fmt.Sprintf("v1/android_instances/%s", id)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return
+}
+
+// Get Android instance with given ID
+func (r *AndroidInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *AndroidInstance, err error) {
+	opts = append(r.Options[:], opts...)
+	if id == "" {
+		err = errors.New("missing required id parameter")
+		return
+	}
+	path := fmt.Sprintf("v1/android_instances/%s", id)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
 	return
 }
 
