@@ -3,6 +3,7 @@ module github.com/limrun-inc/go-sdk
 go 1.21
 
 require (
+	github.com/gorilla/websocket v1.5.3
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 )
