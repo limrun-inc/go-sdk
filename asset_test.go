@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-package limrunv1_test
+package limrun_test
 
 import (
 	"context"
@@ -22,15 +22,15 @@ func TestAssetNew(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Assets.New(context.TODO(), limrunv1.AssetNewParams{
+	_, err := client.Assets.New(context.TODO(), limrun.AssetNewParams{
 		Name: "name",
 	})
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}
@@ -47,20 +47,20 @@ func TestAssetGetWithOptionalParams(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Assets.Get(
 		context.TODO(),
 		"assetId",
-		limrunv1.AssetGetParams{
-			IncludeDownloadURL: limrunv1.Bool(true),
-			IncludeUploadURL:   limrunv1.Bool(true),
+		limrun.AssetGetParams{
+			IncludeDownloadURL: limrun.Bool(true),
+			IncludeUploadURL:   limrun.Bool(true),
 		},
 	)
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}
@@ -77,18 +77,18 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Assets.List(context.TODO(), limrunv1.AssetListParams{
-		IncludeDownloadURL: limrunv1.Bool(true),
-		IncludeUploadURL:   limrunv1.Bool(true),
-		Md5Filter:          limrunv1.String("md5Filter"),
-		NameFilter:         limrunv1.String("nameFilter"),
+	_, err := client.Assets.List(context.TODO(), limrun.AssetListParams{
+		IncludeDownloadURL: limrun.Bool(true),
+		IncludeUploadURL:   limrun.Bool(true),
+		Md5Filter:          limrun.String("md5Filter"),
+		NameFilter:         limrun.String("nameFilter"),
 	})
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}

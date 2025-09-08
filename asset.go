@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-package limrunv1
+package limrun
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 )
 
 // AssetService contains methods and other services that help with interacting with
-// the limrun-v1 API.
+// the limrun API.
 //
 // Note, unlike clients, this service does not read variables from the environment
 // automatically. You should not instantiate this service directly, and instead use

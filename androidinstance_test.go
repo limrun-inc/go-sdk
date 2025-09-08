@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
-package limrunv1_test
+package limrun_test
 
 import (
 	"context"
@@ -22,36 +22,36 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.AndroidInstances.New(context.TODO(), limrunv1.AndroidInstanceNewParams{
-		Wait: limrunv1.Bool(true),
-		Metadata: limrunv1.AndroidInstanceNewParamsMetadata{
-			DisplayName: limrunv1.String("displayName"),
+	_, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{
+		Wait: limrun.Bool(true),
+		Metadata: limrun.AndroidInstanceNewParamsMetadata{
+			DisplayName: limrun.String("displayName"),
 			Labels: map[string]string{
 				"foo": "string",
 			},
 		},
-		Spec: limrunv1.AndroidInstanceNewParamsSpec{
-			Clues: []limrunv1.AndroidInstanceNewParamsSpecClue{{
+		Spec: limrun.AndroidInstanceNewParamsSpec{
+			Clues: []limrun.AndroidInstanceNewParamsSpecClue{{
 				Kind:     "ClientIP",
-				ClientIP: limrunv1.String("clientIp"),
+				ClientIP: limrun.String("clientIp"),
 			}},
-			HardTimeout:       limrunv1.String("hardTimeout"),
-			InactivityTimeout: limrunv1.String("inactivityTimeout"),
-			InitialAssets: []limrunv1.AndroidInstanceNewParamsSpecInitialAsset{{
+			HardTimeout:       limrun.String("hardTimeout"),
+			InactivityTimeout: limrun.String("inactivityTimeout"),
+			InitialAssets: []limrun.AndroidInstanceNewParamsSpecInitialAsset{{
 				Kind:      "App",
 				Source:    "URL",
-				AssetName: limrunv1.String("assetName"),
-				URL:       limrunv1.String("url"),
+				AssetName: limrun.String("assetName"),
+				URL:       limrun.String("url"),
 			}},
-			Region: limrunv1.String("region"),
+			Region: limrun.String("region"),
 		},
 	})
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}
@@ -68,13 +68,13 @@ func TestAndroidInstanceGet(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.AndroidInstances.Get(context.TODO(), "id")
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}
@@ -91,17 +91,17 @@ func TestAndroidInstanceListWithOptionalParams(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.AndroidInstances.List(context.TODO(), limrunv1.AndroidInstanceListParams{
-		LabelSelector: limrunv1.String("env=prod,version=1.2"),
-		Region:        limrunv1.String("region"),
+	_, err := client.AndroidInstances.List(context.TODO(), limrun.AndroidInstanceListParams{
+		LabelSelector: limrun.String("env=prod,version=1.2"),
+		Region:        limrun.String("region"),
 		State:         map[string]interface{}{},
 	})
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}
@@ -118,13 +118,13 @@ func TestAndroidInstanceDelete(t *testing.T) {
 	if !testutil.CheckTestServer(t, baseURL) {
 		return
 	}
-	client := limrunv1.NewClient(
+	client := limrun.NewClient(
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
 	err := client.AndroidInstances.Delete(context.TODO(), "id")
 	if err != nil {
-		var apierr *limrunv1.Error
+		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
 			t.Log(string(apierr.DumpRequest(true)))
 		}

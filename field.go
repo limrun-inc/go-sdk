@@ -1,4 +1,4 @@
-package limrunv1
+package limrun
 
 import (
 	"github.com/limrun-inc/go-sdk/packages/param"
