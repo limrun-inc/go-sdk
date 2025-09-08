@@ -98,7 +98,7 @@ func TestAndroidInstanceListWithOptionalParams(t *testing.T) {
 	_, err := client.AndroidInstances.List(context.TODO(), limrun.AndroidInstanceListParams{
 		LabelSelector: limrun.String("env=prod,version=1.2"),
 		Region:        limrun.String("region"),
-		State:         map[string]interface{}{},
+		State:         limrun.AndroidInstanceListParamsStateUnknown,
 	})
 	if err != nil {
 		var apierr *limrun.Error
