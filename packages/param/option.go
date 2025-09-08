@@ -3,7 +3,7 @@ package param
 import (
 	"encoding/json"
 	"fmt"
-	shimjson "github.com/stainless-sdks/limrun-v1-go/internal/encoding/json"
+	shimjson "github.com/limrun-inc/go-sdk/internal/encoding/json"
 	"time"
 )
 

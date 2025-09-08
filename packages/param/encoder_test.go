@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/limrun-v1-go/packages/param"
+	"github.com/limrun-inc/go-sdk/packages/param"
 )
 
 type Struct struct {

@@ -1,8 +1,8 @@
 package sentinel_test
 
 import (
-	"github.com/stainless-sdks/limrun-v1-go/internal/encoding/json/sentinel"
-	"github.com/stainless-sdks/limrun-v1-go/packages/param"
+	"github.com/limrun-inc/go-sdk/internal/encoding/json/sentinel"
+	"github.com/limrun-inc/go-sdk/packages/param"
 	"reflect"
 	"slices"
 	"testing"

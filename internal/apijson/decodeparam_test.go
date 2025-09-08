@@ -3,8 +3,8 @@ package apijson_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stainless-sdks/limrun-v1-go/internal/apijson"
-	"github.com/stainless-sdks/limrun-v1-go/packages/param"
+	"github.com/limrun-inc/go-sdk/internal/apijson"
+	"github.com/limrun-inc/go-sdk/packages/param"
 	"reflect"
 	"testing"
 )

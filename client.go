@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/stainless-sdks/limrun-v1-go/internal/requestconfig"
-	"github.com/stainless-sdks/limrun-v1-go/option"
+	"github.com/limrun-inc/go-sdk/internal/requestconfig"
+	"github.com/limrun-inc/go-sdk/option"
 )
 
 // Client creates a struct with services and top level methods that help with

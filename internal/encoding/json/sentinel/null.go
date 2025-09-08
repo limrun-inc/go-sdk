@@ -1,7 +1,7 @@
 package sentinel
 
 import (
-	"github.com/stainless-sdks/limrun-v1-go/internal/encoding/json/shims"
+	"github.com/limrun-inc/go-sdk/internal/encoding/json/shims"
 	"reflect"
 	"sync"
 )

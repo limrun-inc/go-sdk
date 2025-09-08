@@ -1,7 +1,7 @@
 package apijson
 
 import (
-	"github.com/stainless-sdks/limrun-v1-go/packages/respjson"
+	"github.com/limrun-inc/go-sdk/packages/respjson"
 	"reflect"
 )
 

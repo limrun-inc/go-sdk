@@ -1,7 +1,7 @@
 package apiform
 
 import (
-	"github.com/stainless-sdks/limrun-v1-go/packages/param"
+	"github.com/limrun-inc/go-sdk/packages/param"
 	"mime/multipart"
 	"reflect"
 )

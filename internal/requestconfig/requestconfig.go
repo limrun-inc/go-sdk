@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stainless-sdks/limrun-v1-go/internal"
-	"github.com/stainless-sdks/limrun-v1-go/internal/apierror"
-	"github.com/stainless-sdks/limrun-v1-go/internal/apiform"
-	"github.com/stainless-sdks/limrun-v1-go/internal/apiquery"
+	"github.com/limrun-inc/go-sdk/internal"
+	"github.com/limrun-inc/go-sdk/internal/apierror"
+	"github.com/limrun-inc/go-sdk/internal/apiform"
+	"github.com/limrun-inc/go-sdk/internal/apiquery"
 )
 
 func getDefaultHeaders() map[string]string {
