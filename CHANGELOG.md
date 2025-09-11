@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 (2025-09-11)
+
+Full Changelog: [v0.2.0...v0.3.0](https://github.com/limrun-inc/go-sdk/compare/v0.2.0...v0.3.0)
+
+### Features
+
+* **api:** add typescript ([cf4d01c](https://github.com/limrun-inc/go-sdk/commit/cf4d01c86ff162864e552a50174f1179a9ac5fa4))
+* **api:** remove md5filter from list assets ([b2cbdde](https://github.com/limrun-inc/go-sdk/commit/b2cbdde31120941ed20885d219c5682f45b306d6))
+* **api:** rename retrieve to get ([ba13401](https://github.com/limrun-inc/go-sdk/commit/ba13401c798500501c30eb4fdd035c275e7b901a))
+
 ## 0.2.0 (2025-09-08)
 
 Full Changelog: [v0.1.0...v0.2.0](https://github.com/limrun-inc/go-sdk/compare/v0.1.0...v0.2.0)
