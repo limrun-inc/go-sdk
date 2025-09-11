@@ -124,8 +124,6 @@ type AssetListParams struct {
 	IncludeDownloadURL param.Opt[bool] `query:"includeDownloadUrl,omitzero" json:"-"`
 	// Toggles whether an upload URL should be included in the response
 	IncludeUploadURL param.Opt[bool] `query:"includeUploadUrl,omitzero" json:"-"`
-	// Query by file md5
-	Md5Filter param.Opt[string] `query:"md5Filter,omitzero" json:"-"`
 	// Query by file name
 	NameFilter param.Opt[string] `query:"nameFilter,omitzero" json:"-"`
 	paramObj
