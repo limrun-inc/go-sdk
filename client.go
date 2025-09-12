@@ -18,6 +18,7 @@ type Client struct {
 	Options          []option.RequestOption
 	AndroidInstances AndroidInstanceService
 	Assets           AssetService
+	IosInstances     IosInstanceService
 }
 
 // DefaultClientOptions read from the environment (LIM_TOKEN, LIMRUN_BASE_URL).
@@ -44,6 +45,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 
 	r.AndroidInstances = NewAndroidInstanceService(opts...)
 	r.Assets = NewAssetService(opts...)
+	r.IosInstances = NewIosInstanceService(opts...)
 
 	return
 }
