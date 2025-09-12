@@ -38,7 +38,7 @@ func NewIosInstanceService(opts ...option.RequestOption) (r IosInstanceService) 
 }
 
 // Create an iOS instance
-func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParams, opts ...option.RequestOption) (res *IosInstanceNewResponse, err error) {
+func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParams, opts ...option.RequestOption) (res *IosInstance, err error) {
 	opts = append(r.Options[:], opts...)
 	path := "v1/ios_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
@@ -46,7 +46,7 @@ func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParam
 }
 
 // List iOS instances
-func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *[]IosInstanceListResponse, err error) {
+func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *[]IosInstance, err error) {
 	opts = append(r.Options[:], opts...)
 	path := "v1/ios_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
@@ -67,7 +67,7 @@ func (r *IosInstanceService) Delete(ctx context.Context, id string, opts ...opti
 }
 
 // Get iOS instance with given ID
-func (r *IosInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *IosInstanceGetResponse, err error) {
+func (r *IosInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *IosInstance, err error) {
 	opts = append(r.Options[:], opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
@@ -78,10 +78,10 @@ func (r *IosInstanceService) Get(ctx context.Context, id string, opts ...option.
 	return
 }
 
-type IosInstanceNewResponse struct {
-	Metadata IosInstanceNewResponseMetadata `json:"metadata,required"`
-	Spec     IosInstanceNewResponseSpec     `json:"spec,required"`
-	Status   IosInstanceNewResponseStatus   `json:"status,required"`
+type IosInstance struct {
+	Metadata IosInstanceMetadata `json:"metadata,required"`
+	Spec     IosInstanceSpec     `json:"spec,required"`
+	Status   IosInstanceStatus   `json:"status,required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Metadata    respjson.Field
@@ -93,12 +93,12 @@ type IosInstanceNewResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r IosInstanceNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceNewResponse) UnmarshalJSON(data []byte) error {
+func (r IosInstance) RawJSON() string { return r.JSON.raw }
+func (r *IosInstance) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type IosInstanceNewResponseMetadata struct {
+type IosInstanceMetadata struct {
 	ID             string            `json:"id,required"`
 	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
 	OrganizationID string            `json:"organizationId,required"`
@@ -119,12 +119,12 @@ type IosInstanceNewResponseMetadata struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r IosInstanceNewResponseMetadata) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceNewResponseMetadata) UnmarshalJSON(data []byte) error {
+func (r IosInstanceMetadata) RawJSON() string { return r.JSON.raw }
+func (r *IosInstanceMetadata) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type IosInstanceNewResponseSpec struct {
+type IosInstanceSpec struct {
 	// After how many minutes of inactivity should the instance be terminated. Example
 	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
 	// altogether.
@@ -146,12 +146,12 @@ type IosInstanceNewResponseSpec struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r IosInstanceNewResponseSpec) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceNewResponseSpec) UnmarshalJSON(data []byte) error {
+func (r IosInstanceSpec) RawJSON() string { return r.JSON.raw }
+func (r *IosInstanceSpec) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type IosInstanceNewResponseStatus struct {
+type IosInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "ready", "terminated".
 	State                string `json:"state,required"`
@@ -167,196 +167,8 @@ type IosInstanceNewResponseStatus struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r IosInstanceNewResponseStatus) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceNewResponseStatus) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceListResponse struct {
-	Metadata IosInstanceListResponseMetadata `json:"metadata,required"`
-	Spec     IosInstanceListResponseSpec     `json:"spec,required"`
-	Status   IosInstanceListResponseStatus   `json:"status,required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Metadata    respjson.Field
-		Spec        respjson.Field
-		Status      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceListResponse) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceListResponseMetadata struct {
-	ID             string            `json:"id,required"`
-	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
-	OrganizationID string            `json:"organizationId,required"`
-	DisplayName    string            `json:"displayName"`
-	Labels         map[string]string `json:"labels"`
-	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID             respjson.Field
-		CreatedAt      respjson.Field
-		OrganizationID respjson.Field
-		DisplayName    respjson.Field
-		Labels         respjson.Field
-		TerminatedAt   respjson.Field
-		ExtraFields    map[string]respjson.Field
-		raw            string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceListResponseMetadata) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceListResponseMetadata) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceListResponseSpec struct {
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
-	InactivityTimeout string `json:"inactivityTimeout,required" format:"duration"`
-	// The region where the instance will be created. If not given, will be decided
-	// based on scheduling clues and availability.
-	Region string `json:"region,required"`
-	// After how many minutes should the instance be terminated. Example values 1m,
-	// 10m, 3h. Default is "0" which means no hard timeout.
-	HardTimeout string `json:"hardTimeout" format:"duration"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		InactivityTimeout respjson.Field
-		Region            respjson.Field
-		HardTimeout       respjson.Field
-		ExtraFields       map[string]respjson.Field
-		raw               string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceListResponseSpec) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceListResponseSpec) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceListResponseStatus struct {
-	Token string `json:"token,required"`
-	// Any of "unknown", "creating", "ready", "terminated".
-	State                string `json:"state,required"`
-	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Token                respjson.Field
-		State                respjson.Field
-		EndpointWebSocketURL respjson.Field
-		ExtraFields          map[string]respjson.Field
-		raw                  string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceListResponseStatus) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceListResponseStatus) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceGetResponse struct {
-	Metadata IosInstanceGetResponseMetadata `json:"metadata,required"`
-	Spec     IosInstanceGetResponseSpec     `json:"spec,required"`
-	Status   IosInstanceGetResponseStatus   `json:"status,required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Metadata    respjson.Field
-		Spec        respjson.Field
-		Status      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceGetResponse) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceGetResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceGetResponseMetadata struct {
-	ID             string            `json:"id,required"`
-	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
-	OrganizationID string            `json:"organizationId,required"`
-	DisplayName    string            `json:"displayName"`
-	Labels         map[string]string `json:"labels"`
-	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID             respjson.Field
-		CreatedAt      respjson.Field
-		OrganizationID respjson.Field
-		DisplayName    respjson.Field
-		Labels         respjson.Field
-		TerminatedAt   respjson.Field
-		ExtraFields    map[string]respjson.Field
-		raw            string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceGetResponseMetadata) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceGetResponseMetadata) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceGetResponseSpec struct {
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
-	InactivityTimeout string `json:"inactivityTimeout,required" format:"duration"`
-	// The region where the instance will be created. If not given, will be decided
-	// based on scheduling clues and availability.
-	Region string `json:"region,required"`
-	// After how many minutes should the instance be terminated. Example values 1m,
-	// 10m, 3h. Default is "0" which means no hard timeout.
-	HardTimeout string `json:"hardTimeout" format:"duration"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		InactivityTimeout respjson.Field
-		Region            respjson.Field
-		HardTimeout       respjson.Field
-		ExtraFields       map[string]respjson.Field
-		raw               string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceGetResponseSpec) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceGetResponseSpec) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceGetResponseStatus struct {
-	Token string `json:"token,required"`
-	// Any of "unknown", "creating", "ready", "terminated".
-	State                string `json:"state,required"`
-	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Token                respjson.Field
-		State                respjson.Field
-		EndpointWebSocketURL respjson.Field
-		ExtraFields          map[string]respjson.Field
-		raw                  string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceGetResponseStatus) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceGetResponseStatus) UnmarshalJSON(data []byte) error {
+func (r IosInstanceStatus) RawJSON() string { return r.JSON.raw }
+func (r *IosInstanceStatus) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
