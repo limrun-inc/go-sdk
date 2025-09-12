@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 (2025-09-12)
+
+Full Changelog: [v0.3.0...v0.4.0](https://github.com/limrun-inc/go-sdk/compare/v0.3.0...v0.4.0)
+
+### Features
+
+* **api:** manual updates ([6d1a15b](https://github.com/limrun-inc/go-sdk/commit/6d1a15b4f6306f1aa3b0141d127c9e5b936fd863))
+* **api:** manual updates ([d48432f](https://github.com/limrun-inc/go-sdk/commit/d48432ffefbe7deb632923ae9f7d2366c2ce2a1e))
+
 ## 0.3.0 (2025-09-11)
 
 Full Changelog: [v0.2.0...v0.3.0](https://github.com/limrun-inc/go-sdk/compare/v0.2.0...v0.3.0)
