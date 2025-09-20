@@ -28,14 +28,14 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/limrun-inc/go-sdk@v0.4.1'
+go get -u 'github.com/limrun-inc/go-sdk@v0.4.2'
 ```
 
 <!-- x-release-please-end -->
 
 ## Requirements
 
-This library requires Go 1.18+.
+This library requires Go 1.22+.
 
 ## Usage
 

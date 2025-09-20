@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
@@ -39,7 +40,7 @@ func NewIosInstanceService(opts ...option.RequestOption) (r IosInstanceService) 
 
 // Create an iOS instance
 func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParams, opts ...option.RequestOption) (res *IosInstance, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	path := "v1/ios_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return
@@ -47,7 +48,7 @@ func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParam
 
 // List iOS instances
 func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *[]IosInstance, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	path := "v1/ios_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return
@@ -55,7 +56,7 @@ func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListPara
 
 // Delete iOS instance with given name
 func (r *IosInstanceService) Delete(ctx context.Context, id string, opts ...option.RequestOption) (err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
@@ -68,7 +69,7 @@ func (r *IosInstanceService) Delete(ctx context.Context, id string, opts ...opti
 
 // Get iOS instance with given ID
 func (r *IosInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *IosInstance, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return

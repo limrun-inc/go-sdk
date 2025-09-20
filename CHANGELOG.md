@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.2 (2025-09-20)
+
+Full Changelog: [v0.4.1...v0.4.2](https://github.com/limrun-inc/go-sdk/compare/v0.4.1...v0.4.2)
+
+### Bug Fixes
+
+* use slices.Concat instead of sometimes modifying r.Options ([e7f9fdf](https://github.com/limrun-inc/go-sdk/commit/e7f9fdfbc3c7ce66b60a29d5d745d6f1382d5f46))
+
+
+### Chores
+
+* bump minimum go version to 1.22 ([1c500cc](https://github.com/limrun-inc/go-sdk/commit/1c500cc127ba353a7086363d3028c2327692023f))
+* do not install brew dependencies in ./scripts/bootstrap by default ([27e0b56](https://github.com/limrun-inc/go-sdk/commit/27e0b56c2097f345e1f042b697e0541e6737f2cb))
+* update more docs for 1.22 ([c72a71e](https://github.com/limrun-inc/go-sdk/commit/c72a71e11e9df4cc9f8badf785907e36c4c91eb4))
+
 ## 0.4.1 (2025-09-18)
 
 Full Changelog: [v0.4.0...v0.4.1](https://github.com/limrun-inc/go-sdk/compare/v0.4.0...v0.4.1)

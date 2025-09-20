@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
@@ -39,7 +40,7 @@ func NewAssetService(opts ...option.RequestOption) (r AssetService) {
 // List organization's all assets with given filters. If none given, return all
 // assets.
 func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *[]Asset, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return
@@ -47,7 +48,7 @@ func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...
 
 // Get the asset with given ID.
 func (r *AssetService) Get(ctx context.Context, assetID string, query AssetGetParams, opts ...option.RequestOption) (res *Asset, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	if assetID == "" {
 		err = errors.New("missing required assetId parameter")
 		return
@@ -63,7 +64,7 @@ func (r *AssetService) Get(ctx context.Context, assetID string, query AssetGetPa
 // is no corresponding file in the storage so downloading it directly or using it
 // in instances will fail until you use the returned upload URL to submit the file.
 func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, opts ...option.RequestOption) (res *AssetGetOrNewResponse, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
 	return
