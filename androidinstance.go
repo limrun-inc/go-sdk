@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
@@ -39,7 +40,7 @@ func NewAndroidInstanceService(opts ...option.RequestOption) (r AndroidInstanceS
 
 // Create an Android instance
 func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstanceNewParams, opts ...option.RequestOption) (res *AndroidInstance, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	path := "v1/android_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return
@@ -47,7 +48,7 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 
 // List Android instances belonging to given organization
 func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *[]AndroidInstance, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	path := "v1/android_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return
@@ -55,7 +56,7 @@ func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstance
 
 // Delete Android instance with given name
 func (r *AndroidInstanceService) Delete(ctx context.Context, id string, opts ...option.RequestOption) (err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
@@ -68,7 +69,7 @@ func (r *AndroidInstanceService) Delete(ctx context.Context, id string, opts ...
 
 // Get Android instance with given ID
 func (r *AndroidInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *AndroidInstance, err error) {
-	opts = append(r.Options[:], opts...)
+	opts = slices.Concat(r.Options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return
