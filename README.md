@@ -35,7 +35,7 @@ go get -u 'github.com/limrun-inc/go-sdk@v0.4.1'
 
 ## Requirements
 
-This library requires Go 1.18+.
+This library requires Go 1.22+.
 
 ## Usage
 
