@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.2 (2025-10-06)
+
+Full Changelog: [v0.4.1...v0.4.2](https://github.com/limrun-inc/go-sdk/compare/v0.4.1...v0.4.2)
+
+### Features
+
+* **api:** add the new multiple apk installation options ([0d3233b](https://github.com/limrun-inc/go-sdk/commit/0d3233b091b86a923ef572889ac917ac91b2b337))
+
+
+### Bug Fixes
+
+* bugfix for setting JSON keys with special characters ([a47cddf](https://github.com/limrun-inc/go-sdk/commit/a47cddfbe787d753c8d703e01e51f3acb167afae))
+* use slices.Concat instead of sometimes modifying r.Options ([d28471e](https://github.com/limrun-inc/go-sdk/commit/d28471ee3e1133033e2a60656e86e8578d88fcf8))
+
+
+### Chores
+
+* bump minimum go version to 1.22 ([6118da1](https://github.com/limrun-inc/go-sdk/commit/6118da1a28b0abfd775ba62b928c70e88f4a5992))
+* do not install brew dependencies in ./scripts/bootstrap by default ([46d3bb2](https://github.com/limrun-inc/go-sdk/commit/46d3bb2dc3f056d9764fb910ef8454ec19d9dab2))
+* update more docs for 1.22 ([cfda39e](https://github.com/limrun-inc/go-sdk/commit/cfda39eabdfa379f8c7323b266e36cffcccca252))
+
 ## 0.4.1 (2025-09-18)
 
 Full Changelog: [v0.4.0...v0.4.1](https://github.com/limrun-inc/go-sdk/compare/v0.4.0...v0.4.1)
