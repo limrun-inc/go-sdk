@@ -264,10 +264,12 @@ func init() {
 type AndroidInstanceNewParamsSpecInitialAsset struct {
 	// Any of "App".
 	Kind string `json:"kind,omitzero,required"`
-	// Any of "URL", "AssetName".
-	Source    string            `json:"source,omitzero,required"`
-	AssetName param.Opt[string] `json:"assetName,omitzero"`
-	URL       param.Opt[string] `json:"url,omitzero"`
+	// Any of "URL", "URLs", "AssetName", "AssetNames".
+	Source     string            `json:"source,omitzero,required"`
+	AssetName  param.Opt[string] `json:"assetName,omitzero"`
+	URL        param.Opt[string] `json:"url,omitzero"`
+	AssetNames []string          `json:"assetNames,omitzero"`
+	URLs       []string          `json:"urls,omitzero"`
 	paramObj
 }
 
@@ -284,7 +286,7 @@ func init() {
 		"kind", "App",
 	)
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
-		"source", "URL", "AssetName",
+		"source", "URL", "URLs", "AssetName", "AssetNames",
 	)
 }
 
