@@ -153,15 +153,15 @@ func (r *IosInstanceSpec) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceStatus struct {
-	Token string `json:"token,required"`
+	Token                string `json:"token,required"`
+	EndpointWebSocketURL string `json:"endpointWebSocketUrl,required"`
 	// Any of "unknown", "creating", "ready", "terminated".
-	State                string `json:"state,required"`
-	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
+	State string `json:"state,required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                respjson.Field
-		State                respjson.Field
 		EndpointWebSocketURL respjson.Field
+		State                respjson.Field
 		ExtraFields          map[string]respjson.Field
 		raw                  string
 	} `json:"-"`
