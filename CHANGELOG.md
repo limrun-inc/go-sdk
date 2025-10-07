@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 (2025-10-07)
+
+Full Changelog: [v0.4.2...v0.5.0](https://github.com/limrun-inc/go-sdk/compare/v0.4.2...v0.5.0)
+
+### Features
+
+* **api:** mark public urls as required ([ae0cb78](https://github.com/limrun-inc/go-sdk/commit/ae0cb78284cd5f52565bdc5974746cb2c65e4692))
+* **api:** revert api change ([ed7f2a6](https://github.com/limrun-inc/go-sdk/commit/ed7f2a65dc8a35851128b869282259615dcf7020))
+
 ## 0.4.2 (2025-10-06)
 
 Full Changelog: [v0.4.1...v0.4.2](https://github.com/limrun-inc/go-sdk/compare/v0.4.1...v0.4.2)
