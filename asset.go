@@ -40,7 +40,7 @@ func NewAssetService(opts ...option.RequestOption) (r AssetService) {
 
 // List organization's all assets with given filters. If none given, return all
 // assets.
-func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *pagination.Items[Asset], err error) {
+func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *pagination.List[Asset], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -59,8 +59,8 @@ func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...
 
 // List organization's all assets with given filters. If none given, return all
 // assets.
-func (r *AssetService) ListAutoPaging(ctx context.Context, query AssetListParams, opts ...option.RequestOption) *pagination.ItemsAutoPager[Asset] {
-	return pagination.NewItemsAutoPager(r.List(ctx, query, opts...))
+func (r *AssetService) ListAutoPaging(ctx context.Context, query AssetListParams, opts ...option.RequestOption) *pagination.ListAutoPager[Asset] {
+	return pagination.NewListAutoPager(r.List(ctx, query, opts...))
 }
 
 // Get the asset with given ID.

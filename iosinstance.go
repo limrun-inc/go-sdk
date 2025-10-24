@@ -48,7 +48,7 @@ func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParam
 }
 
 // List iOS instances
-func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *pagination.Items[IosInstance], err error) {
+func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *pagination.List[IosInstance], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -66,8 +66,8 @@ func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListPara
 }
 
 // List iOS instances
-func (r *IosInstanceService) ListAutoPaging(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) *pagination.ItemsAutoPager[IosInstance] {
-	return pagination.NewItemsAutoPager(r.List(ctx, query, opts...))
+func (r *IosInstanceService) ListAutoPaging(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) *pagination.ListAutoPager[IosInstance] {
+	return pagination.NewListAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete iOS instance with given name

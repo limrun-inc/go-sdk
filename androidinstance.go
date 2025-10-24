@@ -48,7 +48,7 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 }
 
 // List Android instances belonging to given organization
-func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *pagination.Items[AndroidInstance], err error) {
+func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *pagination.List[AndroidInstance], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -66,8 +66,8 @@ func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstance
 }
 
 // List Android instances belonging to given organization
-func (r *AndroidInstanceService) ListAutoPaging(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) *pagination.ItemsAutoPager[AndroidInstance] {
-	return pagination.NewItemsAutoPager(r.List(ctx, query, opts...))
+func (r *AndroidInstanceService) ListAutoPaging(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) *pagination.ListAutoPager[AndroidInstance] {
+	return pagination.NewListAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete Android instance with given name

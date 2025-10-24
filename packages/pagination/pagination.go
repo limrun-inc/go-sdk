@@ -19,7 +19,7 @@ type paramUnion = param.APIUnion
 // aliased to make [param.APIObject] private when embedding
 type paramObj = param.APIObject
 
-type Items[T any] struct {
+type List[T any] struct {
 	Items []T `json:"items"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -32,15 +32,15 @@ type Items[T any] struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r Items[T]) RawJSON() string { return r.JSON.raw }
-func (r *Items[T]) UnmarshalJSON(data []byte) error {
+func (r List[T]) RawJSON() string { return r.JSON.raw }
+func (r *List[T]) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // GetNextPage returns the next page as defined by this pagination style. When
 // there is no next page, this function will return a 'nil' for the page value, but
 // will not return an error
-func (r *Items[T]) GetNextPage() (res *Items[T], err error) {
+func (r *List[T]) GetNextPage() (res *List[T], err error) {
 	if len(r.Items) == 0 {
 		return nil, nil
 	}
@@ -66,16 +66,16 @@ func (r *Items[T]) GetNextPage() (res *Items[T], err error) {
 	return res, nil
 }
 
-func (r *Items[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+func (r *List[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
 	if r == nil {
-		r = &Items[T]{}
+		r = &List[T]{}
 	}
 	r.cfg = cfg
 	r.res = res
 }
 
-type ItemsAutoPager[T any] struct {
-	page *Items[T]
+type ListAutoPager[T any] struct {
+	page *List[T]
 	cur  T
 	idx  int
 	run  int
@@ -83,14 +83,14 @@ type ItemsAutoPager[T any] struct {
 	paramObj
 }
 
-func NewItemsAutoPager[T any](page *Items[T], err error) *ItemsAutoPager[T] {
-	return &ItemsAutoPager[T]{
+func NewListAutoPager[T any](page *List[T], err error) *ListAutoPager[T] {
+	return &ListAutoPager[T]{
 		page: page,
 		err:  err,
 	}
 }
 
-func (r *ItemsAutoPager[T]) Next() bool {
+func (r *ListAutoPager[T]) Next() bool {
 	if r.page == nil || len(r.page.Items) == 0 {
 		return false
 	}
@@ -107,14 +107,14 @@ func (r *ItemsAutoPager[T]) Next() bool {
 	return true
 }
 
-func (r *ItemsAutoPager[T]) Current() T {
+func (r *ListAutoPager[T]) Current() T {
 	return r.cur
 }
 
-func (r *ItemsAutoPager[T]) Err() error {
+func (r *ListAutoPager[T]) Err() error {
 	return r.err
 }
 
-func (r *ItemsAutoPager[T]) Index() int {
+func (r *ListAutoPager[T]) Index() int {
 	return r.run
 }
