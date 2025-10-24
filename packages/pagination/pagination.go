@@ -19,11 +19,11 @@ type paramUnion = param.APIUnion
 // aliased to make [param.APIObject] private when embedding
 type paramObj = param.APIObject
 
-type Instances[T any] struct {
-	Instances []T `json:"instances"`
+type Items[T any] struct {
+	Items []T `json:"items"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Instances   respjson.Field
+		Items       respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
@@ -32,19 +32,19 @@ type Instances[T any] struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r Instances[T]) RawJSON() string { return r.JSON.raw }
-func (r *Instances[T]) UnmarshalJSON(data []byte) error {
+func (r Items[T]) RawJSON() string { return r.JSON.raw }
+func (r *Items[T]) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // GetNextPage returns the next page as defined by this pagination style. When
 // there is no next page, this function will return a 'nil' for the page value, but
 // will not return an error
-func (r *Instances[T]) GetNextPage() (res *Instances[T], err error) {
-	if len(r.Instances) == 0 {
+func (r *Items[T]) GetNextPage() (res *Items[T], err error) {
+	if len(r.Items) == 0 {
 		return nil, nil
 	}
-	items := r.Instances
+	items := r.Items
 	if items == nil || len(items) == 0 {
 		return nil, nil
 	}
@@ -66,16 +66,16 @@ func (r *Instances[T]) GetNextPage() (res *Instances[T], err error) {
 	return res, nil
 }
 
-func (r *Instances[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+func (r *Items[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
 	if r == nil {
-		r = &Instances[T]{}
+		r = &Items[T]{}
 	}
 	r.cfg = cfg
 	r.res = res
 }
 
-type InstancesAutoPager[T any] struct {
-	page *Instances[T]
+type ItemsAutoPager[T any] struct {
+	page *Items[T]
 	cur  T
 	idx  int
 	run  int
@@ -83,38 +83,38 @@ type InstancesAutoPager[T any] struct {
 	paramObj
 }
 
-func NewInstancesAutoPager[T any](page *Instances[T], err error) *InstancesAutoPager[T] {
-	return &InstancesAutoPager[T]{
+func NewItemsAutoPager[T any](page *Items[T], err error) *ItemsAutoPager[T] {
+	return &ItemsAutoPager[T]{
 		page: page,
 		err:  err,
 	}
 }
 
-func (r *InstancesAutoPager[T]) Next() bool {
-	if r.page == nil || len(r.page.Instances) == 0 {
+func (r *ItemsAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.Items) == 0 {
 		return false
 	}
-	if r.idx >= len(r.page.Instances) {
+	if r.idx >= len(r.page.Items) {
 		r.idx = 0
 		r.page, r.err = r.page.GetNextPage()
-		if r.err != nil || r.page == nil || len(r.page.Instances) == 0 {
+		if r.err != nil || r.page == nil || len(r.page.Items) == 0 {
 			return false
 		}
 	}
-	r.cur = r.page.Instances[r.idx]
+	r.cur = r.page.Items[r.idx]
 	r.run += 1
 	r.idx += 1
 	return true
 }
 
-func (r *InstancesAutoPager[T]) Current() T {
+func (r *ItemsAutoPager[T]) Current() T {
 	return r.cur
 }
 
-func (r *InstancesAutoPager[T]) Err() error {
+func (r *ItemsAutoPager[T]) Err() error {
 	return r.err
 }
 
-func (r *InstancesAutoPager[T]) Index() int {
+func (r *ItemsAutoPager[T]) Index() int {
 	return r.run
 }
