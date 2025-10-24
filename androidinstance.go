@@ -291,11 +291,19 @@ func init() {
 }
 
 type AndroidInstanceListParams struct {
+	// Return records up until this instance ID. If not given, it will return up until
+	// the 50th instance.
+	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
 	// Labels filter to apply to Android instances to return. Expects a comma-separated
 	// list of key=value pairs (e.g., env=prod,region=us-west).
 	LabelSelector param.Opt[string] `query:"labelSelector,omitzero" json:"-"`
+	// Maximum number of instances to be returned. The default is 50.
+	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Region where the instance is scheduled on.
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
+	// Return records starting after this instance ID. If not given, it will start from
+	// the most recent one.
+	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
 	// State filter to apply to Android instances to return.
 	//
 	// Any of "unknown", "creating", "ready", "terminated".
