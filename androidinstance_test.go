@@ -75,11 +75,9 @@ func TestAndroidInstanceListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.AndroidInstances.List(context.TODO(), limrun.AndroidInstanceListParams{
-		EndingBefore:  limrun.String("android_someid"),
 		LabelSelector: limrun.String("env=prod,version=1.2"),
 		Limit:         limrun.Int(50),
 		Region:        limrun.String("region"),
-		StartingAfter: limrun.String("android_someid"),
 		State:         limrun.AndroidInstanceListParamsStateUnknown,
 	})
 	if err != nil {

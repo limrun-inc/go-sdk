@@ -15,7 +15,6 @@ import (
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
-	"github.com/limrun-inc/go-sdk/packages/pagination"
 	"github.com/limrun-inc/go-sdk/packages/param"
 	"github.com/limrun-inc/go-sdk/packages/respjson"
 )
@@ -48,26 +47,11 @@ func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParam
 }
 
 // List iOS instances
-func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *pagination.List[IosInstance], err error) {
-	var raw *http.Response
+func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *IosInstanceListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v1/ios_instances"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
-	if err != nil {
-		return nil, err
-	}
-	err = cfg.Execute()
-	if err != nil {
-		return nil, err
-	}
-	res.SetPageConfig(cfg, raw)
-	return res, nil
-}
-
-// List iOS instances
-func (r *IosInstanceService) ListAutoPaging(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) *pagination.ListAutoPager[IosInstance] {
-	return pagination.NewListAutoPager(r.List(ctx, query, opts...))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return
 }
 
 // Delete iOS instance with given name
@@ -189,6 +173,22 @@ func (r *IosInstanceStatus) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type IosInstanceListResponse struct {
+	Items []IosInstance `json:"items"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Items       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r IosInstanceListResponse) RawJSON() string { return r.JSON.raw }
+func (r *IosInstanceListResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type IosInstanceNewParams struct {
 	// Return after the instance is ready to connect.
 	Wait     param.Opt[bool]              `query:"wait,omitzero" json:"-"`
@@ -303,9 +303,6 @@ func init() {
 }
 
 type IosInstanceListParams struct {
-	// Return items up until this ID. If not given, it will return up until the 50th
-	// instance.
-	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
 	// Labels filter to apply to instances to return. Expects a comma-separated list of
 	// key=value pairs (e.g., env=prod,region=us-west).
 	LabelSelector param.Opt[string] `query:"labelSelector,omitzero" json:"-"`
@@ -313,9 +310,6 @@ type IosInstanceListParams struct {
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Region where the instance is scheduled on.
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
-	// Return records starting after this ID. If not given, it will start from the most
-	// recent one.
-	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
 	// State filter to apply to instances to return.
 	//
 	// Any of "unknown", "creating", "ready", "terminated".
