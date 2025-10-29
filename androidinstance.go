@@ -240,9 +240,10 @@ func (r *AndroidInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecClue struct {
-	// Any of "ClientIP".
-	Kind     string            `json:"kind,omitzero,required"`
-	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
+	// Any of "ClientIP", "OSVersion".
+	Kind      string            `json:"kind,omitzero,required"`
+	ClientIP  param.Opt[string] `json:"clientIp,omitzero"`
+	OsVersion param.Opt[string] `json:"osVersion,omitzero"`
 	paramObj
 }
 
@@ -256,7 +257,7 @@ func (r *AndroidInstanceNewParamsSpecClue) UnmarshalJSON(data []byte) error {
 
 func init() {
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecClue](
-		"kind", "ClientIP",
+		"kind", "ClientIP", "OSVersion",
 	)
 }
 

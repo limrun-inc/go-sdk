@@ -38,7 +38,6 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 			Clues: []limrun.IosInstanceNewParamsSpecClue{{
 				Kind:     "ClientIP",
 				ClientIP: limrun.String("clientIp"),
-				SVersion: limrun.String("sVersion"),
 			}},
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),
