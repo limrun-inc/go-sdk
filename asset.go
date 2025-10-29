@@ -39,7 +39,7 @@ func NewAssetService(opts ...option.RequestOption) (r AssetService) {
 
 // List organization's all assets with given filters. If none given, return all
 // assets.
-func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *AssetListResponse, err error) {
+func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *[]Asset, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
@@ -92,22 +92,6 @@ type Asset struct {
 // Returns the unmodified JSON received from the API
 func (r Asset) RawJSON() string { return r.JSON.raw }
 func (r *Asset) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type AssetListResponse struct {
-	Items []Asset `json:"items"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Items       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r AssetListResponse) RawJSON() string { return r.JSON.raw }
-func (r *AssetListResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
