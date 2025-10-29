@@ -74,11 +74,9 @@ func TestIosInstanceListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.IosInstances.List(context.TODO(), limrun.IosInstanceListParams{
-		EndingBefore:  limrun.String("ios_someid"),
 		LabelSelector: limrun.String("env=prod,version=1.2"),
 		Limit:         limrun.Int(50),
 		Region:        limrun.String("region"),
-		StartingAfter: limrun.String("ios_someid"),
 		State:         limrun.IosInstanceListParamsStateUnknown,
 	})
 	if err != nil {

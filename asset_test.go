@@ -27,12 +27,10 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Assets.List(context.TODO(), limrun.AssetListParams{
-		EndingBefore:       limrun.String("asset_someid"),
 		IncludeDownloadURL: limrun.Bool(true),
 		IncludeUploadURL:   limrun.Bool(true),
 		Limit:              limrun.Int(50),
 		NameFilter:         limrun.String("nameFilter"),
-		StartingAfter:      limrun.String("asset_someid"),
 	})
 	if err != nil {
 		var apierr *limrun.Error
