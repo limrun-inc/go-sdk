@@ -125,6 +125,8 @@ type AssetListParams struct {
 	IncludeDownloadURL param.Opt[bool] `query:"includeDownloadUrl,omitzero" json:"-"`
 	// Toggles whether an upload URL should be included in the response
 	IncludeUploadURL param.Opt[bool] `query:"includeUploadUrl,omitzero" json:"-"`
+	// Maximum number of items to be returned. The default is 50.
+	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Query by file name
 	NameFilter param.Opt[string] `query:"nameFilter,omitzero" json:"-"`
 	paramObj

@@ -36,8 +36,9 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 		},
 		Spec: limrun.AndroidInstanceNewParamsSpec{
 			Clues: []limrun.AndroidInstanceNewParamsSpecClue{{
-				Kind:     "ClientIP",
-				ClientIP: limrun.String("clientIp"),
+				Kind:      "ClientIP",
+				ClientIP:  limrun.String("clientIp"),
+				OsVersion: limrun.String("osVersion"),
 			}},
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),
@@ -76,6 +77,7 @@ func TestAndroidInstanceListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.AndroidInstances.List(context.TODO(), limrun.AndroidInstanceListParams{
 		LabelSelector: limrun.String("env=prod,version=1.2"),
+		Limit:         limrun.Int(50),
 		Region:        limrun.String("region"),
 		State:         limrun.AndroidInstanceListParamsStateUnknown,
 	})

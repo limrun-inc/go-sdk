@@ -29,6 +29,7 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 	_, err := client.Assets.List(context.TODO(), limrun.AssetListParams{
 		IncludeDownloadURL: limrun.Bool(true),
 		IncludeUploadURL:   limrun.Bool(true),
+		Limit:              limrun.Int(50),
 		NameFilter:         limrun.String("nameFilter"),
 	})
 	if err != nil {

@@ -46,7 +46,7 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 	return
 }
 
-// List Android instances belonging to given organization
+// List Android instances
 func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *[]AndroidInstance, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/android_instances"
@@ -240,9 +240,11 @@ func (r *AndroidInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecClue struct {
-	// Any of "ClientIP".
+	// Any of "ClientIP", "OSVersion".
 	Kind     string            `json:"kind,omitzero,required"`
 	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
+	// The major version of Android, e.g. "13", "14" or "15".
+	OsVersion param.Opt[string] `json:"osVersion,omitzero"`
 	paramObj
 }
 
@@ -256,7 +258,7 @@ func (r *AndroidInstanceNewParamsSpecClue) UnmarshalJSON(data []byte) error {
 
 func init() {
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecClue](
-		"kind", "ClientIP",
+		"kind", "ClientIP", "OSVersion",
 	)
 }
 
@@ -294,6 +296,8 @@ type AndroidInstanceListParams struct {
 	// Labels filter to apply to Android instances to return. Expects a comma-separated
 	// list of key=value pairs (e.g., env=prod,region=us-west).
 	LabelSelector param.Opt[string] `query:"labelSelector,omitzero" json:"-"`
+	// Maximum number of instances to be returned. The default is 50.
+	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Region where the instance is scheduled on.
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
 	// State filter to apply to Android instances to return.

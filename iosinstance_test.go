@@ -74,6 +74,7 @@ func TestIosInstanceListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.IosInstances.List(context.TODO(), limrun.IosInstanceListParams{
 		LabelSelector: limrun.String("env=prod,version=1.2"),
+		Limit:         limrun.Int(50),
 		Region:        limrun.String("region"),
 		State:         limrun.IosInstanceListParamsStateUnknown,
 	})

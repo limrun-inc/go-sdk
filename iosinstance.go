@@ -289,6 +289,8 @@ type IosInstanceListParams struct {
 	// Labels filter to apply to instances to return. Expects a comma-separated list of
 	// key=value pairs (e.g., env=prod,region=us-west).
 	LabelSelector param.Opt[string] `query:"labelSelector,omitzero" json:"-"`
+	// Maximum number of items to be returned. The default is 50.
+	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Region where the instance is scheduled on.
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
 	// State filter to apply to instances to return.
