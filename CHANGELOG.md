@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 (2025-10-29)
+
+Full Changelog: [v0.4.2...v0.5.0](https://github.com/limrun-inc/go-sdk/compare/v0.4.2...v0.5.0)
+
+### Features
+
+* **api:** add explicit pagination fields ([ccfb77f](https://github.com/limrun-inc/go-sdk/commit/ccfb77fa7038030fa35b659e0d6861b43c61b88e))
+* **api:** add os version clue ([0e1ab7f](https://github.com/limrun-inc/go-sdk/commit/0e1ab7f71dd62915731e152f5575d66d0abddc5e))
+* **api:** limit pagination only to limit parameter temporarily ([aed4f11](https://github.com/limrun-inc/go-sdk/commit/aed4f11700c1456717167957204d75f141a15fc2))
+* **api:** manual updates ([580e699](https://github.com/limrun-inc/go-sdk/commit/580e6999ce131e268ef52873e0dc0ce96562f205))
+* **api:** manual updates ([8ef0cf6](https://github.com/limrun-inc/go-sdk/commit/8ef0cf67956a19b44952347e759be2b940429974))
+* **api:** mark public urls as required ([ae0cb78](https://github.com/limrun-inc/go-sdk/commit/ae0cb78284cd5f52565bdc5974746cb2c65e4692))
+* **api:** os version description to show possible values ([3801b23](https://github.com/limrun-inc/go-sdk/commit/3801b232cc406d3dfc1fcad6262295dcf47d410a))
+* **api:** osVersion clue is available only in Android yet ([a2be626](https://github.com/limrun-inc/go-sdk/commit/a2be626adc9f9d1121797748def9eb415b2bdefa))
+* **api:** remaining pieces of pagionation removed temporarily ([4059c88](https://github.com/limrun-inc/go-sdk/commit/4059c88d7ca1adbf8c1cf843a476ae8f4b17366a))
+* **api:** revert api change ([ed7f2a6](https://github.com/limrun-inc/go-sdk/commit/ed7f2a65dc8a35851128b869282259615dcf7020))
+* **api:** update assets and ios_instances endpoints with pagination ([ddd136b](https://github.com/limrun-inc/go-sdk/commit/ddd136bfe89fb384fca499c0a622e3712c2002d2))
+* **api:** update stainless schema for pagination ([e53151e](https://github.com/limrun-inc/go-sdk/commit/e53151e9a6f895d40eb454d0c899b3b2b7dde47a))
+
 ## 0.4.2 (2025-10-06)
 
 Full Changelog: [v0.4.1...v0.4.2](https://github.com/limrun-inc/go-sdk/compare/v0.4.1...v0.4.2)
