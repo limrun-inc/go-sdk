@@ -47,7 +47,7 @@ func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParam
 }
 
 // List iOS instances
-func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *IosInstanceListResponse, err error) {
+func (r *IosInstanceService) List(ctx context.Context, query IosInstanceListParams, opts ...option.RequestOption) (res *[]IosInstance, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/ios_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
@@ -170,22 +170,6 @@ type IosInstanceStatus struct {
 // Returns the unmodified JSON received from the API
 func (r IosInstanceStatus) RawJSON() string { return r.JSON.raw }
 func (r *IosInstanceStatus) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type IosInstanceListResponse struct {
-	Items []IosInstance `json:"items"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Items       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r IosInstanceListResponse) RawJSON() string { return r.JSON.raw }
-func (r *IosInstanceListResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

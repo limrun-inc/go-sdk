@@ -46,8 +46,8 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 	return
 }
 
-// List Android instances belonging to given organization
-func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *AndroidInstanceListResponse, err error) {
+// List Android instances
+func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *[]AndroidInstanceListResponse, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/android_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
@@ -175,21 +175,7 @@ func (r *AndroidInstanceStatus) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type AndroidInstanceListResponse struct {
-	Items []AndroidInstance `json:"items"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Items       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r AndroidInstanceListResponse) RawJSON() string { return r.JSON.raw }
-func (r *AndroidInstanceListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
+type AndroidInstanceListResponse = any
 
 type AndroidInstanceNewParams struct {
 	// Return after the instance is ready to connect.
