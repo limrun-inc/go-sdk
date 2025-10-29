@@ -241,8 +241,9 @@ func (r *AndroidInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecClue struct {
 	// Any of "ClientIP", "OSVersion".
-	Kind      string            `json:"kind,omitzero,required"`
-	ClientIP  param.Opt[string] `json:"clientIp,omitzero"`
+	Kind     string            `json:"kind,omitzero,required"`
+	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
+	// The major version of Android, e.g. "13", "14" or "15".
 	OsVersion param.Opt[string] `json:"osVersion,omitzero"`
 	paramObj
 }
