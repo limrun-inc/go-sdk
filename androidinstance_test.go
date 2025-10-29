@@ -36,8 +36,9 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 		},
 		Spec: limrun.AndroidInstanceNewParamsSpec{
 			Clues: []limrun.AndroidInstanceNewParamsSpecClue{{
-				Kind:     "ClientIP",
-				ClientIP: limrun.String("clientIp"),
+				Kind:      "ClientIP",
+				ClientIP:  limrun.String("clientIp"),
+				OsVersion: limrun.String("osVersion"),
 			}},
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),

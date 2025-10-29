@@ -237,10 +237,9 @@ func (r *IosInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 
 // The property Kind is required.
 type IosInstanceNewParamsSpecClue struct {
-	// Any of "ClientIP", "OSVersion".
+	// Any of "ClientIP".
 	Kind     string            `json:"kind,omitzero,required"`
 	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
-	SVersion param.Opt[string] `json:"sVersion,omitzero"`
 	paramObj
 }
 
@@ -254,7 +253,7 @@ func (r *IosInstanceNewParamsSpecClue) UnmarshalJSON(data []byte) error {
 
 func init() {
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecClue](
-		"kind", "ClientIP", "OSVersion",
+		"kind", "ClientIP",
 	)
 }
 
