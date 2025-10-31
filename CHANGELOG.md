@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 (2025-10-31)
+
+Full Changelog: [v0.5.0...v0.5.1](https://github.com/limrun-inc/go-sdk/compare/v0.5.0...v0.5.1)
+
+### Features
+
+* **api:** add ios port-forward endpoint url to return type ([0f1451f](https://github.com/limrun-inc/go-sdk/commit/0f1451f44876562d5f97addeca510f583ec4e38b))
+
 ## 0.5.0 (2025-10-29)
 
 Full Changelog: [v0.4.2...v0.5.0](https://github.com/limrun-inc/go-sdk/compare/v0.4.2...v0.5.0)
