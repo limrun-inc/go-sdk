@@ -15,20 +15,20 @@ import (
 
 // WithADBPath lets you supply a custom path to the adb executable if it's not in PATH.
 func WithADBPath(p string) Option {
-	return func(t *Tunnel) {
+	return func(t *ADB) {
 		t.ADBPath = p
 	}
 }
 
-type Option func(*Tunnel)
+type Option func(*ADB)
 
-// New returns a new Tunnel that will listen on an available port and converts Tunnel traffic into WebSocket.
-func New(remoteURL, token string, opts ...Option) (*Tunnel, error) {
+// New returns a new ADB that will listen on an available port and converts ADB traffic into WebSocket.
+func New(remoteURL, token string, opts ...Option) (*ADB, error) {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return nil, fmt.Errorf("creating a tcp listener failed: %w", err)
 	}
-	t := &Tunnel{
+	t := &ADB{
 		RemoteURL: remoteURL,
 		Token:     token,
 		ADBPath:   "adb",
@@ -40,8 +40,8 @@ func New(remoteURL, token string, opts ...Option) (*Tunnel, error) {
 	return t, nil
 }
 
-// Tunnel connects to a remote WebSocket endpoint and forwards Tunnel packets from and to the address it listens on locally.
-type Tunnel struct {
+// ADB connects to a remote WebSocket endpoint and forwards ADB packets from and to the address it listens on locally.
+type ADB struct {
 	// RemoteURL is the URL of the remote server.
 	RemoteURL string
 
@@ -59,8 +59,8 @@ type Tunnel struct {
 // Start starts a tunnel to the Android instance through the given URL and notifies the local ADB to recognize
 // it.
 // It is non-blocking and continues to run in the background.
-// Call Close() method of the returned Tunnel to make sure it's properly cleaned up.
-func (t *Tunnel) Start() error {
+// Call Close() method of the returned ADB to make sure it's properly cleaned up.
+func (t *ADB) Start() error {
 	go func() {
 		if err := t.startTunnel(); err != nil {
 			log.Printf("failed to start TCP tunnel: %s", err)
@@ -73,24 +73,24 @@ func (t *Tunnel) Start() error {
 	return nil
 }
 
-func (t *Tunnel) Addr() string {
+func (t *ADB) Addr() string {
 	return fmt.Sprintf("127.0.0.1:%d", t.listener.Addr().(*net.TCPAddr).Port)
 }
 
-// Close closes the underlying Tunnel listener.
-func (t *Tunnel) Close() {
+// Close closes the underlying ADB listener.
+func (t *ADB) Close() {
 	if t.cancel != nil {
 		t.cancel(nil)
 	}
 }
 
-// startTunnel starts the local Tunnel server to forward to WebSocket.
+// startTunnel starts the local ADB server to forward to WebSocket.
 // Blocks until connection is closed.
 // Cancel the context or call Close() when you'd like to stop this tunnel.
 //
 // You can optionally provide ready channel so that tunnel sends "true" when it's ready to accept connections,
 // e.g. you can call "adb connect" after that message.
-func (t *Tunnel) startTunnel() error {
+func (t *ADB) startTunnel() error {
 	tCtx, cancel := context.WithCancelCause(context.Background())
 	t.cancel = cancel
 	defer cancel(nil)

@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	token := os.Getenv("LIM_TOKEN") // lim_yourtoken
+	token := os.Getenv("LIM_API_KEY") // lim_yourtoken
 	lim := limrun.NewClient(option.WithAPIKey(token))
 
 	init := time.Now()
