@@ -5,9 +5,9 @@ Android tooling to recognize and use them.
 
 Run the example:
 ```bash
-LIM_TOKEN=lim_somevalue
+LIM_API_KEY=lim_somevalue
 
-go run main.go
+go run examples/tunnel/main.go
 ```
 
 Once it's running, you can see it pop up in Android Studio and others. An easy way to test is to use `scrcpy` which

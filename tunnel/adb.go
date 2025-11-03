@@ -22,8 +22,8 @@ func WithADBPath(p string) Option {
 
 type Option func(*ADB)
 
-// New returns a new ADB that will listen on an available port and converts ADB traffic into WebSocket.
-func New(remoteURL, token string, opts ...Option) (*ADB, error) {
+// NewADB returns a new ADB that will listen on an available port and converts ADB traffic into WebSocket.
+func NewADB(remoteURL, token string, opts ...Option) (*ADB, error) {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return nil, fmt.Errorf("creating a tcp listener failed: %w", err)
