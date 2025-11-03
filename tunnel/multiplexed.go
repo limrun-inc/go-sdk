@@ -1,7 +1,6 @@
 package tunnel
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -15,6 +14,54 @@ import (
 
 	"github.com/gorilla/websocket"
 )
+
+/*
+ * Multiplexed establishes a single WebSocket connection to the remote and allows many TCP connections to be tunneled
+ * through that same WebSocket connection. For cases, like HTTP servers, every request is a new TCP connection so this
+ * implementation saves the overhead of WebSocket dialing for every request. But if you create a single TCP connection
+ * anyway, like Android ADB does, it does not provide much benefit.
+ *
+ * Note that it requires the server side to support connection ID prefixing so it can track of connection pairs.
+ * See the protocol below.
+ */
+
+// Protocol Format:
+// All WebSocket messages use this binary format:
+//
+//	[4 bytes: connection ID (big-endian uint32)][data bytes]
+//
+// Connection Lifecycle:
+//   - First message with a new connection ID implicitly opens the connection
+//   - Subsequent messages with data are forwarded to/from the TCP connection
+//   - Message with empty data (only 4-byte header) signals connection close
+//
+// This allows multiple TCP connections to share a single WebSocket connection
+// with only 4 bytes of overhead per message.
+
+const (
+	connIDSize = 4 // Size of connection ID in bytes
+)
+
+// encodeMessage creates a WebSocket message by prefixing data with connection ID.
+// Format: [4 bytes: connID][data]
+func encodeMessage(connID uint32, data []byte) []byte {
+	msg := make([]byte, connIDSize+len(data))
+	binary.BigEndian.PutUint32(msg[:connIDSize], connID)
+	copy(msg[connIDSize:], data)
+	return msg
+}
+
+// decodeMessage extracts the connection ID and data from a WebSocket message.
+// Format: [4 bytes: connID][data]
+// Returns an error if the message is too short.
+func decodeMessage(message []byte) (connID uint32, data []byte, err error) {
+	if len(message) < connIDSize {
+		return 0, nil, fmt.Errorf("message too short: %d bytes, expected at least %d", len(message), connIDSize)
+	}
+	connID = binary.BigEndian.Uint32(message[:connIDSize])
+	data = message[connIDSize:]
+	return connID, data, nil
+}
 
 func MultiplexedWithLocalPort(port int) MultiplexedOption {
 	return func(r *Multiplexed) {
@@ -49,19 +96,6 @@ func NewMultiplexed(remoteURL *url.URL, remotePort int, token string, opts ...Mu
 	return t, nil
 }
 
-// Protocol Format:
-// All WebSocket messages use this binary format:
-//
-//	[4 bytes: connection ID (big-endian uint32)][data bytes]
-//
-// Connection Lifecycle:
-//   - First message with a new connection ID implicitly opens the connection
-//   - Subsequent messages with data are forwarded to/from the TCP connection
-//   - Message with empty data (only 4-byte header) signals connection close
-//
-// This allows multiple TCP connections to share a single WebSocket connection
-// with only 4 bytes of overhead per message.
-
 // Multiplexed connects to a remote WebSocket endpoint once and handles all TCP connections through that single WebSocket
 // connection.
 //
@@ -79,7 +113,6 @@ type Multiplexed struct {
 	Token string
 
 	listener net.Listener
-	cancel   context.CancelCauseFunc
 
 	// Multiplexing state
 	ws          *websocket.Conn
@@ -105,32 +138,41 @@ func (t *Multiplexed) Start() error {
 }
 
 func (t *Multiplexed) Addr() string {
-	return fmt.Sprintf("127.0.0.1:%d", t.listener.Addr().(*net.TCPAddr).Port)
+	addr, ok := t.listener.Addr().(*net.TCPAddr)
+	if !ok {
+		return t.listener.Addr().String()
+	}
+	return fmt.Sprintf("127.0.0.1:%d", addr.Port)
 }
 
-// Close closes the underlying ADB listener and WebSocket connection.
-func (t *Multiplexed) Close() {
-	if t.cancel != nil {
-		t.cancel(nil)
+// Close closes the underlying listener and WebSocket connection.
+func (t *Multiplexed) Close() error {
+	var errs []error
+
+	if t.listener != nil {
+		if err := t.listener.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("closing listener: %w", err))
+		}
 	}
+
 	if t.ws != nil {
-		_ = t.ws.Close()
+		if err := t.ws.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("closing websocket: %w", err))
+		}
 	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("close errors: %v", errs)
+	}
+	return nil
 }
 
-// startTunnel starts the local ADB server to forward to WebSocket.
-// Blocks until connection is closed.
-// Call Close() when you'd like to stop this tunnel.
+// startTunnel starts the local TCP server and establishes the single persistent
+// WebSocket connection to the remote server. For every TCP connection, a new
+// go routine is started to handle it using the shared WebSocket connection.
+//
+// Blocks until Close() is called.
 func (t *Multiplexed) startTunnel() error {
-	tCtx, cancel := context.WithCancelCause(context.Background())
-	t.cancel = cancel
-	defer cancel(nil)
-
-	defer func() {
-		_ = t.listener.Close()
-	}()
-
-	// Establish persistent WebSocket connection upfront
 	ws, _, err := websocket.DefaultDialer.Dial(t.RemoteURL.String(), http.Header{
 		"Authorization": []string{fmt.Sprintf("Bearer %s", t.Token)},
 	})
@@ -138,90 +180,64 @@ func (t *Multiplexed) startTunnel() error {
 		return fmt.Errorf("failed to dial remote websocket server: %w", err)
 	}
 	t.ws = ws
-	defer func() {
-		_ = ws.Close()
-	}()
 
 	// Start WebSocket reader to demultiplex incoming messages
-	go t.readFromWebSocket(tCtx)
+	go t.readFromWebSocket()
 
-	// Accept TCP connections in a loop
 	for {
-		select {
-		case <-tCtx.Done():
-			return context.Cause(tCtx)
-		default:
-		}
-
 		tcpConn, err := t.listener.Accept()
 		if err != nil {
-			select {
-			case <-tCtx.Done():
-				// Listener was closed intentionally
-				return context.Cause(tCtx)
-			default:
-				return fmt.Errorf("failed to accept connection: %w", err)
-			}
+			return fmt.Errorf("failed to accept connection: %w", err)
 		}
 
 		// Handle each connection in its own goroutine
-		go t.handleConnection(tCtx, tcpConn)
+		go t.handleConnection(tcpConn)
 	}
 }
 
-// readFromWebSocket reads from the WebSocket and demultiplexes messages to the correct TCP connection.
+// readFromWebSocket reads from the WebSocket and forwards messages to the correct TCP connection.
 // Message format: [4 bytes: connection ID][data]
 // Empty data indicates connection close signal.
-func (t *Multiplexed) readFromWebSocket(ctx context.Context) {
+func (t *Multiplexed) readFromWebSocket() {
 	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-
 		_, message, err := t.ws.ReadMessage()
 		if err != nil {
 			log.Printf("websocket read error: %v", err)
-			if t.cancel != nil {
-				t.cancel(fmt.Errorf("websocket read error: %w", err))
-			}
 			return
 		}
 
-		if len(message) < 4 {
-			log.Printf("received message too short: %d bytes", len(message))
+		connID, data, err := decodeMessage(message)
+		if err != nil {
+			log.Printf("failed to decode message: %v", err)
 			continue
 		}
 
-		// Extract connection ID (first 4 bytes, big-endian)
-		connID := binary.BigEndian.Uint32(message[:4])
-		data := message[4:]
-
-		// Look up the TCP connection
 		conn, ok := t.connections.Load(connID)
 		if !ok {
-			// This is normal when both client and server close simultaneously
-			// The connection was already cleaned up on our side
+			// When connection is closed, both sides send empty data. The server
+			// may send it after we closed and cleaned up the connection so we ignore
+			// the message if we're closed and it's empty.
 			if len(data) > 0 {
 				// Only log if there was actual data we couldn't deliver
 				log.Printf("received message for unknown connection ID: %d", connID)
 			}
 			continue
 		}
-		tcpConn := conn.(net.Conn)
 
-		// Empty data means close signal from server
-		if len(data) == 0 {
-			log.Printf("ws->tcp: received close signal for connection %d", connID)
-			_ = tcpConn.Close()
+		tcpConn, ok := conn.(net.Conn)
+		if !ok {
+			log.Printf("invalid connection type for ID %d", connID)
 			t.connections.Delete(connID)
 			continue
 		}
 
-		// Write data to TCP connection
-		_, err = tcpConn.Write(data)
-		if err != nil {
+		// Empty data means close signal from server
+		if len(data) == 0 {
+			_ = tcpConn.Close()
+			t.connections.Delete(connID)
+			continue
+		}
+		if _, err := tcpConn.Write(data); err != nil {
 			log.Printf("failed to write to tcp connection %d: %v", connID, err)
 			_ = tcpConn.Close()
 			t.connections.Delete(connID)
@@ -231,11 +247,8 @@ func (t *Multiplexed) readFromWebSocket(ctx context.Context) {
 
 // handleConnection handles a single TCP connection by multiplexing it over the shared WebSocket.
 // Message format: [4 bytes: connection ID][data]
-func (t *Multiplexed) handleConnection(ctx context.Context, tcpConn net.Conn) {
-	// Assign unique connection ID
+func (t *Multiplexed) handleConnection(tcpConn net.Conn) {
 	connID := t.nextConnID.Add(1)
-
-	// Register connection
 	t.connections.Store(connID, tcpConn)
 
 	defer func() {
@@ -243,48 +256,31 @@ func (t *Multiplexed) handleConnection(ctx context.Context, tcpConn net.Conn) {
 		t.connections.Delete(connID)
 
 		// Send close signal: [4 bytes: connID][empty data]
-		closeMsg := make([]byte, 4)
-		binary.BigEndian.PutUint32(closeMsg, connID)
+		closeMsg := encodeMessage(connID, nil)
 		t.wsMu.Lock()
+		defer t.wsMu.Unlock()
 		_ = t.ws.WriteMessage(websocket.BinaryMessage, closeMsg)
-		t.wsMu.Unlock()
 	}()
-
-	// Read from TCP and send to WebSocket with connection ID prefix
-	buffer := make([]byte, 32*1024) // 32KB buffer
+	buffer := make([]byte, 32*1024) // 32KB data buffer
 	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-
 		n, err := tcpConn.Read(buffer)
 		if err != nil {
-			if err != io.EOF {
-				log.Printf("tcp->ws: error reading from connection %d: %v", connID, err)
-			}
-			return
-		}
-
-		if n > 0 {
-			// Build message: [4 bytes: connID][data]
-			msg := make([]byte, 4+n)
-			binary.BigEndian.PutUint32(msg[:4], connID)
-			copy(msg[4:], buffer[:n])
-
-			// Send to WebSocket (with mutex to prevent concurrent writes)
-			t.wsMu.Lock()
-			err = t.ws.WriteMessage(websocket.BinaryMessage, msg)
-			t.wsMu.Unlock()
-
-			if err != nil {
-				log.Printf("failed to write to websocket: %v", err)
-				if t.cancel != nil {
-					t.cancel(fmt.Errorf("websocket write error: %w", err))
-				}
+			if err == io.EOF {
+				// io.EOF is expected when the connection is closed by the client.
 				return
 			}
+			log.Printf("tcp->ws: error reading from connection %d: %v", connID, err)
+			continue
+		}
+		if n == 0 {
+			continue
+		}
+		t.wsMu.Lock()
+		err = t.ws.WriteMessage(websocket.BinaryMessage, encodeMessage(connID, buffer[:n]))
+		t.wsMu.Unlock()
+		if err != nil {
+			log.Printf("failed to write to websocket: %v", err)
+			continue
 		}
 	}
 }
