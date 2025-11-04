@@ -267,6 +267,11 @@ type IosInstanceNewParamsSpecInitialAsset struct {
 	Source    string            `json:"source,omitzero,required"`
 	AssetName param.Opt[string] `json:"assetName,omitzero"`
 	URL       param.Opt[string] `json:"url,omitzero"`
+	// Launch mode specifies how to launch the app after installation. If not given,
+	// the app won't be launched.
+	//
+	// Any of "ForegroundIfRunning", "RelaunchIfRunning", "FailIfRunning".
+	LaunchMode string `json:"launchMode,omitzero"`
 	paramObj
 }
 
@@ -284,6 +289,9 @@ func init() {
 	)
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
 		"source", "URL", "AssetName",
+	)
+	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
+		"launchMode", "ForegroundIfRunning", "RelaunchIfRunning", "FailIfRunning",
 	)
 }
 
