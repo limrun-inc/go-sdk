@@ -184,6 +184,19 @@ func (t *Multiplexed) startTunnel() error {
 	// Start WebSocket reader to demultiplex incoming messages
 	go t.readFromWebSocket()
 
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+					log.Printf("websocket ping failed: %v", err)
+				}
+			}
+		}
+	}()
+
 	for {
 		tcpConn, err := t.listener.Accept()
 		if err != nil {
