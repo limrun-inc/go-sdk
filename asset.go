@@ -46,6 +46,19 @@ func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...
 	return
 }
 
+// Delete the asset with given ID.
+func (r *AssetService) Delete(ctx context.Context, assetID string, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	if assetID == "" {
+		err = errors.New("missing required assetId parameter")
+		return
+	}
+	path := fmt.Sprintf("v1/assets/%s", assetID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return
+}
+
 // Get the asset with given ID.
 func (r *AssetService) Get(ctx context.Context, assetID string, query AssetGetParams, opts ...option.RequestOption) (res *Asset, err error) {
 	opts = slices.Concat(r.Options, opts)
