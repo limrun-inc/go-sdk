@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.2 (2025-11-04)
+
+Full Changelog: [v0.5.1...v0.5.2](https://github.com/limrun-inc/go-sdk/compare/v0.5.1...v0.5.2)
+
+### Features
+
+* **api:** add launchMode to iOS asset object ([3e7e52b](https://github.com/limrun-inc/go-sdk/commit/3e7e52b60cc97437bd899a2006c5812dda7cb2f7))
+
+
+### Chores
+
+* **internal:** grammar fix (it's -&gt; its) ([9a41dcc](https://github.com/limrun-inc/go-sdk/commit/9a41dccda01041b8b3a50b64ccae6d7081abbc21))
+
 ## 0.5.1 (2025-10-31)
 
 Full Changelog: [v0.5.0...v0.5.1](https://github.com/limrun-inc/go-sdk/compare/v0.5.0...v0.5.1)

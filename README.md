@@ -28,7 +28,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/limrun-inc/go-sdk@v0.5.1'
+go get -u 'github.com/limrun-inc/go-sdk@v0.5.2'
 ```
 
 <!-- x-release-please-end -->
@@ -125,7 +125,7 @@ custom := param.Override[limrun.FooParams](12)
 
 ### Request unions
 
-Unions are represented as a struct with fields prefixed by "Of" for each of it's variants,
+Unions are represented as a struct with fields prefixed by "Of" for each of its variants,
 only one field can be non-zero. The non-zero field will be serialized.
 
 Sub-properties of the union can be accessed via methods on the union struct.
