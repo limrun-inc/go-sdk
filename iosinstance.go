@@ -154,7 +154,7 @@ func (r *IosInstanceSpec) UnmarshalJSON(data []byte) error {
 
 type IosInstanceStatus struct {
 	Token string `json:"token,required"`
-	// Any of "unknown", "creating", "ready", "terminated".
+	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State                   string `json:"state,required"`
 	EndpointWebSocketURL    string `json:"endpointWebSocketUrl"`
 	PortForwardWebSocketURL string `json:"portForwardWebSocketUrl"`
@@ -305,7 +305,7 @@ type IosInstanceListParams struct {
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
 	// State filter to apply to instances to return.
 	//
-	// Any of "unknown", "creating", "ready", "terminated".
+	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State IosInstanceListParamsState `query:"state,omitzero" json:"-"`
 	paramObj
 }
@@ -324,6 +324,7 @@ type IosInstanceListParamsState string
 const (
 	IosInstanceListParamsStateUnknown    IosInstanceListParamsState = "unknown"
 	IosInstanceListParamsStateCreating   IosInstanceListParamsState = "creating"
+	IosInstanceListParamsStateAssigned   IosInstanceListParamsState = "assigned"
 	IosInstanceListParamsStateReady      IosInstanceListParamsState = "ready"
 	IosInstanceListParamsStateTerminated IosInstanceListParamsState = "terminated"
 )

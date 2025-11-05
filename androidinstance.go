@@ -154,7 +154,7 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 
 type AndroidInstanceStatus struct {
 	Token string `json:"token,required"`
-	// Any of "unknown", "creating", "ready", "terminated".
+	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State                string `json:"state,required"`
 	AdbWebSocketURL      string `json:"adbWebSocketUrl"`
 	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
@@ -302,7 +302,7 @@ type AndroidInstanceListParams struct {
 	Region param.Opt[string] `query:"region,omitzero" json:"-"`
 	// State filter to apply to Android instances to return.
 	//
-	// Any of "unknown", "creating", "ready", "terminated".
+	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State AndroidInstanceListParamsState `query:"state,omitzero" json:"-"`
 	paramObj
 }
@@ -322,6 +322,7 @@ type AndroidInstanceListParamsState string
 const (
 	AndroidInstanceListParamsStateUnknown    AndroidInstanceListParamsState = "unknown"
 	AndroidInstanceListParamsStateCreating   AndroidInstanceListParamsState = "creating"
+	AndroidInstanceListParamsStateAssigned   AndroidInstanceListParamsState = "assigned"
 	AndroidInstanceListParamsStateReady      AndroidInstanceListParamsState = "ready"
 	AndroidInstanceListParamsStateTerminated AndroidInstanceListParamsState = "terminated"
 )
