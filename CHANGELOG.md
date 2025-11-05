@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.3 (2025-11-05)
+
+Full Changelog: [v0.5.2...v0.5.3](https://github.com/limrun-inc/go-sdk/compare/v0.5.2...v0.5.3)
+
+### Features
+
+* **api:** add asset deletion endpoint ([51f1b6b](https://github.com/limrun-inc/go-sdk/commit/51f1b6bf509fb68b4f3b36a7794d0cfc0c09784c))
+* **api:** add the assigned state to both android and ios instance states ([b22d05e](https://github.com/limrun-inc/go-sdk/commit/b22d05ecade6f01d03020749d18fc4219b4f5c67))
+
 ## 0.5.2 (2025-11-04)
 
 Full Changelog: [v0.5.1...v0.5.2](https://github.com/limrun-inc/go-sdk/compare/v0.5.1...v0.5.2)
