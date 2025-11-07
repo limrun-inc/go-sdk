@@ -45,6 +45,7 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 			InitialAssets: []limrun.AndroidInstanceNewParamsSpecInitialAsset{{
 				Kind:       "App",
 				Source:     "URL",
+				AssetIDs:   []string{"string"},
 				AssetName:  limrun.String("assetName"),
 				AssetNames: []string{"string"},
 				URL:        limrun.String("url"),

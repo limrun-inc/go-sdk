@@ -44,6 +44,7 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 			InitialAssets: []limrun.IosInstanceNewParamsSpecInitialAsset{{
 				Kind:       "App",
 				Source:     "URL",
+				AssetID:    limrun.String("assetId"),
 				AssetName:  limrun.String("assetName"),
 				LaunchMode: "ForegroundIfRunning",
 				URL:        limrun.String("url"),
