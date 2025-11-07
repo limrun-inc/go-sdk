@@ -321,10 +321,10 @@ type IosInstanceListParams struct {
 	// Region where the instance is scheduled on.
 	Region        param.Opt[string] `query:"region,omitzero" json:"-"`
 	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
-	// State filter to apply to instances to return.
-	//
-	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State IosInstanceListParamsState `query:"state,omitzero" json:"-"`
+	// State filter to apply to Android instances to return. Each comma-separated state
+	// will be used as part of an OR clause, e.g. "assigned,ready" will return all
+	// instances that are either assigned or ready.
+	State param.Opt[string] `query:"state,omitzero" json:"-"`
 	paramObj
 }
 
@@ -335,14 +335,3 @@ func (r IosInstanceListParams) URLQuery() (v url.Values, err error) {
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
-
-// State filter to apply to instances to return.
-type IosInstanceListParamsState string
-
-const (
-	IosInstanceListParamsStateUnknown    IosInstanceListParamsState = "unknown"
-	IosInstanceListParamsStateCreating   IosInstanceListParamsState = "creating"
-	IosInstanceListParamsStateAssigned   IosInstanceListParamsState = "assigned"
-	IosInstanceListParamsStateReady      IosInstanceListParamsState = "ready"
-	IosInstanceListParamsStateTerminated IosInstanceListParamsState = "terminated"
-)

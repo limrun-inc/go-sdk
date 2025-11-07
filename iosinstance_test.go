@@ -79,7 +79,7 @@ func TestIosInstanceListWithOptionalParams(t *testing.T) {
 		Limit:         limrun.Int(50),
 		Region:        limrun.String("region"),
 		StartingAfter: limrun.String("startingAfter"),
-		State:         limrun.IosInstanceListParamsStateUnknown,
+		State:         limrun.String("assigned,ready"),
 	})
 	if err != nil {
 		var apierr *limrun.Error
