@@ -20,10 +20,10 @@ type paramUnion = param.APIUnion
 type paramObj = param.APIObject
 
 type AndroidInstance[T any] struct {
-	Items []T `json:",inline"`
+	Data []T `json:",inline"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Items       respjson.Field
+		Data        respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
@@ -41,10 +41,10 @@ func (r *AndroidInstance[T]) UnmarshalJSON(data []byte) error {
 // there is no next page, this function will return a 'nil' for the page value, but
 // will not return an error
 func (r *AndroidInstance[T]) GetNextPage() (res *AndroidInstance[T], err error) {
-	if len(r.Items) == 0 {
+	if len(r.Data) == 0 {
 		return nil, nil
 	}
-	items := r.Items
+	items := r.Data
 	if items == nil || len(items) == 0 {
 		return nil, nil
 	}
@@ -91,17 +91,17 @@ func NewAndroidInstanceAutoPager[T any](page *AndroidInstance[T], err error) *An
 }
 
 func (r *AndroidInstanceAutoPager[T]) Next() bool {
-	if r.page == nil || len(r.page.Items) == 0 {
+	if r.page == nil || len(r.page.Data) == 0 {
 		return false
 	}
-	if r.idx >= len(r.page.Items) {
+	if r.idx >= len(r.page.Data) {
 		r.idx = 0
 		r.page, r.err = r.page.GetNextPage()
-		if r.err != nil || r.page == nil || len(r.page.Items) == 0 {
+		if r.err != nil || r.page == nil || len(r.page.Data) == 0 {
 			return false
 		}
 	}
-	r.cur = r.page.Items[r.idx]
+	r.cur = r.page.Data[r.idx]
 	r.run += 1
 	r.idx += 1
 	return true
