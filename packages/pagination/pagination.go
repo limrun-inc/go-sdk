@@ -19,7 +19,7 @@ type paramUnion = param.APIUnion
 // aliased to make [param.APIObject] private when embedding
 type paramObj = param.APIObject
 
-type AndroidInstance[T any] struct {
+type Items[T any] struct {
 	Items []T `json:",inline"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -32,15 +32,15 @@ type AndroidInstance[T any] struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r AndroidInstance[T]) RawJSON() string { return r.JSON.raw }
-func (r *AndroidInstance[T]) UnmarshalJSON(data []byte) error {
+func (r Items[T]) RawJSON() string { return r.JSON.raw }
+func (r *Items[T]) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // GetNextPage returns the next page as defined by this pagination style. When
 // there is no next page, this function will return a 'nil' for the page value, but
 // will not return an error
-func (r *AndroidInstance[T]) GetNextPage() (res *AndroidInstance[T], err error) {
+func (r *Items[T]) GetNextPage() (res *Items[T], err error) {
 	if len(r.Items) == 0 {
 		return nil, nil
 	}
@@ -66,16 +66,16 @@ func (r *AndroidInstance[T]) GetNextPage() (res *AndroidInstance[T], err error) 
 	return res, nil
 }
 
-func (r *AndroidInstance[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+func (r *Items[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
 	if r == nil {
-		r = &AndroidInstance[T]{}
+		r = &Items[T]{}
 	}
 	r.cfg = cfg
 	r.res = res
 }
 
-type AndroidInstanceAutoPager[T any] struct {
-	page *AndroidInstance[T]
+type ItemsAutoPager[T any] struct {
+	page *Items[T]
 	cur  T
 	idx  int
 	run  int
@@ -83,14 +83,14 @@ type AndroidInstanceAutoPager[T any] struct {
 	paramObj
 }
 
-func NewAndroidInstanceAutoPager[T any](page *AndroidInstance[T], err error) *AndroidInstanceAutoPager[T] {
-	return &AndroidInstanceAutoPager[T]{
+func NewItemsAutoPager[T any](page *Items[T], err error) *ItemsAutoPager[T] {
+	return &ItemsAutoPager[T]{
 		page: page,
 		err:  err,
 	}
 }
 
-func (r *AndroidInstanceAutoPager[T]) Next() bool {
+func (r *ItemsAutoPager[T]) Next() bool {
 	if r.page == nil || len(r.page.Items) == 0 {
 		return false
 	}
@@ -107,14 +107,14 @@ func (r *AndroidInstanceAutoPager[T]) Next() bool {
 	return true
 }
 
-func (r *AndroidInstanceAutoPager[T]) Current() T {
+func (r *ItemsAutoPager[T]) Current() T {
 	return r.cur
 }
 
-func (r *AndroidInstanceAutoPager[T]) Err() error {
+func (r *ItemsAutoPager[T]) Err() error {
 	return r.err
 }
 
-func (r *AndroidInstanceAutoPager[T]) Index() int {
+func (r *ItemsAutoPager[T]) Index() int {
 	return r.run
 }
