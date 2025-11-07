@@ -318,10 +318,10 @@ type AndroidInstanceListParams struct {
 	// Region where the instance is scheduled on.
 	Region        param.Opt[string] `query:"region,omitzero" json:"-"`
 	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
-	// State filter to apply to Android instances to return.
-	//
-	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State AndroidInstanceListParamsState `query:"state,omitzero" json:"-"`
+	// State filter to apply to Android instances to return. Each comma-separated state
+	// will be used as part of an OR clause, e.g. "assigned,ready" will return all
+	// instances that are either assigned or ready.
+	State param.Opt[string] `query:"state,omitzero" json:"-"`
 	paramObj
 }
 
@@ -333,14 +333,3 @@ func (r AndroidInstanceListParams) URLQuery() (v url.Values, err error) {
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
-
-// State filter to apply to Android instances to return.
-type AndroidInstanceListParamsState string
-
-const (
-	AndroidInstanceListParamsStateUnknown    AndroidInstanceListParamsState = "unknown"
-	AndroidInstanceListParamsStateCreating   AndroidInstanceListParamsState = "creating"
-	AndroidInstanceListParamsStateAssigned   AndroidInstanceListParamsState = "assigned"
-	AndroidInstanceListParamsStateReady      AndroidInstanceListParamsState = "ready"
-	AndroidInstanceListParamsStateTerminated AndroidInstanceListParamsState = "terminated"
-)
