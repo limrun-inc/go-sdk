@@ -15,6 +15,7 @@ import (
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
+	"github.com/limrun-inc/go-sdk/packages/pagination"
 	"github.com/limrun-inc/go-sdk/packages/param"
 	"github.com/limrun-inc/go-sdk/packages/respjson"
 )
@@ -47,11 +48,26 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 }
 
 // List Android instances
-func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *[]AndroidInstance, err error) {
+func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *pagination.AndroidInstance[AndroidInstance], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v1/android_instances"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List Android instances
+func (r *AndroidInstanceService) ListAutoPaging(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) *pagination.AndroidInstanceAutoPager[AndroidInstance] {
+	return pagination.NewAndroidInstanceAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete Android instance with given name
@@ -293,13 +309,15 @@ func init() {
 }
 
 type AndroidInstanceListParams struct {
+	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
 	// Labels filter to apply to Android instances to return. Expects a comma-separated
 	// list of key=value pairs (e.g., env=prod,region=us-west).
 	LabelSelector param.Opt[string] `query:"labelSelector,omitzero" json:"-"`
 	// Maximum number of instances to be returned. The default is 50.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Region where the instance is scheduled on.
-	Region param.Opt[string] `query:"region,omitzero" json:"-"`
+	Region        param.Opt[string] `query:"region,omitzero" json:"-"`
+	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
 	// State filter to apply to Android instances to return.
 	//
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
