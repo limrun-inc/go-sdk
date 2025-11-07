@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 (2025-11-07)
+
+Full Changelog: [v0.5.3...v0.6.0](https://github.com/limrun-inc/go-sdk/compare/v0.5.3...v0.6.0)
+
+### Features
+
+* **api:** add comma-separated state for multi-state listings ([983dbdc](https://github.com/limrun-inc/go-sdk/commit/983dbdcf3ba96ddd67612722f556b8bc5c38b600))
+* **api:** add pagination for ios instances and assets as well ([ab0138c](https://github.com/limrun-inc/go-sdk/commit/ab0138ceca7c164dc08c2cb0d7487ddd35fdf3ee))
+* **api:** add pagination to asset spec ([d32b77e](https://github.com/limrun-inc/go-sdk/commit/d32b77e501a2e12abbba5cab2fe0fa25a70f7b40))
+* **api:** disable pagination for assets ([3007624](https://github.com/limrun-inc/go-sdk/commit/3007624de08e4813a3e753ed8a0c21b156d4b02f))
+* **api:** enable pagination for android_instances ([f71655b](https://github.com/limrun-inc/go-sdk/commit/f71655b56deace52b8d0232f87f849b48bbd13eb))
+* **api:** manual updates ([cf32b69](https://github.com/limrun-inc/go-sdk/commit/cf32b69d76451d1218e399d1ad7ae302f0848a06))
+* **api:** manual updates ([daadc36](https://github.com/limrun-inc/go-sdk/commit/daadc3629072b1492e0509aaa36921e9a949f2b3))
+* **api:** move pagination prop to openapi ([fb183b2](https://github.com/limrun-inc/go-sdk/commit/fb183b26d51dc2fdb5069c8ce013e61e07b09e94))
+* **api:** regenerate new pagination fields ([c5c72bc](https://github.com/limrun-inc/go-sdk/commit/c5c72bc447f7ca7b7f2b894ae1fd72b631c97faf))
+* **api:** update comment ([4a27752](https://github.com/limrun-inc/go-sdk/commit/4a277525beb8fa3a4c69b2af99b50c7055d62ce6))
+
 ## 0.5.3 (2025-11-05)
 
 Full Changelog: [v0.5.2...v0.5.3](https://github.com/limrun-inc/go-sdk/compare/v0.5.2...v0.5.3)
