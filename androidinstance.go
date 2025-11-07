@@ -15,7 +15,6 @@ import (
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
-	"github.com/limrun-inc/go-sdk/packages/pagination"
 	"github.com/limrun-inc/go-sdk/packages/param"
 	"github.com/limrun-inc/go-sdk/packages/respjson"
 )
@@ -48,26 +47,11 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 }
 
 // List Android instances
-func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *pagination.AndroidInstance[AndroidInstance], err error) {
-	var raw *http.Response
+func (r *AndroidInstanceService) List(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) (res *[]AndroidInstance, err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v1/android_instances"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
-	if err != nil {
-		return nil, err
-	}
-	err = cfg.Execute()
-	if err != nil {
-		return nil, err
-	}
-	res.SetPageConfig(cfg, raw)
-	return res, nil
-}
-
-// List Android instances
-func (r *AndroidInstanceService) ListAutoPaging(ctx context.Context, query AndroidInstanceListParams, opts ...option.RequestOption) *pagination.AndroidInstanceAutoPager[AndroidInstance] {
-	return pagination.NewAndroidInstanceAutoPager(r.List(ctx, query, opts...))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return
 }
 
 // Delete Android instance with given name
