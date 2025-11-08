@@ -192,6 +192,9 @@ func (r *AndroidInstanceStatus) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceNewParams struct {
+	// If there is another instance with given labels and region, return that one
+	// instead of creating a new instance.
+	ReuseIfExists param.Opt[bool] `query:"reuseIfExists,omitzero" json:"-"`
 	// Return after the instance is ready to connect.
 	Wait     param.Opt[bool]                  `query:"wait,omitzero" json:"-"`
 	Metadata AndroidInstanceNewParamsMetadata `json:"metadata,omitzero"`
