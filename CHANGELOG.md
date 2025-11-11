@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 (2025-11-11)
+
+Full Changelog: [v0.6.0...v0.7.0](https://github.com/limrun-inc/go-sdk/compare/v0.6.0...v0.7.0)
+
+### Features
+
+* **api:** add assetId as asset source kind ([56c0220](https://github.com/limrun-inc/go-sdk/commit/56c0220d990c5c6a3d0704b0fa3b07e18ea43c56))
+* **api:** add reuseIfExists to creation endpoint ([dfb5f86](https://github.com/limrun-inc/go-sdk/commit/dfb5f865f4fd1477cfddb922d65a6e7e9b0f50b0))
+* **api:** update to use LIM_API_KEY instead of LIM_TOKEN ([0e5edaf](https://github.com/limrun-inc/go-sdk/commit/0e5edaf3346ce21c452337d8ff50d4c77787d7e9))
+
 ## 0.6.0 (2025-11-07)
 
 Full Changelog: [v0.5.3...v0.6.0](https://github.com/limrun-inc/go-sdk/compare/v0.5.3...v0.6.0)
