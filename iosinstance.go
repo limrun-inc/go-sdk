@@ -192,6 +192,9 @@ func (r *IosInstanceStatus) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceNewParams struct {
+	// If there is another instance with given labels and region, return that one
+	// instead of creating a new instance.
+	ReuseIfExists param.Opt[bool] `query:"reuseIfExists,omitzero" json:"-"`
 	// Return after the instance is ready to connect.
 	Wait     param.Opt[bool]              `query:"wait,omitzero" json:"-"`
 	Metadata IosInstanceNewParamsMetadata `json:"metadata,omitzero"`
@@ -279,8 +282,9 @@ func init() {
 type IosInstanceNewParamsSpecInitialAsset struct {
 	// Any of "App".
 	Kind string `json:"kind,omitzero,required"`
-	// Any of "URL", "AssetName".
+	// Any of "URL", "AssetName", "AssetID".
 	Source    string            `json:"source,omitzero,required"`
+	AssetID   param.Opt[string] `json:"assetId,omitzero"`
 	AssetName param.Opt[string] `json:"assetName,omitzero"`
 	URL       param.Opt[string] `json:"url,omitzero"`
 	// Launch mode specifies how to launch the app after installation. If not given,
@@ -304,7 +308,7 @@ func init() {
 		"kind", "App",
 	)
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
-		"source", "URL", "AssetName",
+		"source", "URL", "AssetName", "AssetID",
 	)
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
 		"launchMode", "ForegroundIfRunning", "RelaunchIfRunning", "FailIfRunning",

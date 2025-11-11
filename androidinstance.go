@@ -192,6 +192,9 @@ func (r *AndroidInstanceStatus) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceNewParams struct {
+	// If there is another instance with given labels and region, return that one
+	// instead of creating a new instance.
+	ReuseIfExists param.Opt[bool] `query:"reuseIfExists,omitzero" json:"-"`
 	// Return after the instance is ready to connect.
 	Wait     param.Opt[bool]                  `query:"wait,omitzero" json:"-"`
 	Metadata AndroidInstanceNewParamsMetadata `json:"metadata,omitzero"`
@@ -282,10 +285,11 @@ func init() {
 type AndroidInstanceNewParamsSpecInitialAsset struct {
 	// Any of "App".
 	Kind string `json:"kind,omitzero,required"`
-	// Any of "URL", "URLs", "AssetName", "AssetNames".
+	// Any of "URL", "URLs", "AssetName", "AssetNames", "AssetIDs".
 	Source     string            `json:"source,omitzero,required"`
 	AssetName  param.Opt[string] `json:"assetName,omitzero"`
 	URL        param.Opt[string] `json:"url,omitzero"`
+	AssetIDs   []string          `json:"assetIds,omitzero"`
 	AssetNames []string          `json:"assetNames,omitzero"`
 	URLs       []string          `json:"urls,omitzero"`
 	paramObj
@@ -304,7 +308,7 @@ func init() {
 		"kind", "App",
 	)
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
-		"source", "URL", "URLs", "AssetName", "AssetNames",
+		"source", "URL", "URLs", "AssetName", "AssetNames", "AssetIDs",
 	)
 }
 

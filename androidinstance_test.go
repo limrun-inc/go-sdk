@@ -27,7 +27,8 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{
-		Wait: limrun.Bool(true),
+		ReuseIfExists: limrun.Bool(true),
+		Wait:          limrun.Bool(true),
 		Metadata: limrun.AndroidInstanceNewParamsMetadata{
 			DisplayName: limrun.String("displayName"),
 			Labels: map[string]string{
@@ -45,6 +46,7 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 			InitialAssets: []limrun.AndroidInstanceNewParamsSpecInitialAsset{{
 				Kind:       "App",
 				Source:     "URL",
+				AssetIDs:   []string{"string"},
 				AssetName:  limrun.String("assetName"),
 				AssetNames: []string{"string"},
 				URL:        limrun.String("url"),

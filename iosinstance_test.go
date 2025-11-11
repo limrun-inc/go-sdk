@@ -27,7 +27,8 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.IosInstances.New(context.TODO(), limrun.IosInstanceNewParams{
-		Wait: limrun.Bool(true),
+		ReuseIfExists: limrun.Bool(true),
+		Wait:          limrun.Bool(true),
 		Metadata: limrun.IosInstanceNewParamsMetadata{
 			DisplayName: limrun.String("displayName"),
 			Labels: map[string]string{
@@ -44,6 +45,7 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 			InitialAssets: []limrun.IosInstanceNewParamsSpecInitialAsset{{
 				Kind:       "App",
 				Source:     "URL",
+				AssetID:    limrun.String("assetId"),
 				AssetName:  limrun.String("assetName"),
 				LaunchMode: "ForegroundIfRunning",
 				URL:        limrun.String("url"),

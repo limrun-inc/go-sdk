@@ -22,23 +22,23 @@ type Client struct {
 	IosInstances     IosInstanceService
 }
 
-// DefaultClientOptions read from the environment (LIM_TOKEN, LIMRUN_BASE_URL).
+// DefaultClientOptions read from the environment (LIM_API_KEY, LIMRUN_BASE_URL).
 // This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
 	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
 	if o, ok := os.LookupEnv("LIMRUN_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
-	if o, ok := os.LookupEnv("LIM_TOKEN"); ok {
+	if o, ok := os.LookupEnv("LIM_API_KEY"); ok {
 		defaults = append(defaults, option.WithAPIKey(o))
 	}
 	return defaults
 }
 
 // NewClient generates a new client with the default option read from the
-// environment (LIM_TOKEN, LIMRUN_BASE_URL). The option passed in as arguments are
-// applied after these default arguments, and all option will be passed down to the
-// services and requests that this client makes.
+// environment (LIM_API_KEY, LIMRUN_BASE_URL). The option passed in as arguments
+// are applied after these default arguments, and all option will be passed down to
+// the services and requests that this client makes.
 func NewClient(opts ...option.RequestOption) (r Client) {
 	opts = append(DefaultClientOptions(), opts...)
 

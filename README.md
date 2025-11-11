@@ -28,7 +28,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/limrun-inc/go-sdk@v0.6.0'
+go get -u 'github.com/limrun-inc/go-sdk@v0.7.0'
 ```
 
 <!-- x-release-please-end -->
@@ -54,7 +54,7 @@ import (
 
 func main() {
 	client := limrun.NewClient(
-		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LIM_TOKEN")
+		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LIM_API_KEY")
 	)
 	androidInstance, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
 	if err != nil {
