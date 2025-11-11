@@ -54,7 +54,7 @@ import (
 
 func main() {
 	client := limrun.NewClient(
-		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LIM_TOKEN")
+		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("LIM_API_KEY")
 	)
 	androidInstance, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
 	if err != nil {
