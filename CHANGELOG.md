@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1 (2025-11-12)
+
+Full Changelog: [v0.7.0...v0.7.1](https://github.com/limrun-inc/go-sdk/compare/v0.7.0...v0.7.1)
+
+### Chores
+
+* bump gjson version ([f77525e](https://github.com/limrun-inc/go-sdk/commit/f77525e17b9115f5ad11afaba780ee894d04ab53))
+
 ## 0.7.0 (2025-11-11)
 
 Full Changelog: [v0.6.0...v0.7.0](https://github.com/limrun-inc/go-sdk/compare/v0.6.0...v0.7.0)
