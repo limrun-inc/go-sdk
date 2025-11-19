@@ -73,7 +73,7 @@ func (r *IosInstanceService) ListAutoPaging(ctx context.Context, query IosInstan
 // Delete iOS instance with given name
 func (r *IosInstanceService) Delete(ctx context.Context, id string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return
