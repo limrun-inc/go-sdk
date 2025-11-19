@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.1 (2025-11-19)
+
+Full Changelog: [v0.7.0...v0.7.1](https://github.com/limrun-inc/go-sdk/compare/v0.7.0...v0.7.1)
+
+### Bug Fixes
+
+* **client:** correctly specify Accept header with */* instead of empty ([c7cfb5e](https://github.com/limrun-inc/go-sdk/commit/c7cfb5efae0764f5c92fb874cced3163e0bd77f9))
+
+
+### Chores
+
+* bump gjson version ([f77525e](https://github.com/limrun-inc/go-sdk/commit/f77525e17b9115f5ad11afaba780ee894d04ab53))
+
 ## 0.7.0 (2025-11-11)
 
 Full Changelog: [v0.6.0...v0.7.0](https://github.com/limrun-inc/go-sdk/compare/v0.6.0...v0.7.0)
