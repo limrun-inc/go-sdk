@@ -171,15 +171,17 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 type AndroidInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                string `json:"state,required"`
-	AdbWebSocketURL      string `json:"adbWebSocketUrl"`
-	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
+	State                string                       `json:"state,required"`
+	AdbWebSocketURL      string                       `json:"adbWebSocketUrl"`
+	EndpointWebSocketURL string                       `json:"endpointWebSocketUrl"`
+	Sandbox              AndroidInstanceStatusSandbox `json:"sandbox"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                respjson.Field
 		State                respjson.Field
 		AdbWebSocketURL      respjson.Field
 		EndpointWebSocketURL respjson.Field
+		Sandbox              respjson.Field
 		ExtraFields          map[string]respjson.Field
 		raw                  string
 	} `json:"-"`
@@ -188,6 +190,38 @@ type AndroidInstanceStatus struct {
 // Returns the unmodified JSON received from the API
 func (r AndroidInstanceStatus) RawJSON() string { return r.JSON.raw }
 func (r *AndroidInstanceStatus) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AndroidInstanceStatusSandbox struct {
+	PlaywrightAndroid AndroidInstanceStatusSandboxPlaywrightAndroid `json:"playwrightAndroid"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		PlaywrightAndroid respjson.Field
+		ExtraFields       map[string]respjson.Field
+		raw               string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AndroidInstanceStatusSandbox) RawJSON() string { return r.JSON.raw }
+func (r *AndroidInstanceStatusSandbox) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AndroidInstanceStatusSandboxPlaywrightAndroid struct {
+	URL string `json:"url"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		URL         respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AndroidInstanceStatusSandboxPlaywrightAndroid) RawJSON() string { return r.JSON.raw }
+func (r *AndroidInstanceStatusSandboxPlaywrightAndroid) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -246,6 +280,7 @@ type AndroidInstanceNewParamsSpec struct {
 	Region        param.Opt[string]                          `json:"region,omitzero"`
 	Clues         []AndroidInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []AndroidInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
+	Sandbox       AndroidInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -310,6 +345,32 @@ func init() {
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
 		"source", "URL", "URLs", "AssetName", "AssetNames", "AssetIDs",
 	)
+}
+
+type AndroidInstanceNewParamsSpecSandbox struct {
+	PlaywrightAndroid AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid `json:"playwrightAndroid,omitzero"`
+	paramObj
+}
+
+func (r AndroidInstanceNewParamsSpecSandbox) MarshalJSON() (data []byte, err error) {
+	type shadow AndroidInstanceNewParamsSpecSandbox
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AndroidInstanceNewParamsSpecSandbox) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid struct {
+	Enabled param.Opt[bool] `json:"enabled,omitzero"`
+	paramObj
+}
+
+func (r AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) MarshalJSON() (data []byte, err error) {
+	type shadow AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
 }
 
 type AndroidInstanceListParams struct {
