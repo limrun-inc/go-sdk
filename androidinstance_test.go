@@ -53,6 +53,11 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 				URLs:       []string{"string"},
 			}},
 			Region: limrun.String("region"),
+			Sandbox: limrun.AndroidInstanceNewParamsSpecSandbox{
+				PlaywrightAndroid: limrun.AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid{
+					Enabled: limrun.Bool(true),
+				},
+			},
 		},
 	})
 	if err != nil {
