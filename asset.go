@@ -14,7 +14,6 @@ import (
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
-	"github.com/limrun-inc/go-sdk/packages/pagination"
 	"github.com/limrun-inc/go-sdk/packages/param"
 	"github.com/limrun-inc/go-sdk/packages/respjson"
 )
@@ -40,27 +39,11 @@ func NewAssetService(opts ...option.RequestOption) (r AssetService) {
 
 // List organization's all assets with given filters. If none given, return all
 // assets.
-func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *pagination.Items[Asset], err error) {
-	var raw *http.Response
+func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...option.RequestOption) (res *[]Asset, err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v1/assets"
-	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
-	if err != nil {
-		return nil, err
-	}
-	err = cfg.Execute()
-	if err != nil {
-		return nil, err
-	}
-	res.SetPageConfig(cfg, raw)
-	return res, nil
-}
-
-// List organization's all assets with given filters. If none given, return all
-// assets.
-func (r *AssetService) ListAutoPaging(ctx context.Context, query AssetListParams, opts ...option.RequestOption) *pagination.ItemsAutoPager[Asset] {
-	return pagination.NewItemsAutoPager(r.List(ctx, query, opts...))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return
 }
 
 // Delete the asset with given ID.
@@ -151,7 +134,6 @@ func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 }
 
 type AssetListParams struct {
-	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
 	// Toggles whether a download URL should be included in the response
 	IncludeDownloadURL param.Opt[bool] `query:"includeDownloadUrl,omitzero" json:"-"`
 	// Toggles whether an upload URL should be included in the response
@@ -159,8 +141,7 @@ type AssetListParams struct {
 	// Maximum number of items to be returned. The default is 50.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Query by file name
-	NameFilter    param.Opt[string] `query:"nameFilter,omitzero" json:"-"`
-	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
+	NameFilter param.Opt[string] `query:"nameFilter,omitzero" json:"-"`
 	paramObj
 }
 
