@@ -351,8 +351,9 @@ func init() {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAssetConfiguration struct {
 	// Any of "ChromeFlag".
-	Kind       string            `json:"kind,omitzero,required"`
-	ChromeFlag param.Opt[string] `json:"chromeFlag,omitzero"`
+	Kind string `json:"kind,omitzero,required"`
+	// Any of "enable-command-line-on-non-rooted-devices@1".
+	ChromeFlag string `json:"chromeFlag,omitzero"`
 	paramObj
 }
 
@@ -367,6 +368,9 @@ func (r *AndroidInstanceNewParamsSpecInitialAssetConfiguration) UnmarshalJSON(da
 func init() {
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAssetConfiguration](
 		"kind", "ChromeFlag",
+	)
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAssetConfiguration](
+		"chromeFlag", "enable-command-line-on-non-rooted-devices@1",
 	)
 }
 

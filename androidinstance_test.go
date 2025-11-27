@@ -50,7 +50,7 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 				AssetNames: []string{"string"},
 				Configuration: limrun.AndroidInstanceNewParamsSpecInitialAssetConfiguration{
 					Kind:       "ChromeFlag",
-					ChromeFlag: limrun.String("chromeFlag"),
+					ChromeFlag: "enable-command-line-on-non-rooted-devices@1",
 				},
 				Source: "URL",
 				URL:    limrun.String("url"),
