@@ -316,17 +316,18 @@ func init() {
 	)
 }
 
-// The properties Kind, Source are required.
+// The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAsset struct {
-	// Any of "App".
-	Kind string `json:"kind,omitzero,required"`
+	// Any of "App", "Configuration".
+	Kind          string                                                `json:"kind,omitzero,required"`
+	AssetName     param.Opt[string]                                     `json:"assetName,omitzero"`
+	URL           param.Opt[string]                                     `json:"url,omitzero"`
+	AssetIDs      []string                                              `json:"assetIds,omitzero"`
+	AssetNames    []string                                              `json:"assetNames,omitzero"`
+	Configuration AndroidInstanceNewParamsSpecInitialAssetConfiguration `json:"configuration,omitzero"`
 	// Any of "URL", "URLs", "AssetName", "AssetNames", "AssetIDs".
-	Source     string            `json:"source,omitzero,required"`
-	AssetName  param.Opt[string] `json:"assetName,omitzero"`
-	URL        param.Opt[string] `json:"url,omitzero"`
-	AssetIDs   []string          `json:"assetIds,omitzero"`
-	AssetNames []string          `json:"assetNames,omitzero"`
-	URLs       []string          `json:"urls,omitzero"`
+	Source string   `json:"source,omitzero"`
+	URLs   []string `json:"urls,omitzero"`
 	paramObj
 }
 
@@ -340,10 +341,32 @@ func (r *AndroidInstanceNewParamsSpecInitialAsset) UnmarshalJSON(data []byte) er
 
 func init() {
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
-		"kind", "App",
+		"kind", "App", "Configuration",
 	)
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
 		"source", "URL", "URLs", "AssetName", "AssetNames", "AssetIDs",
+	)
+}
+
+// The property Kind is required.
+type AndroidInstanceNewParamsSpecInitialAssetConfiguration struct {
+	// Any of "ChromeFlag".
+	Kind       string            `json:"kind,omitzero,required"`
+	ChromeFlag param.Opt[string] `json:"chromeFlag,omitzero"`
+	paramObj
+}
+
+func (r AndroidInstanceNewParamsSpecInitialAssetConfiguration) MarshalJSON() (data []byte, err error) {
+	type shadow AndroidInstanceNewParamsSpecInitialAssetConfiguration
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AndroidInstanceNewParamsSpecInitialAssetConfiguration) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAssetConfiguration](
+		"kind", "ChromeFlag",
 	)
 }
 
