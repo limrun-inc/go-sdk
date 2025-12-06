@@ -171,19 +171,21 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 type AndroidInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                string                       `json:"state,required"`
-	AdbWebSocketURL      string                       `json:"adbWebSocketUrl"`
-	EndpointWebSocketURL string                       `json:"endpointWebSocketUrl"`
-	Sandbox              AndroidInstanceStatusSandbox `json:"sandbox"`
+	State                   string                       `json:"state,required"`
+	AdbWebSocketURL         string                       `json:"adbWebSocketUrl"`
+	EndpointWebSocketURL    string                       `json:"endpointWebSocketUrl"`
+	Sandbox                 AndroidInstanceStatusSandbox `json:"sandbox"`
+	TargetHTTPPortURLPrefix string                       `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Token                respjson.Field
-		State                respjson.Field
-		AdbWebSocketURL      respjson.Field
-		EndpointWebSocketURL respjson.Field
-		Sandbox              respjson.Field
-		ExtraFields          map[string]respjson.Field
-		raw                  string
+		Token                   respjson.Field
+		State                   respjson.Field
+		AdbWebSocketURL         respjson.Field
+		EndpointWebSocketURL    respjson.Field
+		Sandbox                 respjson.Field
+		TargetHTTPPortURLPrefix respjson.Field
+		ExtraFields             map[string]respjson.Field
+		raw                     string
 	} `json:"-"`
 }
 

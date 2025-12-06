@@ -172,14 +172,16 @@ type IosInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State                   string `json:"state,required"`
+	APIURL                  string `json:"apiUrl"`
 	EndpointWebSocketURL    string `json:"endpointWebSocketUrl"`
-	PortForwardWebSocketURL string `json:"portForwardWebSocketUrl"`
+	TargetHTTPPortURLPrefix string `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                   respjson.Field
 		State                   respjson.Field
+		APIURL                  respjson.Field
 		EndpointWebSocketURL    respjson.Field
-		PortForwardWebSocketURL respjson.Field
+		TargetHTTPPortURLPrefix respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
 	} `json:"-"`
