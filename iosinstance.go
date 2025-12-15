@@ -73,7 +73,7 @@ func (r *IosInstanceService) ListAutoPaging(ctx context.Context, query IosInstan
 // Delete iOS instance with given name
 func (r *IosInstanceService) Delete(ctx context.Context, id string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return
@@ -172,14 +172,18 @@ type IosInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State                   string `json:"state,required"`
+	APIURL                  string `json:"apiUrl"`
 	EndpointWebSocketURL    string `json:"endpointWebSocketUrl"`
-	PortForwardWebSocketURL string `json:"portForwardWebSocketUrl"`
+	ErrorMessage            string `json:"errorMessage"`
+	TargetHTTPPortURLPrefix string `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                   respjson.Field
 		State                   respjson.Field
+		APIURL                  respjson.Field
 		EndpointWebSocketURL    respjson.Field
-		PortForwardWebSocketURL respjson.Field
+		ErrorMessage            respjson.Field
+		TargetHTTPPortURLPrefix respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
 	} `json:"-"`

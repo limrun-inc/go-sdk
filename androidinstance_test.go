@@ -45,14 +45,23 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 			InactivityTimeout: limrun.String("inactivityTimeout"),
 			InitialAssets: []limrun.AndroidInstanceNewParamsSpecInitialAsset{{
 				Kind:       "App",
-				Source:     "URL",
 				AssetIDs:   []string{"string"},
 				AssetName:  limrun.String("assetName"),
 				AssetNames: []string{"string"},
-				URL:        limrun.String("url"),
-				URLs:       []string{"string"},
+				Configuration: limrun.AndroidInstanceNewParamsSpecInitialAssetConfiguration{
+					Kind:       "ChromeFlag",
+					ChromeFlag: "enable-command-line-on-non-rooted-devices@1",
+				},
+				Source: "URL",
+				URL:    limrun.String("url"),
+				URLs:   []string{"string"},
 			}},
 			Region: limrun.String("region"),
+			Sandbox: limrun.AndroidInstanceNewParamsSpecSandbox{
+				PlaywrightAndroid: limrun.AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid{
+					Enabled: limrun.Bool(true),
+				},
+			},
 		},
 	})
 	if err != nil {

@@ -73,7 +73,7 @@ func (r *AndroidInstanceService) ListAutoPaging(ctx context.Context, query Andro
 // Delete Android instance with given name
 func (r *AndroidInstanceService) Delete(ctx context.Context, id string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return
@@ -171,23 +171,61 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 type AndroidInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                string `json:"state,required"`
-	AdbWebSocketURL      string `json:"adbWebSocketUrl"`
-	EndpointWebSocketURL string `json:"endpointWebSocketUrl"`
+	State                   string                       `json:"state,required"`
+	AdbWebSocketURL         string                       `json:"adbWebSocketUrl"`
+	EndpointWebSocketURL    string                       `json:"endpointWebSocketUrl"`
+	ErrorMessage            string                       `json:"errorMessage"`
+	Sandbox                 AndroidInstanceStatusSandbox `json:"sandbox"`
+	TargetHTTPPortURLPrefix string                       `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Token                respjson.Field
-		State                respjson.Field
-		AdbWebSocketURL      respjson.Field
-		EndpointWebSocketURL respjson.Field
-		ExtraFields          map[string]respjson.Field
-		raw                  string
+		Token                   respjson.Field
+		State                   respjson.Field
+		AdbWebSocketURL         respjson.Field
+		EndpointWebSocketURL    respjson.Field
+		ErrorMessage            respjson.Field
+		Sandbox                 respjson.Field
+		TargetHTTPPortURLPrefix respjson.Field
+		ExtraFields             map[string]respjson.Field
+		raw                     string
 	} `json:"-"`
 }
 
 // Returns the unmodified JSON received from the API
 func (r AndroidInstanceStatus) RawJSON() string { return r.JSON.raw }
 func (r *AndroidInstanceStatus) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AndroidInstanceStatusSandbox struct {
+	PlaywrightAndroid AndroidInstanceStatusSandboxPlaywrightAndroid `json:"playwrightAndroid"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		PlaywrightAndroid respjson.Field
+		ExtraFields       map[string]respjson.Field
+		raw               string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AndroidInstanceStatusSandbox) RawJSON() string { return r.JSON.raw }
+func (r *AndroidInstanceStatusSandbox) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AndroidInstanceStatusSandboxPlaywrightAndroid struct {
+	URL string `json:"url"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		URL         respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AndroidInstanceStatusSandboxPlaywrightAndroid) RawJSON() string { return r.JSON.raw }
+func (r *AndroidInstanceStatusSandboxPlaywrightAndroid) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -246,6 +284,7 @@ type AndroidInstanceNewParamsSpec struct {
 	Region        param.Opt[string]                          `json:"region,omitzero"`
 	Clues         []AndroidInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []AndroidInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
+	Sandbox       AndroidInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -281,17 +320,18 @@ func init() {
 	)
 }
 
-// The properties Kind, Source are required.
+// The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAsset struct {
-	// Any of "App".
-	Kind string `json:"kind,omitzero,required"`
+	// Any of "App", "Configuration".
+	Kind          string                                                `json:"kind,omitzero,required"`
+	AssetName     param.Opt[string]                                     `json:"assetName,omitzero"`
+	URL           param.Opt[string]                                     `json:"url,omitzero"`
+	AssetIDs      []string                                              `json:"assetIds,omitzero"`
+	AssetNames    []string                                              `json:"assetNames,omitzero"`
+	Configuration AndroidInstanceNewParamsSpecInitialAssetConfiguration `json:"configuration,omitzero"`
 	// Any of "URL", "URLs", "AssetName", "AssetNames", "AssetIDs".
-	Source     string            `json:"source,omitzero,required"`
-	AssetName  param.Opt[string] `json:"assetName,omitzero"`
-	URL        param.Opt[string] `json:"url,omitzero"`
-	AssetIDs   []string          `json:"assetIds,omitzero"`
-	AssetNames []string          `json:"assetNames,omitzero"`
-	URLs       []string          `json:"urls,omitzero"`
+	Source string   `json:"source,omitzero"`
+	URLs   []string `json:"urls,omitzero"`
 	paramObj
 }
 
@@ -305,11 +345,63 @@ func (r *AndroidInstanceNewParamsSpecInitialAsset) UnmarshalJSON(data []byte) er
 
 func init() {
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
-		"kind", "App",
+		"kind", "App", "Configuration",
 	)
 	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAsset](
 		"source", "URL", "URLs", "AssetName", "AssetNames", "AssetIDs",
 	)
+}
+
+// The property Kind is required.
+type AndroidInstanceNewParamsSpecInitialAssetConfiguration struct {
+	// Any of "ChromeFlag".
+	Kind string `json:"kind,omitzero,required"`
+	// Any of "enable-command-line-on-non-rooted-devices@1".
+	ChromeFlag string `json:"chromeFlag,omitzero"`
+	paramObj
+}
+
+func (r AndroidInstanceNewParamsSpecInitialAssetConfiguration) MarshalJSON() (data []byte, err error) {
+	type shadow AndroidInstanceNewParamsSpecInitialAssetConfiguration
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AndroidInstanceNewParamsSpecInitialAssetConfiguration) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAssetConfiguration](
+		"kind", "ChromeFlag",
+	)
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecInitialAssetConfiguration](
+		"chromeFlag", "enable-command-line-on-non-rooted-devices@1",
+	)
+}
+
+type AndroidInstanceNewParamsSpecSandbox struct {
+	PlaywrightAndroid AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid `json:"playwrightAndroid,omitzero"`
+	paramObj
+}
+
+func (r AndroidInstanceNewParamsSpecSandbox) MarshalJSON() (data []byte, err error) {
+	type shadow AndroidInstanceNewParamsSpecSandbox
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AndroidInstanceNewParamsSpecSandbox) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid struct {
+	Enabled param.Opt[bool] `json:"enabled,omitzero"`
+	paramObj
+}
+
+func (r AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) MarshalJSON() (data []byte, err error) {
+	type shadow AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
 }
 
 type AndroidInstanceListParams struct {
