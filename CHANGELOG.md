@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.0 (2025-12-15)
+
+Full Changelog: [v0.7.0...v0.8.0](https://github.com/limrun-inc/go-sdk/compare/v0.7.0...v0.8.0)
+
+### Features
+
+* **api:** add android sandbox api ([1ebbc62](https://github.com/limrun-inc/go-sdk/commit/1ebbc6211465635a7e06d2caf45179cd511fd4a0))
+* **api:** add asset type configuration with chrome flag ([f0259ce](https://github.com/limrun-inc/go-sdk/commit/f0259ce84f1d4146ba8c86851924895cd56e69e9))
+* **api:** add the optional errorMessage field in status ([75f6be0](https://github.com/limrun-inc/go-sdk/commit/75f6be0d675d917bd28b909d724222e616cfc216))
+* **api:** make chromeFlag enum with supported value ([4bd9879](https://github.com/limrun-inc/go-sdk/commit/4bd9879a8b02f431fed31bcc00460116efcec01d))
+* **api:** manual updates ([4d9e4be](https://github.com/limrun-inc/go-sdk/commit/4d9e4be4bfd16aaf4f6da39fa8ad3c4801602f30))
+* **api:** manual updates ([ca417f1](https://github.com/limrun-inc/go-sdk/commit/ca417f1298add1f830e5c982d8a71d64c0a99c1b))
+* **encoder:** support bracket encoding form-data object members ([5964857](https://github.com/limrun-inc/go-sdk/commit/596485735b8895a73364bb2ed779da9fb4d54a16))
+
+
+### Bug Fixes
+
+* **client:** correctly specify Accept header with */* instead of empty ([42d4d55](https://github.com/limrun-inc/go-sdk/commit/42d4d5577655d9f2f96b4cc590ded1b3ea698244))
+* **mcp:** correct code tool API endpoint ([64ecd45](https://github.com/limrun-inc/go-sdk/commit/64ecd45b9797ae6d15a32f4864fe37bb37aed4ec))
+* rename param to avoid collision ([8023146](https://github.com/limrun-inc/go-sdk/commit/8023146858cfc83bd8eb435b93931b82c40522a3))
+
+
+### Chores
+
+* bump gjson version ([978c3d9](https://github.com/limrun-inc/go-sdk/commit/978c3d93de6cb43297a70bf2164ff5d9313e64ad))
+* elide duplicate aliases ([bbaa5e7](https://github.com/limrun-inc/go-sdk/commit/bbaa5e739978a9b2b93642fd96412e21bed69c34))
+* **internal:** codegen related update ([d92de46](https://github.com/limrun-inc/go-sdk/commit/d92de46bdfe93470baee5c04109f88f6c3997779))
+
 ## 0.7.0 (2025-11-11)
 
 Full Changelog: [v0.6.0...v0.7.0](https://github.com/limrun-inc/go-sdk/compare/v0.6.0...v0.7.0)
