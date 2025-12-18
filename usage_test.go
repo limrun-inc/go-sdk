@@ -24,6 +24,7 @@ func TestUsage(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
+	t.Skip("Prism tests are disabled")
 	androidInstance, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
 	if err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())
