@@ -5,7 +5,7 @@ that has it pre-installed.
 
 Run the example:
 ```bash
-LIM_TOKEN=lim_somevalue
+LIM_API_KEY=lim_somevalue
 
 # Single APK
 go run main.go <path to APK file>

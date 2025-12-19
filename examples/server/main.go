@@ -7,13 +7,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/limrun-inc/go-sdk"
+	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/option"
 	"github.com/limrun-inc/go-sdk/packages/param"
 )
 
 func main() {
-	token := os.Getenv("LIM_TOKEN") // lim_yourtoken
+	token := os.Getenv("LIM_API_KEY") // lim_yourtoken
 	lim := limrun.NewClient(option.WithAPIKey(token))
 
 	s := http.Server{

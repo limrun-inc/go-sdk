@@ -4,19 +4,36 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
+	limrun "github.com/limrun-inc/go-sdk"
+	"github.com/limrun-inc/go-sdk/option"
 	websocket "github.com/limrun-inc/go-sdk/websocket/ios"
 )
 
 func main() {
-	ctx := context.Background()
+	token := os.Getenv("LIM_API_KEY") // lim_yourtoken
+	lim := limrun.NewClient(option.WithAPIKey(token))
+	ctx := context.TODO()
+	instance, err := lim.IosInstances.New(ctx, limrun.IosInstanceNewParams{
+		ReuseIfExists: limrun.Bool(true),
+		Wait:          limrun.Bool(true),
+		Metadata: limrun.IosInstanceNewParamsMetadata{
+			Labels: map[string]string{
+				"name": "go-websocket-ios-example",
+			},
+		},
+	})
+	if err != nil {
+		log.Fatalf("failed to create an ios instance: %s", err)
+	}
 
 	// Connect to the iOS instance
 	client, err := websocket.NewClient(
-		"http://localhost:8833",
-		"your-token",
+		instance.Status.APIURL,
+		instance.Status.Token,
 	)
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)

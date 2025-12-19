@@ -7,7 +7,7 @@ IP address so that we can choose the closest region automatically, and they have
 
 Run the server:
 ```bash
-LIM_TOKEN=lim_somevalue
+LIM_API_KEY=lim_somevalue
 
 go run main.go
 ```
