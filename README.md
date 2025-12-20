@@ -284,8 +284,33 @@ This library provides some conveniences for working with paginated list endpoint
 
 You can use `.ListAutoPaging()` methods to iterate through items across all pages:
 
+```go
+iter := client.AndroidInstances.ListAutoPaging(context.TODO(), limrun.AndroidInstanceListParams{})
+// Automatically fetches more pages as needed.
+for iter.Next() {
+	androidInstance := iter.Current()
+	fmt.Printf("%+v\n", androidInstance)
+}
+if err := iter.Err(); err != nil {
+	panic(err.Error())
+}
+```
+
 Or you can use simple `.List()` methods to fetch a single page and receive a standard response object
 with additional helper methods like `.GetNextPage()`, e.g.:
+
+```go
+page, err := client.AndroidInstances.List(context.TODO(), limrun.AndroidInstanceListParams{})
+for page != nil {
+	for _, androidInstance := range page.Items {
+		fmt.Printf("%+v\n", androidInstance)
+	}
+	page, err = page.GetNextPage()
+}
+if err != nil {
+	panic(err.Error())
+}
+```
 
 ### Errors
 
