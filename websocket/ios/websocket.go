@@ -75,6 +75,32 @@ type LsofEntry struct {
 	Path string `json:"path"`
 }
 
+// AppInstallationResult contains the result of a successful app installation.
+type AppInstallationResult struct {
+	URL      string // The URL the app was installed from
+	BundleID string // Bundle ID of the installed app (always set on success)
+}
+
+// LaunchMode specifies how to launch an app after installation.
+type LaunchMode string
+
+const (
+	// LaunchModeForegroundIfRunning brings the app to foreground if already running, otherwise launches it.
+	LaunchModeForegroundIfRunning LaunchMode = "ForegroundIfRunning"
+	// LaunchModeRelaunchIfRunning kills and relaunches the app if already running.
+	LaunchModeRelaunchIfRunning LaunchMode = "RelaunchIfRunning"
+	// LaunchModeFailIfRunning fails if the app is already running.
+	LaunchModeFailIfRunning LaunchMode = "FailIfRunning"
+)
+
+// AppInstallationOptions configures app installation behavior.
+type AppInstallationOptions struct {
+	// MD5 hash for caching - if provided and matches cached version, skips download
+	MD5 string
+	// LaunchMode after installation. Leave empty to not launch after installation.
+	LaunchMode LaunchMode
+}
+
 // Option configures a Client.
 type Option func(*Client)
 
@@ -116,6 +142,8 @@ type request struct {
 	URL        string                 `json:"url,omitempty"`
 	Kind       string                 `json:"kind,omitempty"`
 	Args       []string               `json:"args,omitempty"`
+	MD5        string                 `json:"md5,omitempty"`
+	LaunchMode LaunchMode             `json:"launchMode,omitempty"`
 }
 
 // response is an internal type for handling WebSocket responses.
@@ -131,6 +159,8 @@ type response struct {
 	ElementType  string          `json:"elementType,omitempty"`
 	Apps         string          `json:"apps,omitempty"`
 	Files        json.RawMessage `json:"files,omitempty"`
+	URL          string          `json:"url,omitempty"`
+	BundleID     string          `json:"bundleId,omitempty"`
 	// simctlStream fields
 	Stdout   string `json:"stdout,omitempty"`
 	Stderr   string `json:"stderr,omitempty"`
@@ -412,6 +442,24 @@ func (c *Client) ListApps(ctx context.Context) ([]InstalledApp, error) {
 func (c *Client) OpenURL(ctx context.Context, urlStr string) error {
 	_, err := c.sendRequest(ctx, &request{Type: "openUrl", URL: urlStr})
 	return err
+}
+
+// InstallApp installs an app from a URL (supports .ipa or .app files, optionally zipped).
+// Returns the installation result with bundle ID on success.
+func (c *Client) InstallApp(ctx context.Context, urlStr string, opts *AppInstallationOptions) (*AppInstallationResult, error) {
+	req := &request{Type: "appInstallation", URL: urlStr}
+	if opts != nil {
+		req.MD5 = opts.MD5
+		req.LaunchMode = opts.LaunchMode
+	}
+	resp, err := c.sendRequest(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &AppInstallationResult{
+		URL:      resp.URL,
+		BundleID: resp.BundleID,
+	}, nil
 }
 
 // Lsof lists open Unix sockets on the instance.
