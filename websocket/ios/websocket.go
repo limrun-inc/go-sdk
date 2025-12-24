@@ -126,24 +126,35 @@ type Client struct {
 	done             chan struct{}
 }
 
+// Orientation represents a device orientation.
+type Orientation string
+
+const (
+	// OrientationPortrait sets the device to portrait mode.
+	OrientationPortrait Orientation = "Portrait"
+	// OrientationLandscape sets the device to landscape mode.
+	OrientationLandscape Orientation = "Landscape"
+)
+
 // request is an internal type for WebSocket requests.
 type request struct {
-	Type       string                 `json:"type"`
-	ID         string                 `json:"id"`
-	X          float64                `json:"x,omitempty"`
-	Y          float64                `json:"y,omitempty"`
-	Point      *AccessibilityPoint    `json:"point,omitempty"`
-	Selector   *AccessibilitySelector `json:"selector,omitempty"`
-	Text       string                 `json:"text,omitempty"`
-	PressEnter bool                   `json:"pressEnter,omitempty"`
-	Key        string                 `json:"key,omitempty"`
-	Modifiers  []string               `json:"modifiers,omitempty"`
-	BundleID   string                 `json:"bundleId,omitempty"`
-	URL        string                 `json:"url,omitempty"`
-	Kind       string                 `json:"kind,omitempty"`
-	Args       []string               `json:"args,omitempty"`
-	MD5        string                 `json:"md5,omitempty"`
-	LaunchMode LaunchMode             `json:"launchMode,omitempty"`
+	Type        string                 `json:"type"`
+	ID          string                 `json:"id"`
+	X           float64                `json:"x,omitempty"`
+	Y           float64                `json:"y,omitempty"`
+	Point       *AccessibilityPoint    `json:"point,omitempty"`
+	Selector    *AccessibilitySelector `json:"selector,omitempty"`
+	Text        string                 `json:"text,omitempty"`
+	PressEnter  bool                   `json:"pressEnter,omitempty"`
+	Key         string                 `json:"key,omitempty"`
+	Modifiers   []string               `json:"modifiers,omitempty"`
+	BundleID    string                 `json:"bundleId,omitempty"`
+	URL         string                 `json:"url,omitempty"`
+	Kind        string                 `json:"kind,omitempty"`
+	Args        []string               `json:"args,omitempty"`
+	MD5         string                 `json:"md5,omitempty"`
+	LaunchMode  LaunchMode             `json:"launchMode,omitempty"`
+	Orientation Orientation            `json:"orientation,omitempty"`
 }
 
 // response is an internal type for handling WebSocket responses.
@@ -473,6 +484,13 @@ func (c *Client) Lsof(ctx context.Context) ([]LsofEntry, error) {
 		return nil, fmt.Errorf("parse files: %w", err)
 	}
 	return files, nil
+}
+
+// SetOrientation sets the device orientation.
+// Valid orientations are OrientationPortrait and OrientationLandscape.
+func (c *Client) SetOrientation(ctx context.Context, orientation Orientation) error {
+	_, err := c.sendRequest(ctx, &request{Type: "setOrientation", Orientation: orientation})
+	return err
 }
 
 // Simctl creates a new SimctlCmd to run the given simctl arguments.
