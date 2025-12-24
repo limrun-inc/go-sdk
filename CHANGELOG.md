@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.0 (2025-12-24)
+
+Full Changelog: [v0.8.0...v0.9.0](https://github.com/limrun-inc/go-sdk/compare/v0.8.0...v0.9.0)
+
+### Features
+
+* **api:** add status.mcpUrl for ios ([f606eec](https://github.com/limrun-inc/go-sdk/commit/f606eec9377b1f834b447663c5a8cb0726e24f27))
+
+
+### Bug Fixes
+
+* skip usage tests that don't work with Prism ([bfca4af](https://github.com/limrun-inc/go-sdk/commit/bfca4af9a3431b9cfa12c290b4dd3634dccb3e6a))
+
+
+### Chores
+
+* add float64 to valid types for RegisterFieldValidator ([04f66e5](https://github.com/limrun-inc/go-sdk/commit/04f66e5a22b0ff782201bc5b0555e792a09ff3d0))
+
+
+### Documentation
+
+* add more examples ([32ab661](https://github.com/limrun-inc/go-sdk/commit/32ab661cfa367a8d6a313d8fbde232ba3c7b3853))
+
 ## 0.8.0 (2025-12-15)
 
 Full Changelog: [v0.7.0...v0.8.0](https://github.com/limrun-inc/go-sdk/compare/v0.7.0...v0.8.0)
