@@ -175,6 +175,7 @@ type IosInstanceStatus struct {
 	APIURL                  string `json:"apiUrl"`
 	EndpointWebSocketURL    string `json:"endpointWebSocketUrl"`
 	ErrorMessage            string `json:"errorMessage"`
+	McpURL                  string `json:"mcpUrl"`
 	TargetHTTPPortURLPrefix string `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -183,6 +184,7 @@ type IosInstanceStatus struct {
 		APIURL                  respjson.Field
 		EndpointWebSocketURL    respjson.Field
 		ErrorMessage            respjson.Field
+		McpURL                  respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
