@@ -86,6 +86,8 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 type Asset struct {
 	ID   string `json:"id,required"`
 	Name string `json:"name,required"`
+	// Human-readable display name for the asset. If not set, the name should be used.
+	DisplayName string `json:"displayName"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5               string `json:"md5"`
 	SignedDownloadURL string `json:"signedDownloadUrl"`
@@ -94,6 +96,7 @@ type Asset struct {
 	JSON struct {
 		ID                respjson.Field
 		Name              respjson.Field
+		DisplayName       respjson.Field
 		Md5               respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
