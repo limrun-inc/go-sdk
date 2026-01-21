@@ -171,12 +171,13 @@ func (r *IosInstanceSpec) UnmarshalJSON(data []byte) error {
 type IosInstanceStatus struct {
 	Token string `json:"token,required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                   string `json:"state,required"`
-	APIURL                  string `json:"apiUrl"`
-	EndpointWebSocketURL    string `json:"endpointWebSocketUrl"`
-	ErrorMessage            string `json:"errorMessage"`
-	McpURL                  string `json:"mcpUrl"`
-	TargetHTTPPortURLPrefix string `json:"targetHttpPortUrlPrefix"`
+	State                   string                   `json:"state,required"`
+	APIURL                  string                   `json:"apiUrl"`
+	EndpointWebSocketURL    string                   `json:"endpointWebSocketUrl"`
+	ErrorMessage            string                   `json:"errorMessage"`
+	McpURL                  string                   `json:"mcpUrl"`
+	Sandbox                 IosInstanceStatusSandbox `json:"sandbox"`
+	TargetHTTPPortURLPrefix string                   `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                   respjson.Field
@@ -185,6 +186,7 @@ type IosInstanceStatus struct {
 		EndpointWebSocketURL    respjson.Field
 		ErrorMessage            respjson.Field
 		McpURL                  respjson.Field
+		Sandbox                 respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
@@ -194,6 +196,38 @@ type IosInstanceStatus struct {
 // Returns the unmodified JSON received from the API
 func (r IosInstanceStatus) RawJSON() string { return r.JSON.raw }
 func (r *IosInstanceStatus) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type IosInstanceStatusSandbox struct {
+	Xcode IosInstanceStatusSandboxXcode `json:"xcode"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Xcode       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r IosInstanceStatusSandbox) RawJSON() string { return r.JSON.raw }
+func (r *IosInstanceStatusSandbox) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type IosInstanceStatusSandboxXcode struct {
+	URL string `json:"url"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		URL         respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r IosInstanceStatusSandboxXcode) RawJSON() string { return r.JSON.raw }
+func (r *IosInstanceStatusSandboxXcode) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -251,6 +285,7 @@ type IosInstanceNewParamsSpec struct {
 	Region        param.Opt[string]                      `json:"region,omitzero"`
 	Clues         []IosInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []IosInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
+	Sandbox       IosInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -319,6 +354,32 @@ func init() {
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
 		"launchMode", "ForegroundIfRunning", "RelaunchIfRunning", "FailIfRunning",
 	)
+}
+
+type IosInstanceNewParamsSpecSandbox struct {
+	Xcode IosInstanceNewParamsSpecSandboxXcode `json:"xcode,omitzero"`
+	paramObj
+}
+
+func (r IosInstanceNewParamsSpecSandbox) MarshalJSON() (data []byte, err error) {
+	type shadow IosInstanceNewParamsSpecSandbox
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *IosInstanceNewParamsSpecSandbox) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type IosInstanceNewParamsSpecSandboxXcode struct {
+	Enabled param.Opt[bool] `json:"enabled,omitzero"`
+	paramObj
+}
+
+func (r IosInstanceNewParamsSpecSandboxXcode) MarshalJSON() (data []byte, err error) {
+	type shadow IosInstanceNewParamsSpecSandboxXcode
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *IosInstanceNewParamsSpecSandboxXcode) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
 }
 
 type IosInstanceListParams struct {

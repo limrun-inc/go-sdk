@@ -152,6 +152,9 @@ func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 }
 
 type AssetListParams struct {
+	// If true, also includes assets from Limrun App Store where you have access to.
+	// App Store assets will be returned with a "appstore/" prefix in their names.
+	IncludeAppStore param.Opt[bool] `query:"includeAppStore,omitzero" json:"-"`
 	// Toggles whether a download URL should be included in the response
 	IncludeDownloadURL param.Opt[bool] `query:"includeDownloadUrl,omitzero" json:"-"`
 	// Toggles whether an upload URL should be included in the response
