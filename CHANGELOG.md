@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.9.0 (2026-02-11)
+
+Full Changelog: [v0.8.0...v0.9.0](https://github.com/limrun-inc/go-sdk/compare/v0.8.0...v0.9.0)
+
+### Features
+
+* **api:** add displayName to asset ([0e158a0](https://github.com/limrun-inc/go-sdk/commit/0e158a0c6d8000bd2e44a77f57c81e4163a81acb))
+* **api:** add ios sandbox properties and app store for assets ([1c50018](https://github.com/limrun-inc/go-sdk/commit/1c50018ee90ac3922b70d3b3232ce218f55b6504))
+* **api:** add optional os field to assets ([eb6f431](https://github.com/limrun-inc/go-sdk/commit/eb6f431684382700dc16b5e2093f12929aadb110))
+* **api:** add status.mcpUrl for ios ([f606eec](https://github.com/limrun-inc/go-sdk/commit/f606eec9377b1f834b447663c5a8cb0726e24f27))
+* **client:** add a convenient param.SetJSON helper ([da032fb](https://github.com/limrun-inc/go-sdk/commit/da032fbc4cd28b32dfb98acdd5316ed8e863b39b))
+
+
+### Bug Fixes
+
+* **docs:** add missing pointer prefix to api.md return types ([f1f6ed6](https://github.com/limrun-inc/go-sdk/commit/f1f6ed6744f3ccd6ca25be3cc56e9e5725e3b95d))
+* **encoder:** correctly serialize NullStruct ([80cb5d8](https://github.com/limrun-inc/go-sdk/commit/80cb5d87f4c1945654e0e648e98a6a635f76a731))
+* skip usage tests that don't work with Prism ([bfca4af](https://github.com/limrun-inc/go-sdk/commit/bfca4af9a3431b9cfa12c290b4dd3634dccb3e6a))
+
+
+### Chores
+
+* add float64 to valid types for RegisterFieldValidator ([04f66e5](https://github.com/limrun-inc/go-sdk/commit/04f66e5a22b0ff782201bc5b0555e792a09ff3d0))
+* **internal:** update `actions/checkout` version ([604a7bc](https://github.com/limrun-inc/go-sdk/commit/604a7bc474b13c1058941c17bb20f43206e2cf2d))
+
+
+### Documentation
+
+* add more examples ([32ab661](https://github.com/limrun-inc/go-sdk/commit/32ab661cfa367a8d6a313d8fbde232ba3c7b3853))
+
 ## 0.8.0 (2025-12-15)
 
 Full Changelog: [v0.7.0...v0.8.0](https://github.com/limrun-inc/go-sdk/compare/v0.7.0...v0.8.0)

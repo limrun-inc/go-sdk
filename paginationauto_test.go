@@ -12,7 +12,7 @@ import (
 	"github.com/limrun-inc/go-sdk/option"
 )
 
-func TestUsage(t *testing.T) {
+func TestAutoPagination(t *testing.T) {
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -24,10 +24,13 @@ func TestUsage(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	t.Skip("Prism tests are disabled")
-	androidInstance, err := client.AndroidInstances.New(context.TODO(), limrun.AndroidInstanceNewParams{})
-	if err != nil {
+	iter := client.AndroidInstances.ListAutoPaging(context.TODO(), limrun.AndroidInstanceListParams{})
+	// Prism mock isn't going to give us real pagination
+	for i := 0; i < 3 && iter.Next(); i++ {
+		androidInstance := iter.Current()
+		t.Logf("%+v\n", androidInstance.Metadata)
+	}
+	if err := iter.Err(); err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
-	t.Logf("%+v\n", androidInstance.Metadata)
 }

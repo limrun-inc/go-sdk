@@ -51,6 +51,11 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 				URL:        limrun.String("url"),
 			}},
 			Region: limrun.String("region"),
+			Sandbox: limrun.IosInstanceNewParamsSpecSandbox{
+				Xcode: limrun.IosInstanceNewParamsSpecSandboxXcode{
+					Enabled: limrun.Bool(true),
+				},
+			},
 		},
 	})
 	if err != nil {

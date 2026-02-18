@@ -86,15 +86,24 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 type Asset struct {
 	ID   string `json:"id,required"`
 	Name string `json:"name,required"`
+	// Human-readable display name for the asset. If not set, the name should be used.
+	DisplayName string `json:"displayName"`
 	// Returned only if there is a corresponding file uploaded already.
-	Md5               string `json:"md5"`
-	SignedDownloadURL string `json:"signedDownloadUrl"`
-	SignedUploadURL   string `json:"signedUploadUrl"`
+	Md5 string `json:"md5"`
+	// The operating system this asset is for. If not set, the asset is available for
+	// all platforms.
+	//
+	// Any of "ios", "android".
+	Os                AssetOs `json:"os"`
+	SignedDownloadURL string  `json:"signedDownloadUrl"`
+	SignedUploadURL   string  `json:"signedUploadUrl"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID                respjson.Field
 		Name              respjson.Field
+		DisplayName       respjson.Field
 		Md5               respjson.Field
+		Os                respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
 		ExtraFields       map[string]respjson.Field
@@ -107,6 +116,15 @@ func (r Asset) RawJSON() string { return r.JSON.raw }
 func (r *Asset) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
+
+// The operating system this asset is for. If not set, the asset is available for
+// all platforms.
+type AssetOs string
+
+const (
+	AssetOsIos     AssetOs = "ios"
+	AssetOsAndroid AssetOs = "android"
+)
 
 type AssetGetOrNewResponse struct {
 	ID                string `json:"id,required"`
@@ -134,6 +152,9 @@ func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 }
 
 type AssetListParams struct {
+	// If true, also includes assets from Limrun App Store where you have access to.
+	// App Store assets will be returned with a "appstore/" prefix in their names.
+	IncludeAppStore param.Opt[bool] `query:"includeAppStore,omitzero" json:"-"`
 	// Toggles whether a download URL should be included in the response
 	IncludeDownloadURL param.Opt[bool] `query:"includeDownloadUrl,omitzero" json:"-"`
 	// Toggles whether an upload URL should be included in the response
