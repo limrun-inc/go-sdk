@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.1 (2026-02-22)
+
+Full Changelog: [v0.9.0...v0.9.1](https://github.com/limrun-inc/go-sdk/compare/v0.9.0...v0.9.1)
+
+### Bug Fixes
+
+* allow canceling a request while it is waiting to retry ([34fdd94](https://github.com/limrun-inc/go-sdk/commit/34fdd94e35870b10989ede5bef7c66458baad9c5))
+* **internal:** skip tests that depend on mock server ([3d54461](https://github.com/limrun-inc/go-sdk/commit/3d5446140e4b6cb4cecae578c1156e1f4c0e6341))
+
+
+### Chores
+
+* **internal:** remove mock server code ([9a6ed5d](https://github.com/limrun-inc/go-sdk/commit/9a6ed5d9bfbce545f38b17f1f77456089bbc063a))
+* update mock server docs ([bd22dc0](https://github.com/limrun-inc/go-sdk/commit/bd22dc054a1a9c0d62e14122773e7328c304d122))
+
 ## 0.9.0 (2026-02-11)
 
 Full Changelog: [v0.8.0...v0.9.0](https://github.com/limrun-inc/go-sdk/compare/v0.8.0...v0.9.0)
