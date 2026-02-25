@@ -96,9 +96,9 @@ func (r *IosInstanceService) Get(ctx context.Context, id string, opts ...option.
 }
 
 type IosInstance struct {
-	Metadata IosInstanceMetadata `json:"metadata,required"`
-	Spec     IosInstanceSpec     `json:"spec,required"`
-	Status   IosInstanceStatus   `json:"status,required"`
+	Metadata IosInstanceMetadata `json:"metadata" api:"required"`
+	Spec     IosInstanceSpec     `json:"spec" api:"required"`
+	Status   IosInstanceStatus   `json:"status" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Metadata    respjson.Field
@@ -116,9 +116,9 @@ func (r *IosInstance) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceMetadata struct {
-	ID             string            `json:"id,required"`
-	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
-	OrganizationID string            `json:"organizationId,required"`
+	ID             string            `json:"id" api:"required"`
+	CreatedAt      time.Time         `json:"createdAt" api:"required" format:"date-time"`
+	OrganizationID string            `json:"organizationId" api:"required"`
 	DisplayName    string            `json:"displayName"`
 	Labels         map[string]string `json:"labels"`
 	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
@@ -145,10 +145,10 @@ type IosInstanceSpec struct {
 	// After how many minutes of inactivity should the instance be terminated. Example
 	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
 	// altogether.
-	InactivityTimeout string `json:"inactivityTimeout,required" format:"duration"`
+	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	// The region where the instance will be created. If not given, will be decided
 	// based on scheduling clues and availability.
-	Region string `json:"region,required"`
+	Region string `json:"region" api:"required"`
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
@@ -169,9 +169,9 @@ func (r *IosInstanceSpec) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceStatus struct {
-	Token string `json:"token,required"`
+	Token string `json:"token" api:"required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                   string                   `json:"state,required"`
+	State                   string                   `json:"state" api:"required"`
 	APIURL                  string                   `json:"apiUrl"`
 	EndpointWebSocketURL    string                   `json:"endpointWebSocketUrl"`
 	ErrorMessage            string                   `json:"errorMessage"`
@@ -300,7 +300,7 @@ func (r *IosInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 // The property Kind is required.
 type IosInstanceNewParamsSpecClue struct {
 	// Any of "ClientIP".
-	Kind     string            `json:"kind,omitzero,required"`
+	Kind     string            `json:"kind,omitzero" api:"required"`
 	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
 	paramObj
 }
@@ -322,9 +322,9 @@ func init() {
 // The properties Kind, Source are required.
 type IosInstanceNewParamsSpecInitialAsset struct {
 	// Any of "App".
-	Kind string `json:"kind,omitzero,required"`
+	Kind string `json:"kind,omitzero" api:"required"`
 	// Any of "URL", "AssetName", "AssetID".
-	Source    string            `json:"source,omitzero,required"`
+	Source    string            `json:"source,omitzero" api:"required"`
 	AssetID   param.Opt[string] `json:"assetId,omitzero"`
 	AssetName param.Opt[string] `json:"assetName,omitzero"`
 	URL       param.Opt[string] `json:"url,omitzero"`

@@ -96,9 +96,9 @@ func (r *AndroidInstanceService) Get(ctx context.Context, id string, opts ...opt
 }
 
 type AndroidInstance struct {
-	Metadata AndroidInstanceMetadata `json:"metadata,required"`
-	Spec     AndroidInstanceSpec     `json:"spec,required"`
-	Status   AndroidInstanceStatus   `json:"status,required"`
+	Metadata AndroidInstanceMetadata `json:"metadata" api:"required"`
+	Spec     AndroidInstanceSpec     `json:"spec" api:"required"`
+	Status   AndroidInstanceStatus   `json:"status" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Metadata    respjson.Field
@@ -116,9 +116,9 @@ func (r *AndroidInstance) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceMetadata struct {
-	ID             string            `json:"id,required"`
-	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
-	OrganizationID string            `json:"organizationId,required"`
+	ID             string            `json:"id" api:"required"`
+	CreatedAt      time.Time         `json:"createdAt" api:"required" format:"date-time"`
+	OrganizationID string            `json:"organizationId" api:"required"`
 	DisplayName    string            `json:"displayName"`
 	Labels         map[string]string `json:"labels"`
 	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
@@ -145,10 +145,10 @@ type AndroidInstanceSpec struct {
 	// After how many minutes of inactivity should the instance be terminated. Example
 	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
 	// altogether.
-	InactivityTimeout string `json:"inactivityTimeout,required" format:"duration"`
+	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	// The region where the instance will be created. If not given, will be decided
 	// based on scheduling clues and availability.
-	Region string `json:"region,required"`
+	Region string `json:"region" api:"required"`
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
@@ -169,9 +169,9 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceStatus struct {
-	Token string `json:"token,required"`
+	Token string `json:"token" api:"required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                   string                       `json:"state,required"`
+	State                   string                       `json:"state" api:"required"`
 	AdbWebSocketURL         string                       `json:"adbWebSocketUrl"`
 	EndpointWebSocketURL    string                       `json:"endpointWebSocketUrl"`
 	ErrorMessage            string                       `json:"errorMessage"`
@@ -299,7 +299,7 @@ func (r *AndroidInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecClue struct {
 	// Any of "ClientIP", "OSVersion".
-	Kind     string            `json:"kind,omitzero,required"`
+	Kind     string            `json:"kind,omitzero" api:"required"`
 	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
 	// The major version of Android, e.g. "13", "14" or "15".
 	OsVersion param.Opt[string] `json:"osVersion,omitzero"`
@@ -323,7 +323,7 @@ func init() {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAsset struct {
 	// Any of "App", "Configuration".
-	Kind          string                                                `json:"kind,omitzero,required"`
+	Kind          string                                                `json:"kind,omitzero" api:"required"`
 	AssetName     param.Opt[string]                                     `json:"assetName,omitzero"`
 	URL           param.Opt[string]                                     `json:"url,omitzero"`
 	AssetIDs      []string                                              `json:"assetIds,omitzero"`
@@ -355,7 +355,7 @@ func init() {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAssetConfiguration struct {
 	// Any of "ChromeFlag".
-	Kind string `json:"kind,omitzero,required"`
+	Kind string `json:"kind,omitzero" api:"required"`
 	// Any of "enable-command-line-on-non-rooted-devices@1".
 	ChromeFlag string `json:"chromeFlag,omitzero"`
 	paramObj
