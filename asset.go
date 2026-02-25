@@ -84,8 +84,8 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 }
 
 type Asset struct {
-	ID   string `json:"id,required"`
-	Name string `json:"name,required"`
+	ID   string `json:"id" api:"required"`
+	Name string `json:"name" api:"required"`
 	// Human-readable display name for the asset. If not set, the name should be used.
 	DisplayName string `json:"displayName"`
 	// Returned only if there is a corresponding file uploaded already.
@@ -127,10 +127,10 @@ const (
 )
 
 type AssetGetOrNewResponse struct {
-	ID                string `json:"id,required"`
-	Name              string `json:"name,required"`
-	SignedDownloadURL string `json:"signedDownloadUrl,required"`
-	SignedUploadURL   string `json:"signedUploadUrl,required"`
+	ID                string `json:"id" api:"required"`
+	Name              string `json:"name" api:"required"`
+	SignedDownloadURL string `json:"signedDownloadUrl" api:"required"`
+	SignedUploadURL   string `json:"signedUploadUrl" api:"required"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -191,7 +191,7 @@ func (r AssetGetParams) URLQuery() (v url.Values, err error) {
 }
 
 type AssetGetOrNewParams struct {
-	Name string `json:"name,required"`
+	Name string `json:"name" api:"required"`
 	paramObj
 }
 
