@@ -43,7 +43,7 @@ func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete the asset with given ID.
@@ -52,11 +52,11 @@ func (r *AssetService) Delete(ctx context.Context, assetID string, opts ...optio
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if assetID == "" {
 		err = errors.New("missing required assetId parameter")
-		return
+		return err
 	}
 	path := fmt.Sprintf("v1/assets/%s", assetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
-	return
+	return err
 }
 
 // Get the asset with given ID.
@@ -64,11 +64,11 @@ func (r *AssetService) Get(ctx context.Context, assetID string, query AssetGetPa
 	opts = slices.Concat(r.Options, opts)
 	if assetID == "" {
 		err = errors.New("missing required assetId parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("v1/assets/%s", assetID)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Creates an asset and returns upload and download URLs. If there is a
@@ -80,7 +80,7 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type Asset struct {
