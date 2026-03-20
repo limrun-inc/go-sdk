@@ -175,6 +175,7 @@ type AndroidInstanceStatus struct {
 	AdbWebSocketURL         string                       `json:"adbWebSocketUrl"`
 	EndpointWebSocketURL    string                       `json:"endpointWebSocketUrl"`
 	ErrorMessage            string                       `json:"errorMessage"`
+	McpURL                  string                       `json:"mcpUrl"`
 	Sandbox                 AndroidInstanceStatusSandbox `json:"sandbox"`
 	TargetHTTPPortURLPrefix string                       `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -184,6 +185,7 @@ type AndroidInstanceStatus struct {
 		AdbWebSocketURL         respjson.Field
 		EndpointWebSocketURL    respjson.Field
 		ErrorMessage            respjson.Field
+		McpURL                  respjson.Field
 		Sandbox                 respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
 		ExtraFields             map[string]respjson.Field
