@@ -285,7 +285,11 @@ type IosInstanceNewParamsSpec struct {
 	Region        param.Opt[string]                      `json:"region,omitzero"`
 	Clues         []IosInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []IosInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
-	Sandbox       IosInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
+	// The model for the Apple Simulator. Default is iphone.
+	//
+	// Any of "iphone", "ipad", "watch".
+	Model   string                          `json:"model,omitzero"`
+	Sandbox IosInstanceNewParamsSpecSandbox `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -295,6 +299,12 @@ func (r IosInstanceNewParamsSpec) MarshalJSON() (data []byte, err error) {
 }
 func (r *IosInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[IosInstanceNewParamsSpec](
+		"model", "iphone", "ipad", "watch",
+	)
 }
 
 // The property Kind is required.
