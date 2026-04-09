@@ -143,8 +143,8 @@ func (r *IosInstanceMetadata) UnmarshalJSON(data []byte) error {
 
 type IosInstanceSpec struct {
 	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
+	// values 1m, 10m, 3h. Default is 3m. Providing "0" uses the organization's default
+	// inactivity timeout.
 	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	// The region where the instance will be created. If not given, will be decided
 	// based on scheduling clues and availability.
@@ -277,8 +277,8 @@ type IosInstanceNewParamsSpec struct {
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout param.Opt[string] `json:"hardTimeout,omitzero" format:"duration"`
 	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
+	// values 1m, 10m, 3h. Default is 3m. Providing "0" uses the organization's default
+	// inactivity timeout.
 	InactivityTimeout param.Opt[string] `json:"inactivityTimeout,omitzero" format:"duration"`
 	// The region where the instance will be created. If not given, will be decided
 	// based on scheduling clues and availability.
