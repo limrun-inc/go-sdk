@@ -40,7 +40,7 @@ func NewXcodeInstanceService(opts ...option.RequestOption) (r XcodeInstanceServi
 }
 
 // Create an Xcode instance
-func (r *XcodeInstanceService) New(ctx context.Context, params XcodeInstanceNewParams, opts ...option.RequestOption) (res *XcodeInstances, err error) {
+func (r *XcodeInstanceService) New(ctx context.Context, params XcodeInstanceNewParams, opts ...option.RequestOption) (res *XcodeInstance, err error) {
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/xcode_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
@@ -48,7 +48,7 @@ func (r *XcodeInstanceService) New(ctx context.Context, params XcodeInstanceNewP
 }
 
 // List Xcode instances
-func (r *XcodeInstanceService) List(ctx context.Context, query XcodeInstanceListParams, opts ...option.RequestOption) (res *pagination.Items[XcodeInstances], err error) {
+func (r *XcodeInstanceService) List(ctx context.Context, query XcodeInstanceListParams, opts ...option.RequestOption) (res *pagination.Items[XcodeInstance], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.Options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -66,7 +66,7 @@ func (r *XcodeInstanceService) List(ctx context.Context, query XcodeInstanceList
 }
 
 // List Xcode instances
-func (r *XcodeInstanceService) ListAutoPaging(ctx context.Context, query XcodeInstanceListParams, opts ...option.RequestOption) *pagination.ItemsAutoPager[XcodeInstances] {
+func (r *XcodeInstanceService) ListAutoPaging(ctx context.Context, query XcodeInstanceListParams, opts ...option.RequestOption) *pagination.ItemsAutoPager[XcodeInstance] {
 	return pagination.NewItemsAutoPager(r.List(ctx, query, opts...))
 }
 
@@ -84,7 +84,7 @@ func (r *XcodeInstanceService) Delete(ctx context.Context, id string, opts ...op
 }
 
 // Get Xcode instance with given ID
-func (r *XcodeInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *XcodeInstances, err error) {
+func (r *XcodeInstanceService) Get(ctx context.Context, id string, opts ...option.RequestOption) (res *XcodeInstance, err error) {
 	opts = slices.Concat(r.Options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
@@ -95,10 +95,10 @@ func (r *XcodeInstanceService) Get(ctx context.Context, id string, opts ...optio
 	return res, err
 }
 
-type XcodeInstances struct {
-	Metadata XcodeInstancesMetadata `json:"metadata" api:"required"`
-	Spec     XcodeInstancesSpec     `json:"spec" api:"required"`
-	Status   XcodeInstancesStatus   `json:"status" api:"required"`
+type XcodeInstance struct {
+	Metadata XcodeInstanceMetadata `json:"metadata" api:"required"`
+	Spec     XcodeInstanceSpec     `json:"spec" api:"required"`
+	Status   XcodeInstanceStatus   `json:"status" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Metadata    respjson.Field
@@ -110,12 +110,12 @@ type XcodeInstances struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r XcodeInstances) RawJSON() string { return r.JSON.raw }
-func (r *XcodeInstances) UnmarshalJSON(data []byte) error {
+func (r XcodeInstance) RawJSON() string { return r.JSON.raw }
+func (r *XcodeInstance) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type XcodeInstancesMetadata struct {
+type XcodeInstanceMetadata struct {
 	ID             string            `json:"id" api:"required"`
 	CreatedAt      time.Time         `json:"createdAt" api:"required" format:"date-time"`
 	OrganizationID string            `json:"organizationId" api:"required"`
@@ -136,12 +136,12 @@ type XcodeInstancesMetadata struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r XcodeInstancesMetadata) RawJSON() string { return r.JSON.raw }
-func (r *XcodeInstancesMetadata) UnmarshalJSON(data []byte) error {
+func (r XcodeInstanceMetadata) RawJSON() string { return r.JSON.raw }
+func (r *XcodeInstanceMetadata) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type XcodeInstancesSpec struct {
+type XcodeInstanceSpec struct {
 	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	Region            string `json:"region" api:"required"`
 	HardTimeout       string `json:"hardTimeout" format:"duration"`
@@ -156,12 +156,12 @@ type XcodeInstancesSpec struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r XcodeInstancesSpec) RawJSON() string { return r.JSON.raw }
-func (r *XcodeInstancesSpec) UnmarshalJSON(data []byte) error {
+func (r XcodeInstanceSpec) RawJSON() string { return r.JSON.raw }
+func (r *XcodeInstanceSpec) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type XcodeInstancesStatus struct {
+type XcodeInstanceStatus struct {
 	Token string `json:"token" api:"required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State        string `json:"state" api:"required"`
@@ -179,8 +179,8 @@ type XcodeInstancesStatus struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r XcodeInstancesStatus) RawJSON() string { return r.JSON.raw }
-func (r *XcodeInstancesStatus) UnmarshalJSON(data []byte) error {
+func (r XcodeInstanceStatus) RawJSON() string { return r.JSON.raw }
+func (r *XcodeInstanceStatus) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
