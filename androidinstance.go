@@ -173,6 +173,7 @@ type AndroidInstanceStatus struct {
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
 	State                   string                       `json:"state" api:"required"`
 	AdbWebSocketURL         string                       `json:"adbWebSocketUrl"`
+	APIURL                  string                       `json:"apiUrl"`
 	EndpointWebSocketURL    string                       `json:"endpointWebSocketUrl"`
 	ErrorMessage            string                       `json:"errorMessage"`
 	McpURL                  string                       `json:"mcpUrl"`
@@ -183,6 +184,7 @@ type AndroidInstanceStatus struct {
 		Token                   respjson.Field
 		State                   respjson.Field
 		AdbWebSocketURL         respjson.Field
+		APIURL                  respjson.Field
 		EndpointWebSocketURL    respjson.Field
 		ErrorMessage            respjson.Field
 		McpURL                  respjson.Field
