@@ -177,6 +177,7 @@ type IosInstanceStatus struct {
 	ErrorMessage            string                   `json:"errorMessage"`
 	McpURL                  string                   `json:"mcpUrl"`
 	Sandbox                 IosInstanceStatusSandbox `json:"sandbox"`
+	SignedStreamURL         string                   `json:"signedStreamUrl"`
 	TargetHTTPPortURLPrefix string                   `json:"targetHttpPortUrlPrefix"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -187,6 +188,7 @@ type IosInstanceStatus struct {
 		ErrorMessage            respjson.Field
 		McpURL                  respjson.Field
 		Sandbox                 respjson.Field
+		SignedStreamURL         respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
