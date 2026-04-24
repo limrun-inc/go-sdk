@@ -161,8 +161,18 @@ type AssetListParams struct {
 	IncludeUploadURL param.Opt[bool] `query:"includeUploadUrl,omitzero" json:"-"`
 	// Maximum number of items to be returned. The default is 50.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
-	// Query by file name
+	// Case-sensitive exact match on the asset name. Cannot be combined with
+	// namePrefixFilter. When combined with includeAppStore=true, a leading "appstore/"
+	// is stripped before querying App Store assets (whose stored names never carry the
+	// prefix).
 	NameFilter param.Opt[string] `query:"nameFilter,omitzero" json:"-"`
+	// Case-sensitive prefix match on the asset name. LIKE wildcards ("%", "\_") in the
+	// value are treated as literal characters, not wildcards. Empty string is rejected
+	// with 400; omit the parameter if no filtering is desired. Cannot be combined with
+	// nameFilter. When combined with includeAppStore=true, a leading "appstore/" is
+	// stripped before querying App Store assets (whose stored names never carry the
+	// prefix); a partial prefix like "appstor" will not match any App Store assets.
+	NamePrefixFilter param.Opt[string] `query:"namePrefixFilter,omitzero" json:"-"`
 	paramObj
 }
 
