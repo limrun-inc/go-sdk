@@ -32,6 +32,7 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 		IncludeUploadURL:   limrun.Bool(true),
 		Limit:              limrun.Int(50),
 		NameFilter:         limrun.String("nameFilter"),
+		NamePrefixFilter:   limrun.String("namePrefixFilter"),
 	})
 	if err != nil {
 		var apierr *limrun.Error
