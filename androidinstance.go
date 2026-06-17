@@ -399,6 +399,8 @@ func (r *AndroidInstanceNewParamsSpecSandbox) UnmarshalJSON(data []byte) error {
 
 type AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid struct {
 	Enabled param.Opt[bool] `json:"enabled,omitzero"`
+	// Any of "1.56.1-lim.1", "1.60.0-lim.1".
+	Version string `json:"version,omitzero"`
 	paramObj
 }
 
@@ -408,6 +410,12 @@ func (r AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) MarshalJSON() (dat
 }
 func (r *AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid](
+		"version", "1.56.1-lim.1", "1.60.0-lim.1",
+	)
 }
 
 type AndroidInstanceListParams struct {

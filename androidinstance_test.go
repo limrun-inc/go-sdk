@@ -60,6 +60,7 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 			Sandbox: limrun.AndroidInstanceNewParamsSpecSandbox{
 				PlaywrightAndroid: limrun.AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid{
 					Enabled: limrun.Bool(true),
+					Version: "1.56.1-lim.1",
 				},
 			},
 		},
