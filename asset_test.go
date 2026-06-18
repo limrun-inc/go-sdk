@@ -96,7 +96,7 @@ func TestAssetGetWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAssetGetOrNew(t *testing.T) {
+func TestAssetGetOrNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -111,6 +111,7 @@ func TestAssetGetOrNew(t *testing.T) {
 	)
 	_, err := client.Assets.GetOrNew(context.TODO(), limrun.AssetGetOrNewParams{
 		Name: "name",
+		Ttl:  limrun.String("ttl"),
 	})
 	if err != nil {
 		var apierr *limrun.Error

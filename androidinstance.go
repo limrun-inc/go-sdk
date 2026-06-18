@@ -285,8 +285,23 @@ type AndroidInstanceNewParamsSpec struct {
 	// values 1m, 10m, 3h. Default is 3m. Providing "0" uses the organization's default
 	// inactivity timeout.
 	InactivityTimeout param.Opt[string] `json:"inactivityTimeout,omitzero" format:"duration"`
-	// The region where the instance will be created. If not given, will be decided
-	// based on scheduling clues and availability.
+	// Where the instance will be created. If not given, the region is decided based on
+	// scheduling clues (client IP) and availability.
+	//
+	// A region is a preference, not a hard pin: the request always overflows to every
+	// other available region, ordered by proximity, when the preferred ones are full.
+	//
+	// Accepted values:
+	//
+	//   - A specific region name (e.g. "us-west1"). It is tried first, then the
+	//     remaining regions in order of proximity to it. Scheduling clues (client IP)
+	//     are ignored when a region is given.
+	//   - A region group name (e.g. "us", "eu"). Its member regions are tried first in
+	//     their listed order, then the remaining regions by proximity to the first
+	//     member.
+	//   - A pipe-separated, ordered list of regions (e.g. "us-east1|us-west1"). Those
+	//     are tried first in the given order, then the remaining regions by proximity to
+	//     the first.
 	Region        param.Opt[string]                          `json:"region,omitzero"`
 	Clues         []AndroidInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []AndroidInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
