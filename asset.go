@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"time"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
@@ -88,6 +89,8 @@ type Asset struct {
 	Name string `json:"name" api:"required"`
 	// Human-readable display name for the asset. If not set, the name should be used.
 	DisplayName string `json:"displayName"`
+	// When set, the time after which the asset is automatically deleted.
+	ExpiresAt time.Time `json:"expiresAt" format:"date-time"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
 	// The operating system this asset is for. If not set, the asset is available for
@@ -102,6 +105,7 @@ type Asset struct {
 		ID                respjson.Field
 		Name              respjson.Field
 		DisplayName       respjson.Field
+		ExpiresAt         respjson.Field
 		Md5               respjson.Field
 		Os                respjson.Field
 		SignedDownloadURL respjson.Field
@@ -131,6 +135,8 @@ type AssetGetOrNewResponse struct {
 	Name              string `json:"name" api:"required"`
 	SignedDownloadURL string `json:"signedDownloadUrl" api:"required"`
 	SignedUploadURL   string `json:"signedUploadUrl" api:"required"`
+	// When set, the time after which the asset is automatically deleted.
+	ExpiresAt time.Time `json:"expiresAt" format:"date-time"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -139,6 +145,7 @@ type AssetGetOrNewResponse struct {
 		Name              respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
+		ExpiresAt         respjson.Field
 		Md5               respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
@@ -202,6 +209,11 @@ func (r AssetGetParams) URLQuery() (v url.Values, err error) {
 
 type AssetGetOrNewParams struct {
 	Name string `json:"name" api:"required"`
+	// Optional time-to-live as a Go duration string (e.g. "24h"). When set, the asset
+	// is deleted this long after now; minimum is 1m. Omit for no expiry. On re-upload
+	// of an existing asset, a value updates the expiry while omitting it leaves the
+	// current expiry unchanged.
+	Ttl param.Opt[string] `json:"ttl,omitzero"`
 	paramObj
 }
 
