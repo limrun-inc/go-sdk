@@ -278,5 +278,109 @@ func main() {
 		}
 	}
 
+	// ========================================================================
+	// Device Info
+	// ========================================================================
+	fmt.Println("\n--- Testing DeviceInfo ---")
+	if info, err := client.DeviceInfo(ctx); err != nil {
+		log.Printf("Failed to get device info: %v", err)
+	} else {
+		fmt.Printf("Device: %s (%s), %.0fx%.0f\n", info.Model, info.UDID, info.ScreenWidth, info.ScreenHeight)
+	}
+
+	// ========================================================================
+	// Toggle Keyboard
+	// ========================================================================
+	fmt.Println("\n--- Testing ToggleKeyboard ---")
+	if err := client.ToggleKeyboard(ctx); err != nil {
+		log.Printf("Failed to toggle keyboard: %v", err)
+	} else {
+		fmt.Println("Toggled software keyboard")
+	}
+
+	// ========================================================================
+	// Scroll
+	// ========================================================================
+	fmt.Println("\n--- Testing Scroll ---")
+	if err := client.Scroll(ctx, websocket.ScrollDown, 300, nil); err != nil {
+		log.Printf("Failed to scroll: %v", err)
+	} else {
+		fmt.Println("Scrolled down 300px")
+	}
+
+	// ========================================================================
+	// Perform Actions (batched, runs in the pod without round-trips)
+	// ========================================================================
+	fmt.Println("\n--- Testing PerformActions ---")
+	actionsResult, err := client.PerformActions(ctx, []websocket.PerformAction{
+		websocket.ActionTap(screenshot.Width/2, screenshot.Height/2),
+		websocket.ActionWait(250),
+		websocket.ActionTypeText("batched input", false),
+	})
+	if err != nil {
+		log.Printf("PerformActions failed: %v", err)
+	} else {
+		fmt.Printf("PerformActions ran %d actions\n", len(actionsResult.Results))
+	}
+
+	// ========================================================================
+	// Launch App with explicit mode
+	// ========================================================================
+	fmt.Println("\n--- Testing LaunchApp with mode ---")
+	if err := client.LaunchApp(ctx, "com.apple.mobilesafari", websocket.WithLaunchMode(websocket.LaunchModeRelaunchIfRunning)); err != nil {
+		log.Printf("Failed to relaunch Safari: %v", err)
+	} else {
+		fmt.Println("Relaunched Safari")
+	}
+
+	// ========================================================================
+	// App Log Tail
+	// ========================================================================
+	fmt.Println("\n--- Testing AppLogTail ---")
+	if logs, err := client.AppLogTail(ctx, "com.apple.mobilesafari", 20); err != nil {
+		log.Printf("Failed to tail app log: %v", err)
+	} else {
+		fmt.Printf("Got %d bytes of Safari logs\n", len(logs))
+	}
+
+	// ========================================================================
+	// Stream Syslog (for 2s)
+	// ========================================================================
+	fmt.Println("\n--- Testing StreamSyslog ---")
+	if stream, err := client.StreamSyslog(ctx); err != nil {
+		log.Printf("Failed to start syslog stream: %v", err)
+	} else {
+		streamCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		lineCount := 0
+	loop:
+		for {
+			select {
+			case batch, ok := <-stream.Lines():
+				if !ok {
+					break loop
+				}
+				lineCount += len(batch)
+			case err := <-stream.Err():
+				log.Printf("Syslog stream error: %v", err)
+				break loop
+			case <-streamCtx.Done():
+				break loop
+			}
+		}
+		cancel()
+		stream.Stop()
+		fmt.Printf("Received %d syslog lines\n", lineCount)
+	}
+
+	// ========================================================================
+	// Terminate App
+	// ========================================================================
+	fmt.Println("\n--- Testing TerminateApp ---")
+	if err := client.TerminateApp(ctx, "com.apple.mobilesafari"); err != nil {
+		log.Printf("Failed to terminate Safari: %v", err)
+	} else {
+		fmt.Println("Terminated Safari")
+	}
+
 	fmt.Println("\n✅ All tests completed!")
 }
