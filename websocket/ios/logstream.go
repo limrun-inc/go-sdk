@@ -124,9 +124,11 @@ func (s *LogStream) readLoop() {
 		}
 		if msg.Error != "" {
 			// A server error message is terminal for the subscription: emit it
-			// and shut down so Lines() closes and consumers stop blocking.
-			s.emitErr(errors.New(msg.Error))
+			// and shut down so Lines() closes and consumers stop blocking. Skip
+			// emitting if the stream was already stopped explicitly — Err() is
+			// only for failures other than an explicit Stop().
 			if !s.closed.Swap(true) {
+				s.emitErr(errors.New(msg.Error))
 				s.shutdown()
 				s.ws.Close()
 			}
