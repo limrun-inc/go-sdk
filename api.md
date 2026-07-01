@@ -55,15 +55,8 @@ Methods:
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsEntry">AnalyticsEntry</a>
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsInstance">AnalyticsInstance</a>
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsInstanceEntry">AnalyticsInstanceEntry</a>
 - <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsInstancesResponse">AnalyticsInstancesResponse</a>
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsRegionStats">AnalyticsRegionStats</a>
 - <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsResponse">AnalyticsResponse</a>
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsSummary">AnalyticsSummary</a>
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#BilledBreakdown">BilledBreakdown</a>
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#CostBreakdown">CostBreakdown</a>
 
 Methods:
 
