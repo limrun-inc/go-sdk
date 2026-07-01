@@ -106,7 +106,7 @@ type AnalyticsInstancesResponseSeriesInstance struct {
 	Cost float64 `json:"cost" api:"required"`
 	// Instance type ID (e.g., ios_xxx, android_xxx)
 	InstanceTid string `json:"instanceTid" api:"required"`
-	// Platform name, such as android, ios, or sandbox
+	// Platform name, such as android, ios, or xcode
 	Platform string `json:"platform" api:"required"`
 	// Actual runtime minutes before platform multiplier
 	RuntimeMinutes  int64                                                   `json:"runtimeMinutes" api:"required"`
@@ -236,19 +236,19 @@ type AnalyticsResponseSeries struct {
 	Android map[string]AnalyticsResponseSeriesAndroid `json:"android" api:"required"`
 	// Map of region to analytics stats for iOS
 	Ios map[string]AnalyticsResponseSeriesIo `json:"ios" api:"required"`
-	// Map of region to analytics stats for Sandbox
-	Sandbox map[string]AnalyticsResponseSeriesSandbox `json:"sandbox" api:"required"`
 	// RFC3339 timestamp for the start of the bucket in the requested timezone,
 	// including the local offset
 	Timestamp string `json:"timestamp" api:"required"`
+	// Map of region to analytics stats for Xcode
+	Xcode map[string]AnalyticsResponseSeriesXcode `json:"xcode" api:"required"`
 	// Individual instance details for this time bucket
 	Instances []AnalyticsResponseSeriesInstance `json:"instances"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Android     respjson.Field
 		Ios         respjson.Field
-		Sandbox     respjson.Field
 		Timestamp   respjson.Field
+		Xcode       respjson.Field
 		Instances   respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
@@ -358,7 +358,7 @@ func (r *AnalyticsResponseSeriesIo) UnmarshalJSON(data []byte) error {
 }
 
 // Complete analytics for a specific region including billing breakdown
-type AnalyticsResponseSeriesSandbox struct {
+type AnalyticsResponseSeriesXcode struct {
 	// Average instance duration in minutes
 	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
 	// Billed minutes with platform multiplier applied
@@ -400,8 +400,8 @@ type AnalyticsResponseSeriesSandbox struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r AnalyticsResponseSeriesSandbox) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsResponseSeriesSandbox) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSeriesXcode) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesXcode) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -413,7 +413,7 @@ type AnalyticsResponseSeriesInstance struct {
 	Cost float64 `json:"cost" api:"required"`
 	// Instance type ID (e.g., ios_xxx, android_xxx)
 	InstanceTid string `json:"instanceTid" api:"required"`
-	// Platform name, such as android, ios, or sandbox
+	// Platform name, such as android, ios, or xcode
 	Platform string `json:"platform" api:"required"`
 	// Actual runtime minutes before platform multiplier
 	RuntimeMinutes  int64                                          `json:"runtimeMinutes" api:"required"`
@@ -503,13 +503,13 @@ type AnalyticsResponseSummary struct {
 	Android map[string]AnalyticsResponseSummaryAndroid `json:"android" api:"required"`
 	// Map of region to analytics stats for iOS
 	Ios map[string]AnalyticsResponseSummaryIo `json:"ios" api:"required"`
-	// Map of region to analytics stats for Sandbox
-	Sandbox map[string]AnalyticsResponseSummarySandbox `json:"sandbox" api:"required"`
+	// Map of region to analytics stats for Xcode
+	Xcode map[string]AnalyticsResponseSummaryXcode `json:"xcode" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Android     respjson.Field
 		Ios         respjson.Field
-		Sandbox     respjson.Field
+		Xcode       respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
@@ -618,7 +618,7 @@ func (r *AnalyticsResponseSummaryIo) UnmarshalJSON(data []byte) error {
 }
 
 // Complete analytics for a specific region including billing breakdown
-type AnalyticsResponseSummarySandbox struct {
+type AnalyticsResponseSummaryXcode struct {
 	// Average instance duration in minutes
 	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
 	// Billed minutes with platform multiplier applied
@@ -660,8 +660,8 @@ type AnalyticsResponseSummarySandbox struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r AnalyticsResponseSummarySandbox) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsResponseSummarySandbox) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSummaryXcode) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSummaryXcode) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
