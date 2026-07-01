@@ -53,102 +53,10 @@ func (r *AnalyticsService) GetInstances(ctx context.Context, query AnalyticsGetI
 	return res, err
 }
 
-// Analytics data for a single time bucket, broken down by platform and region
-type AnalyticsEntry struct {
-	// Map of region to analytics stats for Android
-	Android map[string]AnalyticsRegionStats `json:"android" api:"required"`
-	// Map of region to analytics stats for iOS
-	Ios map[string]AnalyticsRegionStats `json:"ios" api:"required"`
-	// Map of region to analytics stats for Sandbox
-	Sandbox map[string]AnalyticsRegionStats `json:"sandbox" api:"required"`
-	// RFC3339 timestamp for the start of the bucket in the requested timezone,
-	// including the local offset
-	Timestamp string `json:"timestamp" api:"required"`
-	// Individual instance details for this time bucket
-	Instances []AnalyticsInstance `json:"instances"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Android     respjson.Field
-		Ios         respjson.Field
-		Sandbox     respjson.Field
-		Timestamp   respjson.Field
-		Instances   respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r AnalyticsEntry) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsEntry) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Analytics details for a single instance within a time bucket
-type AnalyticsInstance struct {
-	// Billed minutes with platform multiplier applied
-	BilledMinutes int64 `json:"billedMinutes" api:"required"`
-	// Total cost in dollars for this instance
-	Cost float64 `json:"cost" api:"required"`
-	// Instance type ID (e.g., ios_xxx, android_xxx)
-	InstanceTid string `json:"instanceTid" api:"required"`
-	// Platform name, such as android, ios, or sandbox
-	Platform string `json:"platform" api:"required"`
-	// Actual runtime minutes before platform multiplier
-	RuntimeMinutes  int64           `json:"runtimeMinutes" api:"required"`
-	BilledBreakdown BilledBreakdown `json:"billedBreakdown"`
-	// Cost breakdown by billing source in dollars
-	CostBreakdown CostBreakdown `json:"costBreakdown"`
-	// Instance labels at billing time
-	Labels map[string]string `json:"labels"`
-	// Region where the instance ran
-	Region string `json:"region"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BilledMinutes   respjson.Field
-		Cost            respjson.Field
-		InstanceTid     respjson.Field
-		Platform        respjson.Field
-		RuntimeMinutes  respjson.Field
-		BilledBreakdown respjson.Field
-		CostBreakdown   respjson.Field
-		Labels          respjson.Field
-		Region          respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r AnalyticsInstance) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsInstance) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type AnalyticsInstanceEntry struct {
-	Instances []AnalyticsInstance `json:"instances" api:"required"`
-	// RFC3339 timestamp for the start of the minute bucket in the requested timezone,
-	// including the local offset
-	Timestamp string `json:"timestamp" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Instances   respjson.Field
-		Timestamp   respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r AnalyticsInstanceEntry) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsInstanceEntry) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type AnalyticsInstancesResponse struct {
-	AsOf   time.Time                `json:"asOf" api:"required" format:"date-time"`
-	From   time.Time                `json:"from" api:"required" format:"date-time"`
-	Series []AnalyticsInstanceEntry `json:"series" api:"required"`
+	AsOf   time.Time                          `json:"asOf" api:"required" format:"date-time"`
+	From   time.Time                          `json:"from" api:"required" format:"date-time"`
+	Series []AnalyticsInstancesResponseSeries `json:"series" api:"required"`
 	// IANA timezone used for time bucket grouping
 	Timezone string    `json:"timezone" api:"required"`
 	To       time.Time `json:"to" api:"required" format:"date-time"`
@@ -170,8 +78,191 @@ func (r *AnalyticsInstancesResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type AnalyticsInstancesResponseSeries struct {
+	Instances []AnalyticsInstancesResponseSeriesInstance `json:"instances" api:"required"`
+	// RFC3339 timestamp for the start of the minute bucket in the requested timezone,
+	// including the local offset
+	Timestamp string `json:"timestamp" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Instances   respjson.Field
+		Timestamp   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsInstancesResponseSeries) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsInstancesResponseSeries) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Analytics details for a single instance within a time bucket
+type AnalyticsInstancesResponseSeriesInstance struct {
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars for this instance
+	Cost float64 `json:"cost" api:"required"`
+	// Instance type ID (e.g., ios_xxx, android_xxx)
+	InstanceTid string `json:"instanceTid" api:"required"`
+	// Platform name, such as android, ios, or sandbox
+	Platform string `json:"platform" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes  int64                                                   `json:"runtimeMinutes" api:"required"`
+	BilledBreakdown AnalyticsInstancesResponseSeriesInstanceBilledBreakdown `json:"billedBreakdown"`
+	// Cost breakdown by billing source in dollars
+	CostBreakdown AnalyticsInstancesResponseSeriesInstanceCostBreakdown `json:"costBreakdown"`
+	// Instance labels at billing time
+	Labels map[string]string `json:"labels"`
+	// Region where the instance ran
+	Region string `json:"region"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BilledMinutes   respjson.Field
+		Cost            respjson.Field
+		InstanceTid     respjson.Field
+		Platform        respjson.Field
+		RuntimeMinutes  respjson.Field
+		BilledBreakdown respjson.Field
+		CostBreakdown   respjson.Field
+		Labels          respjson.Field
+		Region          respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsInstancesResponseSeriesInstance) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsInstancesResponseSeriesInstance) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AnalyticsInstancesResponseSeriesInstanceBilledBreakdown struct {
+	CreditsBilledMinutes  int64 `json:"creditsBilledMinutes" api:"required"`
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Map of plan ID to billed minutes
+	PlanBilledMinutes map[string]int64 `json:"planBilledMinutes"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CreditsBilledMinutes      respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		PlanBilledMinutes         respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsInstancesResponseSeriesInstanceBilledBreakdown) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsInstancesResponseSeriesInstanceBilledBreakdown) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Cost breakdown by billing source in dollars
+type AnalyticsInstancesResponseSeriesInstanceCostBreakdown struct {
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Map of plan ID to cost in dollars
+	PlanCost map[string]float64 `json:"planCost"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CreditsCost      respjson.Field
+		OnDemandCost     respjson.Field
+		PlanCost         respjson.Field
+		SubscriptionCost respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsInstancesResponseSeriesInstanceCostBreakdown) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsInstancesResponseSeriesInstanceCostBreakdown) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AnalyticsResponse struct {
+	AsOf time.Time `json:"asOf" api:"required" format:"date-time"`
+	// Any of "hour", "day", "week", "minute".
+	Bucket AnalyticsResponseBucket   `json:"bucket" api:"required"`
+	From   time.Time                 `json:"from" api:"required" format:"date-time"`
+	Series []AnalyticsResponseSeries `json:"series" api:"required"`
+	// Summary of analytics across all time buckets, broken down by platform and region
+	Summary AnalyticsResponseSummary `json:"summary" api:"required"`
+	// IANA timezone used for time bucket grouping
+	Timezone string    `json:"timezone" api:"required"`
+	To       time.Time `json:"to" api:"required" format:"date-time"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AsOf        respjson.Field
+		Bucket      respjson.Field
+		From        respjson.Field
+		Series      respjson.Field
+		Summary     respjson.Field
+		Timezone    respjson.Field
+		To          respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponse) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AnalyticsResponseBucket string
+
+const (
+	AnalyticsResponseBucketHour   AnalyticsResponseBucket = "hour"
+	AnalyticsResponseBucketDay    AnalyticsResponseBucket = "day"
+	AnalyticsResponseBucketWeek   AnalyticsResponseBucket = "week"
+	AnalyticsResponseBucketMinute AnalyticsResponseBucket = "minute"
+)
+
+// Analytics data for a single time bucket, broken down by platform and region
+type AnalyticsResponseSeries struct {
+	// Map of region to analytics stats for Android
+	Android map[string]AnalyticsResponseSeriesAndroid `json:"android" api:"required"`
+	// Map of region to analytics stats for iOS
+	Ios map[string]AnalyticsResponseSeriesIo `json:"ios" api:"required"`
+	// Map of region to analytics stats for Sandbox
+	Sandbox map[string]AnalyticsResponseSeriesSandbox `json:"sandbox" api:"required"`
+	// RFC3339 timestamp for the start of the bucket in the requested timezone,
+	// including the local offset
+	Timestamp string `json:"timestamp" api:"required"`
+	// Individual instance details for this time bucket
+	Instances []AnalyticsResponseSeriesInstance `json:"instances"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Android     respjson.Field
+		Ios         respjson.Field
+		Sandbox     respjson.Field
+		Timestamp   respjson.Field
+		Instances   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSeries) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeries) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 // Complete analytics for a specific region including billing breakdown
-type AnalyticsRegionStats struct {
+type AnalyticsResponseSeriesAndroid struct {
 	// Average instance duration in minutes
 	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
 	// Billed minutes with platform multiplier applied
@@ -213,76 +304,149 @@ type AnalyticsRegionStats struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r AnalyticsRegionStats) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsRegionStats) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSeriesAndroid) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesAndroid) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type AnalyticsResponse struct {
-	AsOf time.Time `json:"asOf" api:"required" format:"date-time"`
-	// Any of "hour", "day", "week", "minute".
-	Bucket AnalyticsResponseBucket `json:"bucket" api:"required"`
-	From   time.Time               `json:"from" api:"required" format:"date-time"`
-	Series []AnalyticsEntry        `json:"series" api:"required"`
-	// Summary of analytics across all time buckets, broken down by platform and region
-	Summary AnalyticsSummary `json:"summary" api:"required"`
-	// IANA timezone used for time bucket grouping
-	Timezone string    `json:"timezone" api:"required"`
-	To       time.Time `json:"to" api:"required" format:"date-time"`
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSeriesIo struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		AsOf        respjson.Field
-		Bucket      respjson.Field
-		From        respjson.Field
-		Series      respjson.Field
-		Summary     respjson.Field
-		Timezone    respjson.Field
-		To          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
 	} `json:"-"`
 }
 
 // Returns the unmodified JSON received from the API
-func (r AnalyticsResponse) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsResponse) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSeriesIo) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesIo) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type AnalyticsResponseBucket string
-
-const (
-	AnalyticsResponseBucketHour   AnalyticsResponseBucket = "hour"
-	AnalyticsResponseBucketDay    AnalyticsResponseBucket = "day"
-	AnalyticsResponseBucketWeek   AnalyticsResponseBucket = "week"
-	AnalyticsResponseBucketMinute AnalyticsResponseBucket = "minute"
-)
-
-// Summary of analytics across all time buckets, broken down by platform and region
-type AnalyticsSummary struct {
-	// Map of region to analytics stats for Android
-	Android map[string]AnalyticsRegionStats `json:"android" api:"required"`
-	// Map of region to analytics stats for iOS
-	Ios map[string]AnalyticsRegionStats `json:"ios" api:"required"`
-	// Map of region to analytics stats for Sandbox
-	Sandbox map[string]AnalyticsRegionStats `json:"sandbox" api:"required"`
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSeriesSandbox struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Android     respjson.Field
-		Ios         respjson.Field
-		Sandbox     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
 	} `json:"-"`
 }
 
 // Returns the unmodified JSON received from the API
-func (r AnalyticsSummary) RawJSON() string { return r.JSON.raw }
-func (r *AnalyticsSummary) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSeriesSandbox) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesSandbox) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type BilledBreakdown struct {
+// Analytics details for a single instance within a time bucket
+type AnalyticsResponseSeriesInstance struct {
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars for this instance
+	Cost float64 `json:"cost" api:"required"`
+	// Instance type ID (e.g., ios_xxx, android_xxx)
+	InstanceTid string `json:"instanceTid" api:"required"`
+	// Platform name, such as android, ios, or sandbox
+	Platform string `json:"platform" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes  int64                                          `json:"runtimeMinutes" api:"required"`
+	BilledBreakdown AnalyticsResponseSeriesInstanceBilledBreakdown `json:"billedBreakdown"`
+	// Cost breakdown by billing source in dollars
+	CostBreakdown AnalyticsResponseSeriesInstanceCostBreakdown `json:"costBreakdown"`
+	// Instance labels at billing time
+	Labels map[string]string `json:"labels"`
+	// Region where the instance ran
+	Region string `json:"region"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BilledMinutes   respjson.Field
+		Cost            respjson.Field
+		InstanceTid     respjson.Field
+		Platform        respjson.Field
+		RuntimeMinutes  respjson.Field
+		BilledBreakdown respjson.Field
+		CostBreakdown   respjson.Field
+		Labels          respjson.Field
+		Region          respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSeriesInstance) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesInstance) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type AnalyticsResponseSeriesInstanceBilledBreakdown struct {
 	CreditsBilledMinutes  int64 `json:"creditsBilledMinutes" api:"required"`
 	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
 	// Map of plan ID to billed minutes
@@ -301,13 +465,13 @@ type BilledBreakdown struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r BilledBreakdown) RawJSON() string { return r.JSON.raw }
-func (r *BilledBreakdown) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSeriesInstanceBilledBreakdown) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesInstanceBilledBreakdown) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // Cost breakdown by billing source in dollars
-type CostBreakdown struct {
+type AnalyticsResponseSeriesInstanceCostBreakdown struct {
 	// Cost from credits (always 0)
 	CreditsCost float64 `json:"creditsCost" api:"required"`
 	// Cost from on-demand billing in dollars
@@ -328,8 +492,176 @@ type CostBreakdown struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r CostBreakdown) RawJSON() string { return r.JSON.raw }
-func (r *CostBreakdown) UnmarshalJSON(data []byte) error {
+func (r AnalyticsResponseSeriesInstanceCostBreakdown) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesInstanceCostBreakdown) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Summary of analytics across all time buckets, broken down by platform and region
+type AnalyticsResponseSummary struct {
+	// Map of region to analytics stats for Android
+	Android map[string]AnalyticsResponseSummaryAndroid `json:"android" api:"required"`
+	// Map of region to analytics stats for iOS
+	Ios map[string]AnalyticsResponseSummaryIo `json:"ios" api:"required"`
+	// Map of region to analytics stats for Sandbox
+	Sandbox map[string]AnalyticsResponseSummarySandbox `json:"sandbox" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Android     respjson.Field
+		Ios         respjson.Field
+		Sandbox     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSummary) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSummary) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSummaryAndroid struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSummaryAndroid) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSummaryAndroid) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSummaryIo struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSummaryIo) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSummaryIo) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSummarySandbox struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSummarySandbox) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSummarySandbox) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
