@@ -22,6 +22,7 @@ type Client struct {
 	Assets           AssetService
 	IosInstances     IosInstanceService
 	XcodeInstances   XcodeInstanceService
+	Analytics        AnalyticsService
 }
 
 // DefaultClientOptions read from the environment (LIM_API_KEY, LIMRUN_BASE_URL).
@@ -58,6 +59,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Assets = NewAssetService(opts...)
 	r.IosInstances = NewIosInstanceService(opts...)
 	r.XcodeInstances = NewXcodeInstanceService(opts...)
+	r.Analytics = NewAnalyticsService(opts...)
 
 	return
 }
