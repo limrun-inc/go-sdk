@@ -106,7 +106,9 @@ type AnalyticsInstancesResponseSeriesInstance struct {
 	Cost float64 `json:"cost" api:"required"`
 	// Instance type ID (e.g., ios_xxx, android_xxx)
 	InstanceTid string `json:"instanceTid" api:"required"`
-	// Platform name, such as android, ios, or xcode
+	// Platform name.
+	//
+	// Any of "android", "ios", "xcode".
 	Platform string `json:"platform" api:"required"`
 	// Actual runtime minutes before platform multiplier
 	RuntimeMinutes  int64                                                   `json:"runtimeMinutes" api:"required"`
@@ -413,7 +415,9 @@ type AnalyticsResponseSeriesInstance struct {
 	Cost float64 `json:"cost" api:"required"`
 	// Instance type ID (e.g., ios_xxx, android_xxx)
 	InstanceTid string `json:"instanceTid" api:"required"`
-	// Platform name, such as android, ios, or xcode
+	// Platform name.
+	//
+	// Any of "android", "ios", "xcode".
 	Platform string `json:"platform" api:"required"`
 	// Actual runtime minutes before platform multiplier
 	RuntimeMinutes  int64                                          `json:"runtimeMinutes" api:"required"`
