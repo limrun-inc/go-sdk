@@ -85,29 +85,39 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 }
 
 type Asset struct {
-	ID   string `json:"id" api:"required"`
-	Name string `json:"name" api:"required"`
+	ID string `json:"id" api:"required"`
+	// Any of "App", "Keychain".
+	Kind AssetKind `json:"kind" api:"required"`
+	Name string    `json:"name" api:"required"`
 	// Human-readable display name for the asset. If not set, the name should be used.
 	DisplayName string `json:"displayName"`
 	// When set, the time after which the asset is automatically deleted.
 	ExpiresAt time.Time `json:"expiresAt" format:"date-time"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
-	// The operating system this asset is for. If not set, the asset is available for
-	// all platforms.
+	// Deprecated: alias of platform, always mirrors it. Use platform instead.
 	//
-	// Any of "ios", "android".
-	Os                AssetOs `json:"os"`
-	SignedDownloadURL string  `json:"signedDownloadUrl"`
-	SignedUploadURL   string  `json:"signedUploadUrl"`
+	// Any of "ios", "android", "xcode".
+	//
+	// Deprecated: deprecated
+	Os AssetOs `json:"os"`
+	// The platform this asset is for. If not set, the asset is available for all
+	// platforms.
+	//
+	// Any of "ios", "android", "xcode".
+	Platform          AssetPlatform `json:"platform"`
+	SignedDownloadURL string        `json:"signedDownloadUrl"`
+	SignedUploadURL   string        `json:"signedUploadUrl"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID                respjson.Field
+		Kind              respjson.Field
 		Name              respjson.Field
 		DisplayName       respjson.Field
 		ExpiresAt         respjson.Field
 		Md5               respjson.Field
 		Os                respjson.Field
+		Platform          respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
 		ExtraFields       map[string]respjson.Field
@@ -121,32 +131,55 @@ func (r *Asset) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// The operating system this asset is for. If not set, the asset is available for
-// all platforms.
+type AssetKind string
+
+const (
+	AssetKindApp      AssetKind = "App"
+	AssetKindKeychain AssetKind = "Keychain"
+)
+
+// Deprecated: alias of platform, always mirrors it. Use platform instead.
 type AssetOs string
 
 const (
 	AssetOsIos     AssetOs = "ios"
 	AssetOsAndroid AssetOs = "android"
+	AssetOsXcode   AssetOs = "xcode"
+)
+
+// The platform this asset is for. If not set, the asset is available for all
+// platforms.
+type AssetPlatform string
+
+const (
+	AssetPlatformIos     AssetPlatform = "ios"
+	AssetPlatformAndroid AssetPlatform = "android"
+	AssetPlatformXcode   AssetPlatform = "xcode"
 )
 
 type AssetGetOrNewResponse struct {
-	ID                string `json:"id" api:"required"`
-	Name              string `json:"name" api:"required"`
-	SignedDownloadURL string `json:"signedDownloadUrl" api:"required"`
-	SignedUploadURL   string `json:"signedUploadUrl" api:"required"`
+	ID string `json:"id" api:"required"`
+	// Any of "App", "Keychain".
+	Kind              AssetGetOrNewResponseKind `json:"kind" api:"required"`
+	Name              string                    `json:"name" api:"required"`
+	SignedDownloadURL string                    `json:"signedDownloadUrl" api:"required"`
+	SignedUploadURL   string                    `json:"signedUploadUrl" api:"required"`
 	// When set, the time after which the asset is automatically deleted.
 	ExpiresAt time.Time `json:"expiresAt" format:"date-time"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
+	// Any of "ios", "android", "xcode".
+	Platform AssetGetOrNewResponsePlatform `json:"platform"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID                respjson.Field
+		Kind              respjson.Field
 		Name              respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
 		ExpiresAt         respjson.Field
 		Md5               respjson.Field
+		Platform          respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -157,6 +190,21 @@ func (r AssetGetOrNewResponse) RawJSON() string { return r.JSON.raw }
 func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
+
+type AssetGetOrNewResponseKind string
+
+const (
+	AssetGetOrNewResponseKindApp      AssetGetOrNewResponseKind = "App"
+	AssetGetOrNewResponseKindKeychain AssetGetOrNewResponseKind = "Keychain"
+)
+
+type AssetGetOrNewResponsePlatform string
+
+const (
+	AssetGetOrNewResponsePlatformIos     AssetGetOrNewResponsePlatform = "ios"
+	AssetGetOrNewResponsePlatformAndroid AssetGetOrNewResponsePlatform = "android"
+	AssetGetOrNewResponsePlatformXcode   AssetGetOrNewResponsePlatform = "xcode"
+)
 
 type AssetListParams struct {
 	// If true, also includes assets from Limrun App Store where you have access to.
@@ -180,6 +228,10 @@ type AssetListParams struct {
 	// stripped before querying App Store assets (whose stored names never carry the
 	// prefix); a partial prefix like "appstor" will not match any App Store assets.
 	NamePrefixFilter param.Opt[string] `query:"namePrefixFilter,omitzero" json:"-"`
+	// Filters assets by kind.
+	//
+	// Any of "App", "Keychain".
+	KindFilter AssetListParamsKindFilter `query:"kindFilter,omitzero" json:"-"`
 	paramObj
 }
 
@@ -190,6 +242,14 @@ func (r AssetListParams) URLQuery() (v url.Values, err error) {
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
+
+// Filters assets by kind.
+type AssetListParamsKindFilter string
+
+const (
+	AssetListParamsKindFilterApp      AssetListParamsKindFilter = "App"
+	AssetListParamsKindFilterKeychain AssetListParamsKindFilter = "Keychain"
+)
 
 type AssetGetParams struct {
 	// Toggles whether a download URL should be included in the response
@@ -214,6 +274,10 @@ type AssetGetOrNewParams struct {
 	// of an existing asset, a value updates the expiry while omitting it leaves the
 	// current expiry unchanged.
 	Ttl param.Opt[string] `json:"ttl,omitzero"`
+	// Any of "App", "Keychain".
+	Kind AssetGetOrNewParamsKind `json:"kind,omitzero"`
+	// Any of "ios", "android", "xcode".
+	Platform AssetGetOrNewParamsPlatform `json:"platform,omitzero"`
 	paramObj
 }
 
@@ -224,3 +288,18 @@ func (r AssetGetOrNewParams) MarshalJSON() (data []byte, err error) {
 func (r *AssetGetOrNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
+
+type AssetGetOrNewParamsKind string
+
+const (
+	AssetGetOrNewParamsKindApp      AssetGetOrNewParamsKind = "App"
+	AssetGetOrNewParamsKindKeychain AssetGetOrNewParamsKind = "Keychain"
+)
+
+type AssetGetOrNewParamsPlatform string
+
+const (
+	AssetGetOrNewParamsPlatformIos     AssetGetOrNewParamsPlatform = "ios"
+	AssetGetOrNewParamsPlatformAndroid AssetGetOrNewParamsPlatform = "android"
+	AssetGetOrNewParamsPlatformXcode   AssetGetOrNewParamsPlatform = "xcode"
+)

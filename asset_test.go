@@ -30,6 +30,7 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 		IncludeAppStore:    limrun.Bool(true),
 		IncludeDownloadURL: limrun.Bool(true),
 		IncludeUploadURL:   limrun.Bool(true),
+		KindFilter:         limrun.AssetListParamsKindFilterApp,
 		Limit:              limrun.Int(50),
 		NameFilter:         limrun.String("nameFilter"),
 		NamePrefixFilter:   limrun.String("namePrefixFilter"),
@@ -110,8 +111,10 @@ func TestAssetGetOrNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Assets.GetOrNew(context.TODO(), limrun.AssetGetOrNewParams{
-		Name: "name",
-		Ttl:  limrun.String("ttl"),
+		Name:     "name",
+		Kind:     limrun.AssetGetOrNewParamsKindApp,
+		Platform: limrun.AssetGetOrNewParamsPlatformIos,
+		Ttl:      limrun.String("ttl"),
 	})
 	if err != nil {
 		var apierr *limrun.Error
