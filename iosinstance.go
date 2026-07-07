@@ -179,6 +179,17 @@ type IosInstanceStatus struct {
 	Sandbox                 IosInstanceStatusSandbox `json:"sandbox"`
 	SignedStreamURL         string                   `json:"signedStreamUrl"`
 	TargetHTTPPortURLPrefix string                   `json:"targetHttpPortUrlPrefix"`
+	// Machine-readable reason the instance was terminated. Always present once state
+	// is "terminated", never present before that. New values may be added over time,
+	// so treat any unrecognized value as "Unknown". Known values:
+	//
+	//   - "UserRequested": terminated by a delete request to the API.
+	//   - "InactivityTimeout": the timeout given in spec.inactivityTimeout elapsed.
+	//   - "HardTimeout": the timeout given in spec.hardTimeout elapsed.
+	//   - "Unknown": terminated for a cause the platform did not attribute, including
+	//     instances that failed to get ready during creation. See errorMessage for
+	//     details when available.
+	TerminationReason string `json:"terminationReason"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                   respjson.Field
@@ -190,6 +201,7 @@ type IosInstanceStatus struct {
 		Sandbox                 respjson.Field
 		SignedStreamURL         respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
+		TerminationReason       respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
 	} `json:"-"`
@@ -348,13 +360,16 @@ func init() {
 
 // The properties Kind, Source are required.
 type IosInstanceNewParamsSpecInitialAsset struct {
-	// Any of "App".
+	// Any of "App", "Keychain".
 	Kind string `json:"kind,omitzero" api:"required"`
 	// Any of "URL", "AssetName", "AssetID".
 	Source    string            `json:"source,omitzero" api:"required"`
 	AssetID   param.Opt[string] `json:"assetId,omitzero"`
 	AssetName param.Opt[string] `json:"assetName,omitzero"`
-	URL       param.Opt[string] `json:"url,omitzero"`
+	// Base64/base64url-encoded 32-byte key used to decrypt Keychain assets. Required
+	// when kind is Keychain.
+	EncryptionKey param.Opt[string] `json:"encryptionKey,omitzero"`
+	URL           param.Opt[string] `json:"url,omitzero"`
 	// Launch mode specifies how to launch the app after installation. If not given,
 	// the app won't be launched.
 	//
@@ -373,7 +388,7 @@ func (r *IosInstanceNewParamsSpecInitialAsset) UnmarshalJSON(data []byte) error 
 
 func init() {
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
-		"kind", "App",
+		"kind", "App", "Keychain",
 	)
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
 		"source", "URL", "AssetName", "AssetID",
