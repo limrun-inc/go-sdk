@@ -40,6 +40,7 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 				Kind:     "ClientIP",
 				ClientIP: limrun.String("clientIp"),
 			}},
+			ForceBundleID:     limrun.String("x"),
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),
 			InitialAssets: []limrun.IosInstanceNewParamsSpecInitialAsset{{
