@@ -287,6 +287,10 @@ func (r *IosInstanceNewParamsMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceNewParamsSpec struct {
+	// Keeps this app in the foreground after it is first observed there. This does not
+	// launch the app when the simulator starts. Once armed, closing or backgrounding
+	// the app causes it to be brought back to the foreground.
+	ForceBundleID param.Opt[string] `json:"forceBundleId,omitzero"`
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout param.Opt[string] `json:"hardTimeout,omitzero" format:"duration"`
