@@ -241,9 +241,9 @@ type XcodeInstanceNewParamsSpec struct {
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout param.Opt[string] `json:"hardTimeout,omitzero" format:"duration"`
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" uses the organization's default
-	// inactivity timeout.
+	// After how many minutes of inactivity should the instance be terminated. The
+	// timer starts once the instance becomes ready. Example values 1m, 10m, 3h.
+	// Default is 5m. Providing "0" uses the organization's default inactivity timeout.
 	InactivityTimeout param.Opt[string] `json:"inactivityTimeout,omitzero" format:"duration"`
 	// Where the instance will be created. If not given, the region is decided based on
 	// scheduling clues (client IP) and availability.

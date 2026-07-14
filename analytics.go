@@ -108,7 +108,7 @@ type AnalyticsInstancesResponseSeriesInstance struct {
 	InstanceTid string `json:"instanceTid" api:"required"`
 	// Platform name.
 	//
-	// Any of "android", "ios", "xcode".
+	// Any of "android", "ios", "xcode", "gradle".
 	Platform string `json:"platform" api:"required"`
 	// Actual runtime minutes before platform multiplier
 	RuntimeMinutes  int64                                                   `json:"runtimeMinutes" api:"required"`
@@ -236,6 +236,8 @@ const (
 type AnalyticsResponseSeries struct {
 	// Map of region to analytics stats for Android
 	Android map[string]AnalyticsResponseSeriesAndroid `json:"android" api:"required"`
+	// Map of region to analytics stats for Gradle
+	Gradle map[string]AnalyticsResponseSeriesGradle `json:"gradle" api:"required"`
 	// Map of region to analytics stats for iOS
 	Ios map[string]AnalyticsResponseSeriesIo `json:"ios" api:"required"`
 	// RFC3339 timestamp for the start of the bucket in the requested timezone,
@@ -248,6 +250,7 @@ type AnalyticsResponseSeries struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Android     respjson.Field
+		Gradle      respjson.Field
 		Ios         respjson.Field
 		Timestamp   respjson.Field
 		Xcode       respjson.Field
@@ -308,6 +311,54 @@ type AnalyticsResponseSeriesAndroid struct {
 // Returns the unmodified JSON received from the API
 func (r AnalyticsResponseSeriesAndroid) RawJSON() string { return r.JSON.raw }
 func (r *AnalyticsResponseSeriesAndroid) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSeriesGradle struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSeriesGradle) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSeriesGradle) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -417,7 +468,7 @@ type AnalyticsResponseSeriesInstance struct {
 	InstanceTid string `json:"instanceTid" api:"required"`
 	// Platform name.
 	//
-	// Any of "android", "ios", "xcode".
+	// Any of "android", "ios", "xcode", "gradle".
 	Platform string `json:"platform" api:"required"`
 	// Actual runtime minutes before platform multiplier
 	RuntimeMinutes  int64                                          `json:"runtimeMinutes" api:"required"`
@@ -505,6 +556,8 @@ func (r *AnalyticsResponseSeriesInstanceCostBreakdown) UnmarshalJSON(data []byte
 type AnalyticsResponseSummary struct {
 	// Map of region to analytics stats for Android
 	Android map[string]AnalyticsResponseSummaryAndroid `json:"android" api:"required"`
+	// Map of region to analytics stats for Gradle
+	Gradle map[string]AnalyticsResponseSummaryGradle `json:"gradle" api:"required"`
 	// Map of region to analytics stats for iOS
 	Ios map[string]AnalyticsResponseSummaryIo `json:"ios" api:"required"`
 	// Map of region to analytics stats for Xcode
@@ -512,6 +565,7 @@ type AnalyticsResponseSummary struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Android     respjson.Field
+		Gradle      respjson.Field
 		Ios         respjson.Field
 		Xcode       respjson.Field
 		ExtraFields map[string]respjson.Field
@@ -570,6 +624,54 @@ type AnalyticsResponseSummaryAndroid struct {
 // Returns the unmodified JSON received from the API
 func (r AnalyticsResponseSummaryAndroid) RawJSON() string { return r.JSON.raw }
 func (r *AnalyticsResponseSummaryAndroid) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Complete analytics for a specific region including billing breakdown
+type AnalyticsResponseSummaryGradle struct {
+	// Average instance duration in minutes
+	AvgDurationMinutes float64 `json:"avgDurationMinutes" api:"required"`
+	// Billed minutes with platform multiplier applied
+	BilledMinutes int64 `json:"billedMinutes" api:"required"`
+	// Total cost in dollars
+	Cost float64 `json:"cost" api:"required"`
+	// Number of unique instances
+	Count int64 `json:"count" api:"required"`
+	// Minutes billed to credits
+	CreditsBilledMinutes int64 `json:"creditsBilledMinutes" api:"required"`
+	// Cost from credits (always 0)
+	CreditsCost float64 `json:"creditsCost" api:"required"`
+	// Minutes billed on-demand
+	OnDemandBilledMinutes int64 `json:"onDemandBilledMinutes" api:"required"`
+	// Cost from on-demand billing in dollars
+	OnDemandCost float64 `json:"onDemandCost" api:"required"`
+	// Actual runtime minutes before platform multiplier
+	RuntimeMinutes int64 `json:"runtimeMinutes" api:"required"`
+	// Map of subscription ID to billed minutes
+	SubscriptionBilledMinutes map[string]int64 `json:"subscriptionBilledMinutes"`
+	// Map of subscription ID to cost in dollars
+	SubscriptionCost map[string]float64 `json:"subscriptionCost"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AvgDurationMinutes        respjson.Field
+		BilledMinutes             respjson.Field
+		Cost                      respjson.Field
+		Count                     respjson.Field
+		CreditsBilledMinutes      respjson.Field
+		CreditsCost               respjson.Field
+		OnDemandBilledMinutes     respjson.Field
+		OnDemandCost              respjson.Field
+		RuntimeMinutes            respjson.Field
+		SubscriptionBilledMinutes respjson.Field
+		SubscriptionCost          respjson.Field
+		ExtraFields               map[string]respjson.Field
+		raw                       string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AnalyticsResponseSummaryGradle) RawJSON() string { return r.JSON.raw }
+func (r *AnalyticsResponseSummaryGradle) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
