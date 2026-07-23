@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
-	shimjson "github.com/limrun-inc/go-sdk/internal/encoding/json"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
 	"github.com/limrun-inc/go-sdk/packages/param"
@@ -67,8 +66,7 @@ func (r *ScopedToken) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// The property Scopes is required.
-type ScopedTokenCreateParam struct {
+type ScopedTokenNewParams struct {
 	// Scopes in the form <resource>:<id|_>:<action>, e.g. "device:_:install",
 	// "asset:asset_01h455vb4pex5vsknk084sn02q:read" or "applerelay:\*:connect".
 	// Resource IDs are the customer-visible IDs returned by the API.
@@ -79,21 +77,9 @@ type ScopedTokenCreateParam struct {
 	paramObj
 }
 
-func (r ScopedTokenCreateParam) MarshalJSON() (data []byte, err error) {
-	type shadow ScopedTokenCreateParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *ScopedTokenCreateParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type ScopedTokenNewParams struct {
-	ScopedTokenCreate ScopedTokenCreateParam
-	paramObj
-}
-
 func (r ScopedTokenNewParams) MarshalJSON() (data []byte, err error) {
-	return shimjson.Marshal(r.ScopedTokenCreate)
+	type shadow ScopedTokenNewParams
+	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *ScopedTokenNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)

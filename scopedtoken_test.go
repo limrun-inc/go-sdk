@@ -27,10 +27,8 @@ func TestScopedTokenNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.ScopedTokens.New(context.TODO(), limrun.ScopedTokenNewParams{
-		ScopedTokenCreate: limrun.ScopedTokenCreateParam{
-			Scopes:     []string{"string"},
-			TtlSeconds: limrun.Int(1),
-		},
+		Scopes:     []string{"string"},
+		TtlSeconds: limrun.Int(1),
 	})
 	if err != nil {
 		var apierr *limrun.Error
