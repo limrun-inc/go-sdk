@@ -62,3 +62,17 @@ Methods:
 
 - <code title="get /v1/analytics">client.Analytics.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsGetParams">AnalyticsGetParams</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsResponse">AnalyticsResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /v1/analytics/instances">client.Analytics.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsService.GetInstances">GetInstances</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsGetInstancesParams">AnalyticsGetInstancesParams</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#AnalyticsInstancesResponse">AnalyticsInstancesResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
+# ScopedTokens
+
+Params Types:
+
+- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedTokenCreateParam">ScopedTokenCreateParam</a>
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedToken">ScopedToken</a>
+
+Methods:
+
+- <code title="post /v1/scoped_tokens">client.ScopedTokens.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedTokenService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedTokenNewParams">ScopedTokenNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedToken">ScopedToken</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
