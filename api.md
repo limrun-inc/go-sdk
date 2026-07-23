@@ -65,10 +65,6 @@ Methods:
 
 # ScopedTokens
 
-Params Types:
-
-- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedTokenCreateParam">ScopedTokenCreateParam</a>
-
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#ScopedToken">ScopedToken</a>
