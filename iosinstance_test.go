@@ -52,8 +52,9 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 				LaunchMode:    "ForegroundIfRunning",
 				URL:           limrun.String("url"),
 			}},
-			Model:  "iphone",
-			Region: limrun.String("region"),
+			Jurisdiction: "us",
+			Model:        "iphone",
+			Region:       limrun.String("region"),
 			Sandbox: limrun.IosInstanceNewParamsSpecSandbox{
 				Xcode: limrun.IosInstanceNewParamsSpecSandboxXcode{
 					Enabled: limrun.Bool(true),

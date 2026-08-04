@@ -318,6 +318,15 @@ type IosInstanceNewParamsSpec struct {
 	Region        param.Opt[string]                      `json:"region,omitzero"`
 	Clues         []IosInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []IosInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
+	// Restricts scheduling to regions in the given jurisdiction. Unlike region, this
+	// is a hard constraint: the request never overflows to a region outside the
+	// jurisdiction and fails when no region in the jurisdiction has capacity. A region
+	// belongs to a jurisdiction when its name starts with the jurisdiction prefix,
+	// e.g. "eu-north1" is in "eu". A region preference pointing outside the
+	// jurisdiction is ignored.
+	//
+	// Any of "us", "eu", "as".
+	Jurisdiction string `json:"jurisdiction,omitzero"`
 	// The model for the Apple Simulator. Default is iphone.
 	//
 	// Any of "iphone", "ipad", "watch".
@@ -335,6 +344,9 @@ func (r *IosInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
+	apijson.RegisterFieldValidator[IosInstanceNewParamsSpec](
+		"jurisdiction", "us", "eu", "as",
+	)
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpec](
 		"model", "iphone", "ipad", "watch",
 	)
