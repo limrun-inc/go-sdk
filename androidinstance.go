@@ -44,7 +44,7 @@ func (r *AndroidInstanceService) New(ctx context.Context, params AndroidInstance
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/android_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
-	return
+	return res, err
 }
 
 // List Android instances
@@ -76,11 +76,11 @@ func (r *AndroidInstanceService) Delete(ctx context.Context, id string, opts ...
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
-		return
+		return err
 	}
 	path := fmt.Sprintf("v1/android_instances/%s", id)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
-	return
+	return err
 }
 
 // Get Android instance with given ID
@@ -88,17 +88,17 @@ func (r *AndroidInstanceService) Get(ctx context.Context, id string, opts ...opt
 	opts = slices.Concat(r.Options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("v1/android_instances/%s", id)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type AndroidInstance struct {
-	Metadata AndroidInstanceMetadata `json:"metadata,required"`
-	Spec     AndroidInstanceSpec     `json:"spec,required"`
-	Status   AndroidInstanceStatus   `json:"status,required"`
+	Metadata AndroidInstanceMetadata `json:"metadata" api:"required"`
+	Spec     AndroidInstanceSpec     `json:"spec" api:"required"`
+	Status   AndroidInstanceStatus   `json:"status" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Metadata    respjson.Field
@@ -116,9 +116,9 @@ func (r *AndroidInstance) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceMetadata struct {
-	ID             string            `json:"id,required"`
-	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
-	OrganizationID string            `json:"organizationId,required"`
+	ID             string            `json:"id" api:"required"`
+	CreatedAt      time.Time         `json:"createdAt" api:"required" format:"date-time"`
+	OrganizationID string            `json:"organizationId" api:"required"`
 	DisplayName    string            `json:"displayName"`
 	Labels         map[string]string `json:"labels"`
 	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
@@ -142,13 +142,13 @@ func (r *AndroidInstanceMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceSpec struct {
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
-	InactivityTimeout string `json:"inactivityTimeout,required" format:"duration"`
+	// After how many minutes of inactivity should the instance be terminated. The
+	// timer starts once the instance becomes ready. Example values 1m, 10m, 3h.
+	// Default is 3m. Providing "0" uses the organization's default inactivity timeout.
+	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	// The region where the instance will be created. If not given, will be decided
 	// based on scheduling clues and availability.
-	Region string `json:"region,required"`
+	Region string `json:"region" api:"required"`
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
@@ -169,23 +169,41 @@ func (r *AndroidInstanceSpec) UnmarshalJSON(data []byte) error {
 }
 
 type AndroidInstanceStatus struct {
-	Token string `json:"token,required"`
+	Token string `json:"token" api:"required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                   string                       `json:"state,required"`
+	State                   string                       `json:"state" api:"required"`
 	AdbWebSocketURL         string                       `json:"adbWebSocketUrl"`
+	APIURL                  string                       `json:"apiUrl"`
 	EndpointWebSocketURL    string                       `json:"endpointWebSocketUrl"`
 	ErrorMessage            string                       `json:"errorMessage"`
+	McpURL                  string                       `json:"mcpUrl"`
 	Sandbox                 AndroidInstanceStatusSandbox `json:"sandbox"`
+	SignedStreamURL         string                       `json:"signedStreamUrl"`
 	TargetHTTPPortURLPrefix string                       `json:"targetHttpPortUrlPrefix"`
+	// Machine-readable reason the instance was terminated. Always present once state
+	// is "terminated", never present before that. New values may be added over time,
+	// so treat any unrecognized value as "Unknown". Known values:
+	//
+	//   - "UserRequested": terminated by a delete request to the API.
+	//   - "InactivityTimeout": the timeout given in spec.inactivityTimeout elapsed.
+	//   - "HardTimeout": the timeout given in spec.hardTimeout elapsed.
+	//   - "Unknown": terminated for a cause the platform did not attribute, including
+	//     instances that failed to get ready during creation. See errorMessage for
+	//     details when available.
+	TerminationReason string `json:"terminationReason"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                   respjson.Field
 		State                   respjson.Field
 		AdbWebSocketURL         respjson.Field
+		APIURL                  respjson.Field
 		EndpointWebSocketURL    respjson.Field
 		ErrorMessage            respjson.Field
+		McpURL                  respjson.Field
 		Sandbox                 respjson.Field
+		SignedStreamURL         respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
+		TerminationReason       respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
 	} `json:"-"`
@@ -275,16 +293,40 @@ type AndroidInstanceNewParamsSpec struct {
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout param.Opt[string] `json:"hardTimeout,omitzero" format:"duration"`
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
+	// After how many minutes of inactivity should the instance be terminated. The
+	// timer starts once the instance becomes ready. Example values 1m, 10m, 3h.
+	// Default is 3m. Providing "0" uses the organization's default inactivity timeout.
 	InactivityTimeout param.Opt[string] `json:"inactivityTimeout,omitzero" format:"duration"`
-	// The region where the instance will be created. If not given, will be decided
-	// based on scheduling clues and availability.
+	// Where the instance will be created. If not given, the region is decided based on
+	// scheduling clues (client IP) and availability.
+	//
+	// A region is a preference, not a hard pin: the request always overflows to every
+	// other available region, ordered by proximity, when the preferred ones are full.
+	//
+	// Accepted values:
+	//
+	//   - A specific region name (e.g. "us-west1"). It is tried first, then the
+	//     remaining regions in order of proximity to it. Scheduling clues (client IP)
+	//     are ignored when a region is given.
+	//   - A region group name (e.g. "us", "eu"). Its member regions are tried first in
+	//     their listed order, then the remaining regions by proximity to the first
+	//     member.
+	//   - A pipe-separated, ordered list of regions (e.g. "us-east1|us-west1"). Those
+	//     are tried first in the given order, then the remaining regions by proximity to
+	//     the first.
 	Region        param.Opt[string]                          `json:"region,omitzero"`
 	Clues         []AndroidInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []AndroidInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
-	Sandbox       AndroidInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
+	// Restricts scheduling to regions in the given jurisdiction. Unlike region, this
+	// is a hard constraint: the request never overflows to a region outside the
+	// jurisdiction and fails when no region in the jurisdiction has capacity. A region
+	// belongs to a jurisdiction when its name starts with the jurisdiction prefix,
+	// e.g. "eu-north1" is in "eu". A region preference pointing outside the
+	// jurisdiction is ignored.
+	//
+	// Any of "us", "eu", "as".
+	Jurisdiction string                              `json:"jurisdiction,omitzero"`
+	Sandbox      AndroidInstanceNewParamsSpecSandbox `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -296,10 +338,16 @@ func (r *AndroidInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+func init() {
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpec](
+		"jurisdiction", "us", "eu", "as",
+	)
+}
+
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecClue struct {
 	// Any of "ClientIP", "OSVersion".
-	Kind     string            `json:"kind,omitzero,required"`
+	Kind     string            `json:"kind,omitzero" api:"required"`
 	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
 	// The major version of Android, e.g. "13", "14" or "15".
 	OsVersion param.Opt[string] `json:"osVersion,omitzero"`
@@ -323,7 +371,7 @@ func init() {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAsset struct {
 	// Any of "App", "Configuration".
-	Kind          string                                                `json:"kind,omitzero,required"`
+	Kind          string                                                `json:"kind,omitzero" api:"required"`
 	AssetName     param.Opt[string]                                     `json:"assetName,omitzero"`
 	URL           param.Opt[string]                                     `json:"url,omitzero"`
 	AssetIDs      []string                                              `json:"assetIds,omitzero"`
@@ -355,7 +403,7 @@ func init() {
 // The property Kind is required.
 type AndroidInstanceNewParamsSpecInitialAssetConfiguration struct {
 	// Any of "ChromeFlag".
-	Kind string `json:"kind,omitzero,required"`
+	Kind string `json:"kind,omitzero" api:"required"`
 	// Any of "enable-command-line-on-non-rooted-devices@1".
 	ChromeFlag string `json:"chromeFlag,omitzero"`
 	paramObj
@@ -393,6 +441,8 @@ func (r *AndroidInstanceNewParamsSpecSandbox) UnmarshalJSON(data []byte) error {
 
 type AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid struct {
 	Enabled param.Opt[bool] `json:"enabled,omitzero"`
+	// Any of "1.56.1-lim.1", "1.60.0-lim.1".
+	Version string `json:"version,omitzero"`
 	paramObj
 }
 
@@ -402,6 +452,12 @@ func (r AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) MarshalJSON() (dat
 }
 func (r *AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid](
+		"version", "1.56.1-lim.1", "1.60.0-lim.1",
+	)
 }
 
 type AndroidInstanceListParams struct {

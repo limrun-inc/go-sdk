@@ -4,6 +4,7 @@ package limrun_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/limrun-inc/go-sdk/option"
 )
 
-func TestAutoPagination(t *testing.T) {
+func TestScopedTokenNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -25,13 +26,15 @@ func TestAutoPagination(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	iter := client.AndroidInstances.ListAutoPaging(context.TODO(), limrun.AndroidInstanceListParams{})
-	// The mock server isn't going to give us real pagination
-	for i := 0; i < 3 && iter.Next(); i++ {
-		androidInstance := iter.Current()
-		t.Logf("%+v\n", androidInstance.Metadata)
-	}
-	if err := iter.Err(); err != nil {
+	_, err := client.ScopedTokens.New(context.TODO(), limrun.ScopedTokenNewParams{
+		Scopes:     []string{"string"},
+		TtlSeconds: limrun.Int(1),
+	})
+	if err != nil {
+		var apierr *limrun.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
 }

@@ -44,7 +44,7 @@ func (r *IosInstanceService) New(ctx context.Context, params IosInstanceNewParam
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/ios_instances"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
-	return
+	return res, err
 }
 
 // List iOS instances
@@ -76,11 +76,11 @@ func (r *IosInstanceService) Delete(ctx context.Context, id string, opts ...opti
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if id == "" {
 		err = errors.New("missing required id parameter")
-		return
+		return err
 	}
 	path := fmt.Sprintf("v1/ios_instances/%s", id)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
-	return
+	return err
 }
 
 // Get iOS instance with given ID
@@ -88,17 +88,17 @@ func (r *IosInstanceService) Get(ctx context.Context, id string, opts ...option.
 	opts = slices.Concat(r.Options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
-		return
+		return nil, err
 	}
 	path := fmt.Sprintf("v1/ios_instances/%s", id)
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
 type IosInstance struct {
-	Metadata IosInstanceMetadata `json:"metadata,required"`
-	Spec     IosInstanceSpec     `json:"spec,required"`
-	Status   IosInstanceStatus   `json:"status,required"`
+	Metadata IosInstanceMetadata `json:"metadata" api:"required"`
+	Spec     IosInstanceSpec     `json:"spec" api:"required"`
+	Status   IosInstanceStatus   `json:"status" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Metadata    respjson.Field
@@ -116,9 +116,9 @@ func (r *IosInstance) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceMetadata struct {
-	ID             string            `json:"id,required"`
-	CreatedAt      time.Time         `json:"createdAt,required" format:"date-time"`
-	OrganizationID string            `json:"organizationId,required"`
+	ID             string            `json:"id" api:"required"`
+	CreatedAt      time.Time         `json:"createdAt" api:"required" format:"date-time"`
+	OrganizationID string            `json:"organizationId" api:"required"`
 	DisplayName    string            `json:"displayName"`
 	Labels         map[string]string `json:"labels"`
 	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
@@ -142,13 +142,13 @@ func (r *IosInstanceMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceSpec struct {
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
-	InactivityTimeout string `json:"inactivityTimeout,required" format:"duration"`
+	// After how many minutes of inactivity should the instance be terminated. The
+	// timer starts once the instance becomes ready. Example values 1m, 10m, 3h.
+	// Default is 3m. Providing "0" uses the organization's default inactivity timeout.
+	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	// The region where the instance will be created. If not given, will be decided
 	// based on scheduling clues and availability.
-	Region string `json:"region,required"`
+	Region string `json:"region" api:"required"`
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
@@ -169,15 +169,27 @@ func (r *IosInstanceSpec) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceStatus struct {
-	Token string `json:"token,required"`
+	Token string `json:"token" api:"required"`
 	// Any of "unknown", "creating", "assigned", "ready", "terminated".
-	State                   string                   `json:"state,required"`
+	State                   string                   `json:"state" api:"required"`
 	APIURL                  string                   `json:"apiUrl"`
 	EndpointWebSocketURL    string                   `json:"endpointWebSocketUrl"`
 	ErrorMessage            string                   `json:"errorMessage"`
 	McpURL                  string                   `json:"mcpUrl"`
 	Sandbox                 IosInstanceStatusSandbox `json:"sandbox"`
+	SignedStreamURL         string                   `json:"signedStreamUrl"`
 	TargetHTTPPortURLPrefix string                   `json:"targetHttpPortUrlPrefix"`
+	// Machine-readable reason the instance was terminated. Always present once state
+	// is "terminated", never present before that. New values may be added over time,
+	// so treat any unrecognized value as "Unknown". Known values:
+	//
+	//   - "UserRequested": terminated by a delete request to the API.
+	//   - "InactivityTimeout": the timeout given in spec.inactivityTimeout elapsed.
+	//   - "HardTimeout": the timeout given in spec.hardTimeout elapsed.
+	//   - "Unknown": terminated for a cause the platform did not attribute, including
+	//     instances that failed to get ready during creation. See errorMessage for
+	//     details when available.
+	TerminationReason string `json:"terminationReason"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token                   respjson.Field
@@ -187,7 +199,9 @@ type IosInstanceStatus struct {
 		ErrorMessage            respjson.Field
 		McpURL                  respjson.Field
 		Sandbox                 respjson.Field
+		SignedStreamURL         respjson.Field
 		TargetHTTPPortURLPrefix respjson.Field
+		TerminationReason       respjson.Field
 		ExtraFields             map[string]respjson.Field
 		raw                     string
 	} `json:"-"`
@@ -273,19 +287,51 @@ func (r *IosInstanceNewParamsMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type IosInstanceNewParamsSpec struct {
+	// Keeps this app in the foreground after it is first observed there. This does not
+	// launch the app when the simulator starts. Once armed, closing or backgrounding
+	// the app causes it to be brought back to the foreground.
+	ForceBundleID param.Opt[string] `json:"forceBundleId,omitzero"`
 	// After how many minutes should the instance be terminated. Example values 1m,
 	// 10m, 3h. Default is "0" which means no hard timeout.
 	HardTimeout param.Opt[string] `json:"hardTimeout,omitzero" format:"duration"`
-	// After how many minutes of inactivity should the instance be terminated. Example
-	// values 1m, 10m, 3h. Default is 3m. Providing "0" disables inactivity checks
-	// altogether.
+	// After how many minutes of inactivity should the instance be terminated. The
+	// timer starts once the instance becomes ready. Example values 1m, 10m, 3h.
+	// Default is 3m. Providing "0" uses the organization's default inactivity timeout.
 	InactivityTimeout param.Opt[string] `json:"inactivityTimeout,omitzero" format:"duration"`
-	// The region where the instance will be created. If not given, will be decided
-	// based on scheduling clues and availability.
+	// Where the instance will be created. If not given, the region is decided based on
+	// scheduling clues (client IP) and availability.
+	//
+	// A region is a preference, not a hard pin: the request always overflows to every
+	// other available region, ordered by proximity, when the preferred ones are full.
+	//
+	// Accepted values:
+	//
+	//   - A specific region name (e.g. "us-west1"). It is tried first, then the
+	//     remaining regions in order of proximity to it. Scheduling clues (client IP)
+	//     are ignored when a region is given.
+	//   - A region group name (e.g. "us", "eu"). Its member regions are tried first in
+	//     their listed order, then the remaining regions by proximity to the first
+	//     member.
+	//   - A pipe-separated, ordered list of regions (e.g. "us-east1|us-west1"). Those
+	//     are tried first in the given order, then the remaining regions by proximity to
+	//     the first.
 	Region        param.Opt[string]                      `json:"region,omitzero"`
 	Clues         []IosInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []IosInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
-	Sandbox       IosInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
+	// Restricts scheduling to regions in the given jurisdiction. Unlike region, this
+	// is a hard constraint: the request never overflows to a region outside the
+	// jurisdiction and fails when no region in the jurisdiction has capacity. A region
+	// belongs to a jurisdiction when its name starts with the jurisdiction prefix,
+	// e.g. "eu-north1" is in "eu". A region preference pointing outside the
+	// jurisdiction is ignored.
+	//
+	// Any of "us", "eu", "as".
+	Jurisdiction string `json:"jurisdiction,omitzero"`
+	// The model for the Apple Simulator. Default is iphone.
+	//
+	// Any of "iphone", "ipad", "watch".
+	Model   string                          `json:"model,omitzero"`
+	Sandbox IosInstanceNewParamsSpecSandbox `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -297,10 +343,19 @@ func (r *IosInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+func init() {
+	apijson.RegisterFieldValidator[IosInstanceNewParamsSpec](
+		"jurisdiction", "us", "eu", "as",
+	)
+	apijson.RegisterFieldValidator[IosInstanceNewParamsSpec](
+		"model", "iphone", "ipad", "watch",
+	)
+}
+
 // The property Kind is required.
 type IosInstanceNewParamsSpecClue struct {
 	// Any of "ClientIP".
-	Kind     string            `json:"kind,omitzero,required"`
+	Kind     string            `json:"kind,omitzero" api:"required"`
 	ClientIP param.Opt[string] `json:"clientIp,omitzero"`
 	paramObj
 }
@@ -321,15 +376,17 @@ func init() {
 
 // The properties Kind, Source are required.
 type IosInstanceNewParamsSpecInitialAsset struct {
-	// Any of "App".
-	Kind string `json:"kind,omitzero,required"`
+	// Any of "App", "Keychain".
+	Kind string `json:"kind,omitzero" api:"required"`
 	// Any of "URL", "AssetName", "AssetID".
-	Source    string            `json:"source,omitzero,required"`
+	Source    string            `json:"source,omitzero" api:"required"`
 	AssetID   param.Opt[string] `json:"assetId,omitzero"`
 	AssetName param.Opt[string] `json:"assetName,omitzero"`
-	URL       param.Opt[string] `json:"url,omitzero"`
-	// Launch mode specifies how to launch the app after installation. If not given,
-	// the app won't be launched.
+	// Base64/base64url-encoded 32-byte key used to decrypt Keychain assets. Required
+	// when kind is Keychain.
+	EncryptionKey param.Opt[string] `json:"encryptionKey,omitzero"`
+	URL           param.Opt[string] `json:"url,omitzero"`
+	// Launch mode specifies how to launch the app after installation.
 	//
 	// Any of "ForegroundIfRunning", "RelaunchIfRunning", "FailIfRunning".
 	LaunchMode string `json:"launchMode,omitzero"`
@@ -346,7 +403,7 @@ func (r *IosInstanceNewParamsSpecInitialAsset) UnmarshalJSON(data []byte) error 
 
 func init() {
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
-		"kind", "App",
+		"kind", "App", "Keychain",
 	)
 	apijson.RegisterFieldValidator[IosInstanceNewParamsSpecInitialAsset](
 		"source", "URL", "AssetName", "AssetID",

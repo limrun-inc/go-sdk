@@ -14,7 +14,7 @@ import (
 )
 
 func TestAssetListWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -30,8 +30,10 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 		IncludeAppStore:    limrun.Bool(true),
 		IncludeDownloadURL: limrun.Bool(true),
 		IncludeUploadURL:   limrun.Bool(true),
+		KindFilter:         limrun.AssetListParamsKindFilterApp,
 		Limit:              limrun.Int(50),
 		NameFilter:         limrun.String("nameFilter"),
+		NamePrefixFilter:   limrun.String("namePrefixFilter"),
 	})
 	if err != nil {
 		var apierr *limrun.Error
@@ -43,7 +45,7 @@ func TestAssetListWithOptionalParams(t *testing.T) {
 }
 
 func TestAssetDelete(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -66,7 +68,7 @@ func TestAssetDelete(t *testing.T) {
 }
 
 func TestAssetGetWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -95,8 +97,8 @@ func TestAssetGetWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestAssetGetOrNew(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+func TestAssetGetOrNewWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -109,7 +111,10 @@ func TestAssetGetOrNew(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Assets.GetOrNew(context.TODO(), limrun.AssetGetOrNewParams{
-		Name: "name",
+		Name:     "name",
+		Kind:     limrun.AssetGetOrNewParamsKindApp,
+		Platform: limrun.AssetGetOrNewParamsPlatformIos,
+		Ttl:      limrun.String("ttl"),
 	})
 	if err != nil {
 		var apierr *limrun.Error

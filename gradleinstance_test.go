@@ -13,7 +13,7 @@ import (
 	"github.com/limrun-inc/go-sdk/option"
 )
 
-func TestIosInstanceNewWithOptionalParams(t *testing.T) {
+func TestGradleInstanceNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -26,40 +26,24 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.IosInstances.New(context.TODO(), limrun.IosInstanceNewParams{
+	_, err := client.GradleInstances.New(context.TODO(), limrun.GradleInstanceNewParams{
 		ReuseIfExists: limrun.Bool(true),
 		Wait:          limrun.Bool(true),
-		Metadata: limrun.IosInstanceNewParamsMetadata{
+		Metadata: limrun.GradleInstanceNewParamsMetadata{
 			DisplayName: limrun.String("displayName"),
 			Labels: map[string]string{
 				"foo": "string",
 			},
 		},
-		Spec: limrun.IosInstanceNewParamsSpec{
-			Clues: []limrun.IosInstanceNewParamsSpecClue{{
+		Spec: limrun.GradleInstanceNewParamsSpec{
+			Clues: []limrun.GradleInstanceNewParamsSpecClue{{
 				Kind:     "ClientIP",
 				ClientIP: limrun.String("clientIp"),
 			}},
-			ForceBundleID:     limrun.String("x"),
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),
-			InitialAssets: []limrun.IosInstanceNewParamsSpecInitialAsset{{
-				Kind:          "App",
-				Source:        "URL",
-				AssetID:       limrun.String("assetId"),
-				AssetName:     limrun.String("assetName"),
-				EncryptionKey: limrun.String("encryptionKey"),
-				LaunchMode:    "ForegroundIfRunning",
-				URL:           limrun.String("url"),
-			}},
-			Jurisdiction: "us",
-			Model:        "iphone",
-			Region:       limrun.String("region"),
-			Sandbox: limrun.IosInstanceNewParamsSpecSandbox{
-				Xcode: limrun.IosInstanceNewParamsSpecSandboxXcode{
-					Enabled: limrun.Bool(true),
-				},
-			},
+			Jurisdiction:      "us",
+			Region:            limrun.String("region"),
 		},
 	})
 	if err != nil {
@@ -71,7 +55,7 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestIosInstanceListWithOptionalParams(t *testing.T) {
+func TestGradleInstanceListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -84,11 +68,10 @@ func TestIosInstanceListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.IosInstances.List(context.TODO(), limrun.IosInstanceListParams{
+	_, err := client.GradleInstances.List(context.TODO(), limrun.GradleInstanceListParams{
 		EndingBefore:  limrun.String("endingBefore"),
 		LabelSelector: limrun.String("env=prod,version=1.2"),
 		Limit:         limrun.Int(50),
-		Region:        limrun.String("region"),
 		StartingAfter: limrun.String("startingAfter"),
 		State:         limrun.String("assigned,ready"),
 	})
@@ -101,7 +84,7 @@ func TestIosInstanceListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestIosInstanceDelete(t *testing.T) {
+func TestGradleInstanceDelete(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -114,7 +97,7 @@ func TestIosInstanceDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.IosInstances.Delete(context.TODO(), "id")
+	err := client.GradleInstances.Delete(context.TODO(), "id")
 	if err != nil {
 		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
@@ -124,7 +107,7 @@ func TestIosInstanceDelete(t *testing.T) {
 	}
 }
 
-func TestIosInstanceGet(t *testing.T) {
+func TestGradleInstanceGet(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -137,7 +120,7 @@ func TestIosInstanceGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.IosInstances.Get(context.TODO(), "id")
+	_, err := client.GradleInstances.Get(context.TODO(), "id")
 	if err != nil {
 		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
