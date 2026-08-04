@@ -51,6 +51,19 @@ Methods:
 - <code title="delete /v1/xcode_instances/{id}">client.XcodeInstances.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#XcodeInstanceService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, id <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 - <code title="get /v1/xcode_instances/{id}">client.XcodeInstances.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#XcodeInstanceService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, id <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#XcodeInstance">XcodeInstance</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+# GradleInstances
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstance">GradleInstance</a>
+
+Methods:
+
+- <code title="post /v1/gradle_instances">client.GradleInstances.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstanceService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, params <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstanceNewParams">GradleInstanceNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstance">GradleInstance</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v1/gradle_instances">client.GradleInstances.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstanceService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstanceListParams">GradleInstanceListParams</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk/packages/pagination#Items">Items</a>[<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstance">GradleInstance</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="delete /v1/gradle_instances/{id}">client.GradleInstances.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstanceService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, id <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
+- <code title="get /v1/gradle_instances/{id}">client.GradleInstances.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstanceService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, id <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk">limrun</a>.<a href="https://pkg.go.dev/github.com/limrun-inc/go-sdk#GradleInstance">GradleInstance</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
 # Analytics
 
 Response Types:
