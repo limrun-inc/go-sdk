@@ -42,6 +42,7 @@ func TestXcodeInstanceNewWithOptionalParams(t *testing.T) {
 			}},
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),
+			Jurisdiction:      "us",
 			Region:            limrun.String("region"),
 		},
 	})

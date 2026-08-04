@@ -317,7 +317,16 @@ type AndroidInstanceNewParamsSpec struct {
 	Region        param.Opt[string]                          `json:"region,omitzero"`
 	Clues         []AndroidInstanceNewParamsSpecClue         `json:"clues,omitzero"`
 	InitialAssets []AndroidInstanceNewParamsSpecInitialAsset `json:"initialAssets,omitzero"`
-	Sandbox       AndroidInstanceNewParamsSpecSandbox        `json:"sandbox,omitzero"`
+	// Restricts scheduling to regions in the given jurisdiction. Unlike region, this
+	// is a hard constraint: the request never overflows to a region outside the
+	// jurisdiction and fails when no region in the jurisdiction has capacity. A region
+	// belongs to a jurisdiction when its name starts with the jurisdiction prefix,
+	// e.g. "eu-north1" is in "eu". A region preference pointing outside the
+	// jurisdiction is ignored.
+	//
+	// Any of "us", "eu", "as".
+	Jurisdiction string                              `json:"jurisdiction,omitzero"`
+	Sandbox      AndroidInstanceNewParamsSpecSandbox `json:"sandbox,omitzero"`
 	paramObj
 }
 
@@ -327,6 +336,12 @@ func (r AndroidInstanceNewParamsSpec) MarshalJSON() (data []byte, err error) {
 }
 func (r *AndroidInstanceNewParamsSpec) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[AndroidInstanceNewParamsSpec](
+		"jurisdiction", "us", "eu", "as",
+	)
 }
 
 // The property Kind is required.

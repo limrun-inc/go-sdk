@@ -56,7 +56,8 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 				URL:    limrun.String("url"),
 				URLs:   []string{"string"},
 			}},
-			Region: limrun.String("region"),
+			Jurisdiction: "us",
+			Region:       limrun.String("region"),
 			Sandbox: limrun.AndroidInstanceNewParamsSpecSandbox{
 				PlaywrightAndroid: limrun.AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid{
 					Enabled: limrun.Bool(true),
