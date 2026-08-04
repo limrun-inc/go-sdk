@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.10.0 (2026-08-04)
+
+Full Changelog: [v0.9.0...v0.10.0](https://github.com/limrun-inc/go-sdk/compare/v0.9.0...v0.10.0)
+
+### Features
+
+* **api:** add analytics api ([ce7c027](https://github.com/limrun-inc/go-sdk/commit/ce7c027b68f549af13b25e15ec9505370c03d849))
+* **api:** add apiUrl to android ([becfdd5](https://github.com/limrun-inc/go-sdk/commit/becfdd5cc2d69ff4cec1e2c787ebde732021657f))
+* **api:** add gradle to stainless config as well ([19541d3](https://github.com/limrun-inc/go-sdk/commit/19541d36c9b8b60f064c83f315235f0e3e06e041))
+* **api:** add jurisdiction ([f44c4ad](https://github.com/limrun-inc/go-sdk/commit/f44c4ad0868975448d7461daeeda9d599c146fbc))
+* **api:** add scoped tokens to stainless config ([2ce028c](https://github.com/limrun-inc/go-sdk/commit/2ce028c6c59fb53e926fe5e129bbd5153a872057))
+* **api:** add spec.model to ios creation api ([c876fe5](https://github.com/limrun-inc/go-sdk/commit/c876fe5abe47fb1c3c75489596b504a597398ea9))
+* **api:** add status.mcpUrl to android ([a8f1902](https://github.com/limrun-inc/go-sdk/commit/a8f1902294a19df4d3507d96eec9f16e591dda13))
+* **api:** add version to android playwright ([bf95382](https://github.com/limrun-inc/go-sdk/commit/bf95382a074080867f35b874fd8ae03688017b66))
+* **api:** add xcode build logs and signedStreamUrl ([417e67c](https://github.com/limrun-inc/go-sdk/commit/417e67cb41a9d6e743c3a454c8b3808f6c89d923))
+* **api:** add xcode instances endpoints ([87ad94c](https://github.com/limrun-inc/go-sdk/commit/87ad94cec4f19318f46206b81b4003028f4ccc28))
+* **api:** analytics api, make platform enum ([8c6a2da](https://github.com/limrun-inc/go-sdk/commit/8c6a2dafa7a2a27120709217978a96579b22d265))
+* **api:** fix indentation ([24bc445](https://github.com/limrun-inc/go-sdk/commit/24bc445d26edbffaf1a15c3e992529822899d75a))
+* **api:** fix model name for xcode_instance in stainless config ([e43f5f7](https://github.com/limrun-inc/go-sdk/commit/e43f5f71a357e213a299c9b5098bab995846eea1))
+* **api:** fix stainless models for scoped tokens ([369f31e](https://github.com/limrun-inc/go-sdk/commit/369f31e98538293c6dcc191474d1592b05e7ef7f))
+* **api:** ios add forceBundleId ([afa244e](https://github.com/limrun-inc/go-sdk/commit/afa244e214670b06f40a679251ea8306258d039a))
+* **api:** manual updates ([dacfda4](https://github.com/limrun-inc/go-sdk/commit/dacfda4c9a41eb762c2eec96938e7a3a2e6dc198))
+* **api:** manual updates ([9b79c70](https://github.com/limrun-inc/go-sdk/commit/9b79c705ce79c86013bc60a526f90ccdf1c39236))
+* **api:** manual updates ([79c6b51](https://github.com/limrun-inc/go-sdk/commit/79c6b51dee21d68ed2447fac72f566fcc477a6de))
+* **api:** scoped tokens desc fix ([ab5eb1c](https://github.com/limrun-inc/go-sdk/commit/ab5eb1c32f2f47bf982bdfea5f7b920dc7dc12fd))
+* **api:** simplify the models for analytics endpoint ([a45fddf](https://github.com/limrun-inc/go-sdk/commit/a45fddf1c007f4bd867c3ff57bc981be81a9ed9f))
+* **api:** update stainless config for xcode_instances resource ([420adf1](https://github.com/limrun-inc/go-sdk/commit/420adf130fa27758c61fb1843af45023b2598ba3))
+* **api:** update to latest main ([b29a9c7](https://github.com/limrun-inc/go-sdk/commit/b29a9c7125134620f7e6efdabf573293e3ecca42))
+* **internal:** support comma format in multipart form encoding ([167880a](https://github.com/limrun-inc/go-sdk/commit/167880a0ca4eebbab7ec0ac7447283aaab8cde1f))
+* **stlc:** configurable CI runner and private-production-repo support in workflow templates ([179bdfc](https://github.com/limrun-inc/go-sdk/commit/179bdfc90aace0b72cfc40e0b0ae4df10cb74ef9))
+
+
+### Bug Fixes
+
+* allow canceling a request while it is waiting to retry ([2b24378](https://github.com/limrun-inc/go-sdk/commit/2b243788f6493d2a567ecb82d88ec7eb21034416))
+* **internal:** skip tests that depend on mock server ([08703b0](https://github.com/limrun-inc/go-sdk/commit/08703b0861f20334a8e7642e09ebea85fa196744))
+* prevent duplicate ? in query params ([3ba98cd](https://github.com/limrun-inc/go-sdk/commit/3ba98cdca12fd52de92b30a78a4f016b36aee6bd))
+
+
+### Chores
+
+* **ci:** skip lint on metadata-only changes ([558c7fc](https://github.com/limrun-inc/go-sdk/commit/558c7fcd716046017118e560720aff547a6ec6cc))
+* **ci:** skip uploading artifacts on stainless-internal branches ([5b9bc78](https://github.com/limrun-inc/go-sdk/commit/5b9bc781fd6c18a5521cc4a79288269f5d4e4516))
+* **ci:** support opting out of skipping builds on metadata-only commits ([9f914bd](https://github.com/limrun-inc/go-sdk/commit/9f914bd9ba290e05877165638874484712de428f))
+* **client:** fix multipart serialisation of Default() fields ([759d9ea](https://github.com/limrun-inc/go-sdk/commit/759d9eaa5ba52007d9fcb53d649e9828f547a4d7))
+* **internal:** codegen related update ([44b0352](https://github.com/limrun-inc/go-sdk/commit/44b035295cb62cc133e4b2b9fa6f5daa85165d43))
+* **internal:** codegen related update ([c0a4ba5](https://github.com/limrun-inc/go-sdk/commit/c0a4ba5fc6e9b5518070a5391306e6485bade2db))
+* **internal:** codegen related update ([6698aee](https://github.com/limrun-inc/go-sdk/commit/6698aee88afa08ff6a0ba2bf2c21216647d5a96c))
+* **internal:** codegen related update ([8adc4fa](https://github.com/limrun-inc/go-sdk/commit/8adc4fa9d34bad3b8c883654557a2f4aa981ec6b))
+* **internal:** codegen related update ([47a92fe](https://github.com/limrun-inc/go-sdk/commit/47a92fe34b11b61efa5abe39f6e1e9882f379687))
+* **internal:** codegen related update ([660aded](https://github.com/limrun-inc/go-sdk/commit/660aded4427c99471caa3f869cc14c5abc19a2d6))
+* **internal:** codegen related update ([5382d75](https://github.com/limrun-inc/go-sdk/commit/5382d750467ece09844a71398ddeca322b37c801))
+* **internal:** minor cleanup ([e413e98](https://github.com/limrun-inc/go-sdk/commit/e413e985c64ad6e3eb2b52852696d518607f1574))
+* **internal:** move custom custom `json` tags to `api` ([9f208bc](https://github.com/limrun-inc/go-sdk/commit/9f208bc522bb98b07ccd8300da97c147bae8b0eb))
+* **internal:** remove mock server code ([823a8f0](https://github.com/limrun-inc/go-sdk/commit/823a8f03a6bb5a323b65cd284f250642cbdbc335))
+* **internal:** support default value struct tag ([78cbe02](https://github.com/limrun-inc/go-sdk/commit/78cbe021375f74fc4fbd790011c725fca995a6df))
+* **internal:** tweak CI branches ([39643cc](https://github.com/limrun-inc/go-sdk/commit/39643cc242eb93ad0b06b12ff4ad436236b11413))
+* **internal:** update gitignore ([e99a4bc](https://github.com/limrun-inc/go-sdk/commit/e99a4bc083089ed12ce6711d14a9da1d5e6a1b21))
+* **internal:** use explicit returns ([ba81464](https://github.com/limrun-inc/go-sdk/commit/ba814646255196feecc63384749a72817f906912))
+* **internal:** use explicit returns in more places ([525abc0](https://github.com/limrun-inc/go-sdk/commit/525abc0e1a4c7b3fd105b5acdcb13608c4d1fec9))
+* remove unnecessary error check for url parsing ([b9f32c7](https://github.com/limrun-inc/go-sdk/commit/b9f32c749541443e6a52bffc9590805583acdd9a))
+* update docs for api:"required" ([4d52f9c](https://github.com/limrun-inc/go-sdk/commit/4d52f9cb2d7c2bc366027705ce4f2f5e5505849d))
+* update mock server docs ([dab2133](https://github.com/limrun-inc/go-sdk/commit/dab213314cf00b7b1eccf53b34bdfe5f739b3a93))
+
 ## 0.9.0 (2026-02-11)
 
 Full Changelog: [v0.8.0...v0.9.0](https://github.com/limrun-inc/go-sdk/compare/v0.8.0...v0.9.0)
