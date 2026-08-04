@@ -22,6 +22,7 @@ type Client struct {
 	Assets           AssetService
 	IosInstances     IosInstanceService
 	XcodeInstances   XcodeInstanceService
+	GradleInstances  GradleInstanceService
 	Analytics        AnalyticsService
 	ScopedTokens     ScopedTokenService
 }
@@ -60,6 +61,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Assets = NewAssetService(opts...)
 	r.IosInstances = NewIosInstanceService(opts...)
 	r.XcodeInstances = NewXcodeInstanceService(opts...)
+	r.GradleInstances = NewGradleInstanceService(opts...)
 	r.Analytics = NewAnalyticsService(opts...)
 	r.ScopedTokens = NewScopedTokenService(opts...)
 
