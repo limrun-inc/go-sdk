@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -194,19 +195,77 @@ func TestInstallAppSameURLResolvesInOrder(t *testing.T) {
 	}
 }
 
-func TestInstallAppTimeoutDropsWaiter(t *testing.T) {
-	m := newMockInstance(t, nil) // never answers
+// A timed-out install is still on the wire; its late assetResult must not
+// settle the next install of the same URL.
+func TestInstallAppLateResultAfterTimeout(t *testing.T) {
+	var n atomic.Int32
+	release := make(chan struct{})
+	m := newMockInstance(t, func(conn *websocket.Conn, msg map[string]any) {
+		if msg["type"] != "asset" {
+			return
+		}
+		if n.Add(1) == 1 {
+			return // hold the first answer until the second install is sent
+		}
+		<-release
+		reply(t, conn, map[string]any{"type": "assetResult", "result": "failure", "url": msg["url"], "message": "late result of the first install"})
+		reply(t, conn, map[string]any{"type": "assetResult", "result": "success", "url": msg["url"]})
+	})
 	c := m.client(t)
+	const u = "https://cdn.example.com/slow.apk"
+
 	short, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
-	if err := c.InstallApp(short, "https://cdn.example.com/slow.apk"); !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("got %v, want deadline exceeded", err)
+	if err := c.InstallApp(short, u); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("first install: got %v, want deadline exceeded", err)
 	}
-	c.assetsMu.Lock()
-	n := len(c.assets)
-	c.assetsMu.Unlock()
-	if n != 0 {
-		t.Errorf("waiter left behind after timeout: %d urls pending", n)
+	second := make(chan error, 1)
+	go func() { second <- c.InstallApp(ctx(t), u) }()
+	waitFor(t, func() bool { return n.Load() == 2 })
+	close(release)
+	if err := <-second; err != nil {
+		t.Fatalf("second install got the first install's late result: %v", err)
+	}
+}
+
+// Many concurrent installs of one URL: the i-th result must reach the i-th
+// request on the wire, whatever the goroutine scheduling.
+func TestInstallAppConcurrentSameURLMatchesWireOrder(t *testing.T) {
+	const total = 50
+	var sent atomic.Int32
+	m := newMockInstance(t, func(conn *websocket.Conn, msg map[string]any) {
+		if msg["type"] != "asset" {
+			return
+		}
+		// answer each request with its own position on the wire
+		i := sent.Add(1)
+		reply(t, conn, map[string]any{"type": "assetResult", "result": "failure", "url": msg["url"], "message": fmt.Sprint(i)})
+	})
+	c := m.client(t)
+
+	var wg sync.WaitGroup
+	got := make(chan string, total)
+	for i := 0; i < total; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var ce *CommandError
+			if err := c.InstallApp(ctx(t), "https://cdn.example.com/same.apk"); errors.As(err, &ce) {
+				got <- ce.Message
+			}
+		}()
+	}
+	wg.Wait()
+	close(got)
+	seen := map[string]bool{}
+	for msg := range got {
+		if seen[msg] {
+			t.Fatalf("result %s delivered twice", msg)
+		}
+		seen[msg] = true
+	}
+	if len(seen) != total {
+		t.Fatalf("got %d distinct results, want %d", len(seen), total)
 	}
 }
 
@@ -398,6 +457,20 @@ func TestServerDisconnectFailsPendingRequests(t *testing.T) {
 	c := m.client(t)
 	if _, err := c.OpenURL(ctx(t), "https://example.com"); !errors.Is(err, ErrConnectionClose) {
 		t.Errorf("got %v, want ErrConnectionClose", err)
+	}
+	// after the drop the client is closed: new calls fail fast
+	start := time.Now()
+	if _, err := c.OpenURL(ctx(t), "https://example.com"); !errors.Is(err, ErrNotConnected) {
+		t.Errorf("after disconnect: got %v, want ErrNotConnected", err)
+	}
+	if err := c.InstallApp(ctx(t), "https://cdn.example.com/a.apk"); !errors.Is(err, ErrNotConnected) {
+		t.Errorf("install after disconnect: got %v, want ErrNotConnected", err)
+	}
+	if time.Since(start) > time.Second {
+		t.Error("calls after disconnect waited instead of failing fast")
+	}
+	if err := c.Close(); err != nil {
+		t.Errorf("Close after disconnect: %v", err)
 	}
 }
 

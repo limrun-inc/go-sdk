@@ -241,6 +241,13 @@ func newSessionID() string {
 
 // Close closes the connection and fails every pending request.
 func (c *Client) Close() error {
+	return c.shutdown()
+}
+
+// shutdown runs once, whether the caller closed the client or the server
+// dropped the connection: later calls then fail fast with ErrNotConnected
+// instead of writing to a socket nobody reads.
+func (c *Client) shutdown() error {
 	if c.closed.Swap(true) {
 		return nil
 	}
@@ -274,13 +281,13 @@ func (c *Client) failAll(err error) {
 }
 
 func (c *Client) readLoop() {
-	defer c.failAll(ErrConnectionClose)
 	for {
 		_, data, err := c.ws.ReadMessage()
 		if err != nil {
 			if !c.closed.Load() {
 				c.logger.Error("websocket read error", "error", err)
 			}
+			_ = c.shutdown()
 			return
 		}
 		var msg message
@@ -474,19 +481,26 @@ func (c *Client) InstallApp(ctx context.Context, apkURL string) error {
 	ctx, cancel := withDefaultTimeout(ctx, c.assetTimeout)
 	defer cancel()
 
+	// Enqueue and send under the same lock, so the waiter order always
+	// matches the order the requests went out on the wire.
 	ch := make(chan result, 1)
 	c.assetsMu.Lock()
 	c.assets[apkURL] = append(c.assets[apkURL], ch)
+	err := c.write(map[string]string{"type": "asset", "url": apkURL})
+	if err != nil {
+		c.removeAssetWaiterLocked(apkURL, ch)
+	}
 	c.assetsMu.Unlock()
-
-	if err := c.write(map[string]string{"type": "asset", "url": apkURL}); err != nil {
-		c.dropAssetWaiter(apkURL, ch)
+	if err != nil {
 		return fmt.Errorf("send asset: %w", err)
 	}
 
 	select {
 	case <-ctx.Done():
-		c.dropAssetWaiter(apkURL, ch)
+		// Keep the waiter queued: the request is already on the wire and its
+		// assetResult will still arrive. Removing it would hand that result
+		// to the next install of the same URL. The channel is buffered, so
+		// the late result is simply dropped.
 		return fmt.Errorf("install %s: %w", apkURL, ctx.Err())
 	case r := <-ch:
 		if r.err != nil {
@@ -503,9 +517,9 @@ func (c *Client) InstallApp(ctx context.Context, apkURL string) error {
 	}
 }
 
-func (c *Client) dropAssetWaiter(apkURL string, ch chan result) {
-	c.assetsMu.Lock()
-	defer c.assetsMu.Unlock()
+// removeAssetWaiterLocked removes a waiter whose request never went out.
+// c.assetsMu must be held.
+func (c *Client) removeAssetWaiterLocked(apkURL string, ch chan result) {
 	waiters := c.assets[apkURL]
 	for i, w := range waiters {
 		if w == ch {
