@@ -2,13 +2,14 @@ package apijson_test
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/limrun-inc/go-sdk/internal/apijson"
 	"github.com/limrun-inc/go-sdk/packages/respjson"
-	"testing"
 )
 
 type StructWithNullExtraField struct {
-	Results []string `json:"results,required"`
+	Results []string `json:"results" api:"required"`
 	JSON    struct {
 		Results     respjson.Field
 		ExtraFields map[string]respjson.Field

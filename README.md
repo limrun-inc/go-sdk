@@ -6,10 +6,12 @@
 
 <!-- x-release-please-end -->
 
-The Limrun Go library provides convenient access to the [Limrun REST API](https://lim.run)
-from applications written in Go.
+The Limrun Go library provides access to the [Limrun API](https://lim.run),
+iOS simulators, Android emulators, and Xcode and Gradle build sandboxes.
+It includes app monitoring, log streams, file sync, and network tunnels.
 
-It is generated with [Stainless](https://www.stainless.com/).
+The REST client is generated with [Stainless](https://www.stainless.com/).
+The instance clients and helpers follow the TypeScript SDK's protocols.
 
 ## Installation
 
@@ -37,9 +39,13 @@ go get -u 'github.com/limrun-inc/go-sdk@v0.9.0'
 
 This library requires Go 1.22+.
 
+`StartXcrunShim` and `PrepareMaestroRun` also require Node.js on `PATH` to run
+the shared xcrun shim. `PrepareMaestroRun` requires the Maestro CLI, and
+`StartADBTunnel` requires `adb`. Other SDK operations do not require these tools.
+
 ## Usage
 
-The full API of this library can be found in [api.md](api.md).
+See [api.md](api.md) for the services, instance clients, and helper packages.
 
 ```go
 package main
@@ -64,6 +70,27 @@ func main() {
 }
 
 ```
+
+### Monitor an iOS app and stream syslog
+
+Create an instance client from a ready instance, then register `MonitorApp`.
+Its exit callback receives recent logs and structured crash details. The monitor
+keeps watching across app launches until you call `Stop` or close the client.
+`WatchApp` observes one exit. `StreamSyslog` uses a separate WebSocket and returns
+batches of log lines through `Lines()`.
+
+The [iOS monitoring example](examples/ios-monitor/main.go) combines these APIs and
+stops on Ctrl+C:
+
+```sh
+export LIM_API_KEY='your-api-key'
+go run ./examples/ios-monitor -instance ios_example -bundle com.example.app
+```
+
+For direct connections, use `ios.NewClient(apiURL, token)` or
+`android.NewClient(apiURL, token)` from `websocket/ios` or `websocket/android`.
+Xcode and Gradle instance services also provide `CreateClient`, with build
+operations defined in the `build` package.
 
 ### Request fields
 

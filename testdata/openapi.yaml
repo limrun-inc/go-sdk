@@ -1,0 +1,2987 @@
+# SDK endpoint contract used by scripts/mock. Runtime-only endpoints are excluded.
+# Go duration strings stay strings: Prism interprets format: duration as ISO 8601.
+openapi: 3.0.3
+info:
+  title: Limrun SDK test contract
+  version: 0.69.1
+paths:
+  /v1/access_tokens:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessTokenCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/scoped_tokens:
+    post:
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScopedTokenCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopedToken'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/access_tokens/{tokenId}:
+    delete:
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/scoped_tokens/{tokenId}:
+    delete:
+      deprecated: true
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/analytics:
+    get:
+      parameters:
+        - name: from
+          required: false
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          required: false
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: startedAt
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: '#/components/schemas/AnalyticsTimeFilter'
+        - name: stoppedAt
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: '#/components/schemas/AnalyticsTimeFilter'
+        - name: region
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: bucket
+          required: false
+          in: query
+          schema:
+            type: string
+            enum:
+              - hour
+              - day
+              - week
+              - minute
+            default: day
+        - name: timezone
+          required: false
+          in: query
+          schema:
+            type: string
+            default: America/Los_Angeles
+        - name: labels
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/analytics/instances:
+    get:
+      parameters:
+        - name: from
+          required: false
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          required: false
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: startedAt
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: '#/components/schemas/AnalyticsTimeFilter'
+        - name: stoppedAt
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: '#/components/schemas/AnalyticsTimeFilter'
+        - name: region
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: timezone
+          required: false
+          in: query
+          schema:
+            type: string
+            default: America/Los_Angeles
+        - name: labels
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsInstancesResponse'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/android_instances:
+    get:
+      parameters:
+        - name: region
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: state
+          required: false
+          in: query
+          schema:
+            type: string
+            example: assigned,ready
+        - name: labelSelector
+          required: false
+          in: query
+          schema:
+            type: string
+            example: env=prod,version=1.2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: startingAfter
+          in: query
+          schema:
+            type: string
+        - name: endingBefore
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AndroidInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    post:
+      parameters:
+        - name: wait
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: reuseIfExists
+          required: false
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AndroidInstanceCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AndroidInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/android_instances/{id}:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AndroidInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    patch:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: If-Match
+          required: true
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceUpdate'
+      responses:
+        '204': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/android_instances/{id}/session_artifacts:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: kind
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/SessionArtifactKind'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionArtifact'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/ios_instances:
+    get:
+      parameters:
+        - name: region
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: state
+          required: false
+          in: query
+          schema:
+            type: string
+            example: assigned,ready
+        - name: labelSelector
+          required: false
+          in: query
+          schema:
+            type: string
+            example: env=prod,version=1.2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: startingAfter
+          in: query
+          schema:
+            type: string
+        - name: endingBefore
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IOSInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    post:
+      parameters:
+        - name: wait
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: reuseIfExists
+          required: false
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IOSInstanceCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IOSInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/ios_instances/{id}:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IOSInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    patch:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: If-Match
+          required: true
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceUpdate'
+      responses:
+        '204': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/ios_instances/{id}/session_artifacts:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: kind
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/SessionArtifactKind'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionArtifact'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/xcode_instances:
+    get:
+      parameters:
+        - name: state
+          required: false
+          in: query
+          schema:
+            type: string
+            example: assigned,ready
+        - name: labelSelector
+          required: false
+          in: query
+          schema:
+            type: string
+            example: env=prod,version=1.2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: startingAfter
+          in: query
+          schema:
+            type: string
+        - name: endingBefore
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/XcodeInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    post:
+      parameters:
+        - name: wait
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: reuseIfExists
+          required: false
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/XcodeInstanceCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XcodeInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/xcode_instances/{id}:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XcodeInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    patch:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: If-Match
+          required: true
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceUpdate'
+      responses:
+        '204': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/xcode_instances/{id}/cache:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: Accept
+          required: false
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XcodeInstanceCache'
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    put:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/XcodeInstanceCacheBind'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XcodeInstanceCache'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/gradle_instances:
+    get:
+      parameters:
+        - name: state
+          required: false
+          in: query
+          schema:
+            type: string
+            example: assigned,ready
+        - name: labelSelector
+          required: false
+          in: query
+          schema:
+            type: string
+            example: env=prod,version=1.2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: startingAfter
+          in: query
+          schema:
+            type: string
+        - name: endingBefore
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradleInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    post:
+      parameters:
+        - name: wait
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: reuseIfExists
+          required: false
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradleInstanceCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradleInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/gradle_instances/{id}:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradleInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    patch:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: If-Match
+          required: true
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceUpdate'
+      responses:
+        '204': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/gradle_instances/{id}/build_logs:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradleBuildLog'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/xcode_instances/{id}/build_logs:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/XcodeBuildLog'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/xcode_instances/{id}/bazel_build_logs:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BazelBuildLog'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/assets/{assetId}/upload_urls:
+    get:
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetUploadUrls'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/assets/{assetId}:
+    patch:
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetUpdate'
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    get:
+      parameters:
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: includeDownloadUrl
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: includeUploadUrl
+          required: false
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      parameters:
+        - name: assetId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/assets:
+    get:
+      parameters:
+        - name: nameFilter
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: namePrefixFilter
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: includeAppStore
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: includeDownloadUrl
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: includeUploadUrl
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: kindFilter
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/AssetKind'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+            default: 50
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asset'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetPut'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetPutResult'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/organizations/{organizationId}/ios_snapshots:
+    get:
+      parameters:
+        - name: organizationId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: prefix
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 100000
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendIOSSnapshotList'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+  /v1/organizations/{organizationId}/ios_snapshots/{key}:
+    get:
+      parameters:
+        - name: organizationId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: key
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendIOSSnapshot'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+    delete:
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+  /v1/organizations/{organizationId}/xcode_snapshots:
+    get:
+      parameters:
+        - name: organizationId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: prefix
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendXcodeSnapshotList'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+  /v1/organizations/{organizationId}/xcode_snapshots/{key}:
+    get:
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendXcodeSnapshot'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+    delete:
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': {}
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendAPIError'
+components:
+  schemas:
+    AccessTokenCreate:
+      type: object
+      properties:
+        permissions:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        scopes:
+          deprecated: true
+          type: array
+          minItems: 1
+          items:
+            type: string
+        ttlSeconds:
+          type: integer
+          minimum: 1
+          maximum: 14400
+          default: 3600
+    AccessToken:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        scopes:
+          deprecated: true
+          type: array
+          items:
+            type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - token
+        - scopes
+        - expiresAt
+    APIError:
+      type: object
+      properties:
+        message:
+          type: string
+        reason:
+          type: string
+          enum:
+            - NoSubscription
+            - NoRemainingMinutes
+            - ConcurrencyLimitReached
+      required:
+        - message
+    ScopedTokenCreate:
+      deprecated: true
+      allOf:
+        - $ref: '#/components/schemas/AccessTokenCreate'
+    ScopedToken:
+      deprecated: true
+      allOf:
+        - $ref: '#/components/schemas/AccessToken'
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    AnalyticsTimeFilter:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        gte:
+          type: string
+          format: date-time
+        lte:
+          type: string
+          format: date-time
+    AnalyticsResponse:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        bucket:
+          type: string
+          enum:
+            - hour
+            - day
+            - week
+            - minute
+        timezone:
+          type: string
+        asOf:
+          type: string
+          format: date-time
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsEntry'
+      required:
+        - bucket
+        - timezone
+        - asOf
+        - series
+        - summary
+    AnalyticsInstancesResponse:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        asOf:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsInstanceEntry'
+      required:
+        - asOf
+        - timezone
+        - series
+    AndroidInstance:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            organizationId:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            terminatedAt:
+              type: string
+              format: date-time
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+          required:
+            - id
+            - organizationId
+            - createdAt
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            region:
+              type: string
+            inactivityTimeout:
+              type: string
+              default: 3m
+            hardTimeout:
+              type: string
+              default: '0'
+            tunnel:
+              type: string
+          required:
+            - region
+            - inactivityTimeout
+        status:
+          type: object
+          properties:
+            state:
+              $ref: '#/components/schemas/AndroidInstanceState'
+            apiUrl:
+              type: string
+            adbWebSocketUrl:
+              type: string
+            endpointWebSocketUrl:
+              type: string
+            signedStreamUrl:
+              type: string
+            mcpUrl:
+              type: string
+            targetHttpPortUrlPrefix:
+              type: string
+            token:
+              type: string
+            streamToken:
+              type: string
+            sandbox:
+              $ref: '#/components/schemas/AndroidSandboxStatus'
+            errorMessage:
+              type: string
+            terminationReason:
+              $ref: '#/components/schemas/TerminationReason'
+          required:
+            - state
+      required:
+        - metadata
+        - spec
+        - status
+    AndroidInstanceCreate:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            displayName:
+              type: string
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            clues:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - ClientIP
+                      - ClientLocation
+                      - OSVersion
+                  clientIp:
+                    type: string
+                  clientLocation:
+                    $ref: '#/components/schemas/ClientLocation'
+                  osVersion:
+                    type: string
+                required:
+                  - kind
+            model:
+              type: string
+              default: phone
+              enum:
+                - phone
+                - tablet
+            jurisdiction:
+              $ref: '#/components/schemas/Jurisdiction'
+            region:
+              type: string
+              deprecated: true
+            inactivityTimeout:
+              type: string
+              default: 3m
+            hardTimeout:
+              type: string
+              default: '0'
+            tunnel:
+              type: string
+              pattern: ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
+              maxLength: 63
+            sandbox:
+              $ref: '#/components/schemas/SandboxSpec'
+            initialAssets:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - App
+                      - Configuration
+                    default: App
+                  configuration:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                          - ChromeFlag
+                      chromeFlag:
+                        type: string
+                        enum:
+                          - enable-command-line-on-non-rooted-devices@1
+                    required:
+                      - kind
+                  source:
+                    type: string
+                    enum:
+                      - URL
+                      - URLs
+                      - AssetName
+                      - AssetNames
+                      - AssetIDs
+                    default: URL
+                  url:
+                    type: string
+                  assetName:
+                    type: string
+                  urls:
+                    type: array
+                    items:
+                      type: string
+                  assetNames:
+                    type: array
+                    items:
+                      type: string
+                  assetIds:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - kind
+    InstanceUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        metadata:
+          type: object
+          additionalProperties: false
+          required:
+            - labels
+          properties:
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+        spec:
+          type: object
+          additionalProperties: false
+          required:
+            - role
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+    SessionArtifactKind:
+      type: string
+      enum:
+        - recording
+        - appLog
+        - eventLog
+        - networkLog
+    SessionArtifact:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/SessionArtifactKind'
+        bundleId:
+          type: string
+        tunnelId:
+          type: string
+        selectors:
+          type: array
+          items:
+            type: string
+        startedAt:
+          type: string
+          format: date-time
+        stoppedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        sizeBytes:
+          type: integer
+          format: int64
+        downloadUrl:
+          type: string
+      required:
+        - id
+        - kind
+        - downloadUrl
+    IOSInstance:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            organizationId:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            terminatedAt:
+              type: string
+              format: date-time
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+          required:
+            - id
+            - organizationId
+            - createdAt
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            region:
+              type: string
+            inactivityTimeout:
+              type: string
+              default: 3m
+            hardTimeout:
+              type: string
+              default: '0'
+            tunnel:
+              type: string
+          required:
+            - region
+            - inactivityTimeout
+        status:
+          type: object
+          properties:
+            state:
+              $ref: '#/components/schemas/IOSInstanceState'
+            apiUrl:
+              type: string
+            endpointWebSocketUrl:
+              type: string
+            signedStreamUrl:
+              type: string
+            targetHttpPortUrlPrefix:
+              type: string
+            mcpUrl:
+              type: string
+            deviceState:
+              $ref: '#/components/schemas/IOSDeviceStateStatus'
+            token:
+              type: string
+            streamToken:
+              type: string
+            errorMessage:
+              type: string
+            terminationReason:
+              $ref: '#/components/schemas/TerminationReason'
+          required:
+            - state
+      required:
+        - metadata
+        - spec
+        - status
+    IOSInstanceCreate:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            displayName:
+              type: string
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            sandbox:
+              type: object
+              deprecated: true
+              properties:
+                xcode:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+            clues:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - ClientIP
+                      - ClientLocation
+                      - OSVersion
+                  clientIp:
+                    type: string
+                  clientLocation:
+                    $ref: '#/components/schemas/ClientLocation'
+                  osVersion:
+                    type: string
+                required:
+                  - kind
+            model:
+              type: string
+              default: iphone
+              enum:
+                - iphone
+                - iphone-duo
+                - ipad
+                - watch
+            jurisdiction:
+              $ref: '#/components/schemas/Jurisdiction'
+            deviceState:
+              $ref: '#/components/schemas/IOSDeviceStateConfig'
+            region:
+              type: string
+              deprecated: true
+            inactivityTimeout:
+              type: string
+              default: 3m
+            hardTimeout:
+              type: string
+              default: '0'
+            forceBundleId:
+              type: string
+              minLength: 1
+            tunnel:
+              type: string
+              pattern: ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$
+              maxLength: 63
+            initialAssets:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - App
+                      - Keychain
+                    default: App
+                  source:
+                    type: string
+                    enum:
+                      - URL
+                      - AssetName
+                      - AssetID
+                    default: URL
+                  url:
+                    type: string
+                  assetName:
+                    type: string
+                  assetId:
+                    type: string
+                  encryptionKey:
+                    type: string
+                  launchMode:
+                    type: string
+                    enum:
+                      - ForegroundIfRunning
+                      - RelaunchIfRunning
+                      - FailIfRunning
+                required:
+                  - kind
+                  - source
+    XcodeInstance:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            organizationId:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            terminatedAt:
+              type: string
+              format: date-time
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+          required:
+            - id
+            - organizationId
+            - createdAt
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            region:
+              type: string
+            inactivityTimeout:
+              type: string
+              default: 10m
+            hardTimeout:
+              type: string
+              default: '0'
+          required:
+            - region
+            - inactivityTimeout
+        status:
+          type: object
+          properties:
+            state:
+              $ref: '#/components/schemas/XcodeInstanceState'
+            apiUrl:
+              type: string
+            token:
+              type: string
+            errorMessage:
+              type: string
+            terminationReason:
+              $ref: '#/components/schemas/TerminationReason'
+          required:
+            - state
+      required:
+        - metadata
+        - spec
+        - status
+    XcodeInstanceCreate:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            displayName:
+              type: string
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            clues:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - ClientIP
+                      - ClientLocation
+                  clientIp:
+                    type: string
+                  clientLocation:
+                    $ref: '#/components/schemas/ClientLocation'
+                required:
+                  - kind
+            region:
+              type: string
+              deprecated: true
+            jurisdiction:
+              $ref: '#/components/schemas/Jurisdiction'
+            inactivityTimeout:
+              type: string
+              default: 10m
+            hardTimeout:
+              type: string
+              default: '0'
+            cache:
+              $ref: '#/components/schemas/XcodeCacheConfig'
+    XcodeInstanceCache:
+      type: object
+      properties:
+        config:
+          $ref: '#/components/schemas/XcodeCacheConfig'
+        restore:
+          $ref: '#/components/schemas/XcodeCacheRestoreStatus'
+        save:
+          $ref: '#/components/schemas/XcodeCacheSaveStatus'
+      required:
+        - restore
+        - save
+    XcodeInstanceCacheBind:
+      type: object
+      properties:
+        key:
+          type: string
+      required:
+        - key
+    GradleInstance:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            organizationId:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            terminatedAt:
+              type: string
+              format: date-time
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+          required:
+            - id
+            - organizationId
+            - createdAt
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            region:
+              type: string
+            inactivityTimeout:
+              type: string
+              default: 10m
+            hardTimeout:
+              type: string
+              default: '0'
+          required:
+            - region
+            - inactivityTimeout
+        status:
+          type: object
+          properties:
+            state:
+              $ref: '#/components/schemas/GradleInstanceState'
+            apiUrl:
+              type: string
+            token:
+              type: string
+            errorMessage:
+              type: string
+            terminationReason:
+              $ref: '#/components/schemas/TerminationReason'
+          required:
+            - state
+      required:
+        - metadata
+        - spec
+        - status
+    GradleInstanceCreate:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            displayName:
+              type: string
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            clues:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - ClientIP
+                      - ClientLocation
+                  clientIp:
+                    type: string
+                  clientLocation:
+                    $ref: '#/components/schemas/ClientLocation'
+                required:
+                  - kind
+            region:
+              type: string
+              deprecated: true
+            jurisdiction:
+              $ref: '#/components/schemas/Jurisdiction'
+            inactivityTimeout:
+              type: string
+              default: 10m
+            hardTimeout:
+              type: string
+              default: '0'
+    GradleBuildLog:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        exitCode:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        buildDurationMs:
+          type: integer
+        error:
+          type: string
+        downloadUrl:
+          type: string
+      required:
+        - id
+        - status
+        - downloadUrl
+    XcodeBuildLog:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        exitCode:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        buildDurationMs:
+          type: integer
+        error:
+          type: string
+        downloadUrl:
+          type: string
+      required:
+        - id
+        - status
+        - downloadUrl
+    BazelBuildLog:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        pattern:
+          type: array
+          items:
+            type: string
+        startedAt:
+          type: string
+          format: date-time
+        durationMs:
+          type: integer
+        error:
+          type: string
+        downloadUrl:
+          type: string
+        metadataDownloadUrl:
+          type: string
+      required:
+        - id
+        - status
+        - downloadUrl
+        - metadataDownloadUrl
+    AssetUploadUrls:
+      type: object
+      required:
+        - signedUploadUrl
+        - signedIconUploadUrl
+      properties:
+        md5:
+          type: string
+        signedUploadUrl:
+          type: string
+        signedIconUploadUrl:
+          type: string
+        iconUrl:
+          type: string
+    AssetUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+        bundleIdentifier:
+          type: string
+        shortVersion:
+          type: string
+        buildVersion:
+          type: string
+        deeplink:
+          type: string
+        targetSdk:
+          type: string
+        ttl:
+          type: string
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/AssetKind'
+        displayName:
+          type: string
+        platform:
+          $ref: '#/components/schemas/AssetPlatform'
+        os:
+          type: string
+          enum:
+            - ios
+            - android
+            - xcode
+          deprecated: true
+        bundleIdentifier:
+          type: string
+        shortVersion:
+          type: string
+        buildVersion:
+          type: string
+        deeplink:
+          type: string
+        targetSdk:
+          type: string
+        md5:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        signedUploadUrl:
+          type: string
+        signedDownloadUrl:
+          type: string
+        signedIconUrl:
+          type: string
+      required:
+        - id
+        - name
+        - kind
+    AssetKind:
+      type: string
+      enum:
+        - App
+        - Keychain
+      default: App
+    AssetPut:
+      type: object
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/AssetKind'
+        platform:
+          $ref: '#/components/schemas/AssetPlatform'
+        ttl:
+          type: string
+        displayName:
+          type: string
+        bundleIdentifier:
+          type: string
+        shortVersion:
+          type: string
+        buildVersion:
+          type: string
+        deeplink:
+          type: string
+      required:
+        - name
+    AssetPutResult:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/AssetKind'
+        platform:
+          $ref: '#/components/schemas/AssetPlatform'
+        md5:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        signedUploadUrl:
+          type: string
+        signedDownloadUrl:
+          type: string
+      required:
+        - id
+        - name
+        - kind
+        - signedUploadUrl
+        - signedDownloadUrl
+    AnalyticsEntry:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        android:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnalyticsRegionStats'
+        ios:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnalyticsRegionStats'
+        xcode:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnalyticsRegionStats'
+        gradle:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AnalyticsRegionStats'
+        instances:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsInstance'
+      required:
+        - timestamp
+        - android
+        - ios
+        - xcode
+        - gradle
+    AnalyticsInstanceEntry:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        instances:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsInstance'
+      required:
+        - timestamp
+        - instances
+    InstanceRole:
+      type: object
+      additionalProperties: false
+      required:
+        - permissions
+      properties:
+        permissions:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+    AndroidInstanceState:
+      type: string
+      enum:
+        - unknown
+        - creating
+        - assigned
+        - ready
+        - terminated
+    AndroidSandboxStatus:
+      type: object
+      properties:
+        playwrightAndroid:
+          type: object
+          properties:
+            url:
+              type: string
+    TerminationReason:
+      type: string
+      example: InactivityTimeout
+    ClientLocation:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+    Jurisdiction:
+      type: string
+      enum:
+        - us
+        - eu
+        - as
+    SandboxSpec:
+      type: object
+      properties:
+        playwrightAndroid:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            version:
+              type: string
+              enum:
+                - 1.56.1-lim.1
+                - 1.60.0-lim.1
+    IOSInstanceState:
+      type: string
+      enum:
+        - unknown
+        - creating
+        - assigned
+        - ready
+        - terminated
+    IOSDeviceStateStatus:
+      type: object
+      properties:
+        restore:
+          $ref: '#/components/schemas/IOSDeviceStateRestoreStatus'
+        save:
+          $ref: '#/components/schemas/IOSDeviceStateSaveStatus'
+      required:
+        - restore
+        - save
+    IOSDeviceStateConfig:
+      type: object
+      properties:
+        key:
+          type: string
+          maxLength: 128
+        restoreMode:
+          type: string
+          enum:
+            - server
+            - client
+          default: server
+      required:
+        - key
+    XcodeInstanceState:
+      type: string
+      enum:
+        - unknown
+        - creating
+        - assigned
+        - ready
+        - terminated
+    XcodeCacheConfig:
+      type: object
+      properties:
+        key:
+          type: string
+          example: myapp-pr51
+        restoreKeys:
+          type: array
+          items:
+            type: string
+          example:
+            - myapp-pr51
+            - myapp-main
+        paths:
+          type: array
+          items:
+            type: string
+          example:
+            - Pods
+            - .build
+    XcodeCacheRestoreStatus:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum:
+            - disabled
+            - unsupported
+            - placing
+            - downloading
+            - materializing
+            - restored
+            - skipped
+            - failed
+        reason:
+          type: string
+        message:
+          type: string
+        matchedKey:
+          type: string
+        matchKind:
+          type: string
+          enum:
+            - exact_hit
+            - prefix_hit
+        skippedKeys:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              reason:
+                type: string
+            required:
+              - key
+              - reason
+        paths:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+          enum:
+            - tag
+            - tigris
+        bytes:
+          type: integer
+          format: int64
+        uncompressedBytes:
+          type: integer
+          format: int64
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+      required:
+        - phase
+    XcodeCacheSaveStatus:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum:
+            - disabled
+            - idle
+            - quiescing
+            - archiving
+            - uploading
+            - verifying
+            - published
+            - skipped
+            - failed
+            - timed_out
+        reason:
+          type: string
+        message:
+          type: string
+        cacheKey:
+          type: string
+        paths:
+          type: array
+          items:
+            type: string
+        bytes:
+          type: integer
+          format: int64
+        uncompressedBytes:
+          type: integer
+          format: int64
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+      required:
+        - phase
+    GradleInstanceState:
+      type: string
+      enum:
+        - unknown
+        - creating
+        - assigned
+        - ready
+        - terminated
+    AssetPlatform:
+      type: string
+      enum:
+        - ios
+        - android
+        - xcode
+    AnalyticsRegionStats:
+      type: object
+      properties:
+        runtimeMinutes:
+          type: integer
+          format: int64
+        billedCredits:
+          type: string
+        billedMinutes:
+          type: integer
+          format: int64
+        wallclockMinutes:
+          type: integer
+          format: int64
+        avgDurationMinutes:
+          type: number
+          format: double
+        count:
+          type: integer
+          format: int64
+        cost:
+          type: number
+          format: double
+        creditsBilled:
+          type: string
+        creditsBilledMinutes:
+          type: integer
+          format: int64
+        subscriptionBilledCredits:
+          type: object
+          additionalProperties:
+            type: string
+        subscriptionBilledMinutes:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        onDemandBilledCredits:
+          type: string
+        onDemandBilledMinutes:
+          type: integer
+          format: int64
+        creditsCost:
+          type: number
+          format: double
+        subscriptionCost:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        onDemandCost:
+          type: number
+          format: double
+      required:
+        - runtimeMinutes
+        - billedMinutes
+        - avgDurationMinutes
+        - count
+        - cost
+        - creditsBilledMinutes
+        - onDemandBilledMinutes
+        - creditsCost
+        - onDemandCost
+    AnalyticsInstance:
+      type: object
+      properties:
+        instanceTid:
+          type: string
+        platform:
+          type: string
+          enum:
+            - android
+            - ios
+            - xcode
+            - gradle
+        region:
+          type: string
+        runtimeMinutes:
+          type: integer
+          format: int64
+        billedCredits:
+          type: string
+        billedMinutes:
+          type: integer
+          format: int64
+        wallclockMinutes:
+          type: integer
+          format: int64
+        cost:
+          type: number
+          format: double
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        billedBreakdown:
+          $ref: '#/components/schemas/BilledBreakdown'
+        costBreakdown:
+          $ref: '#/components/schemas/CostBreakdown'
+      required:
+        - instanceTid
+        - platform
+        - runtimeMinutes
+        - billedMinutes
+        - cost
+    IOSDeviceStateRestoreStatus:
+      type: object
+      properties:
+        downloadUrl:
+          type: string
+        phase:
+          type: string
+          enum:
+            - pending
+            - restored
+            - empty
+            - failed
+        reason:
+          type: string
+        message:
+          type: string
+      required:
+        - phase
+    IOSDeviceStateSaveStatus:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum:
+            - disabled
+            - idle
+            - requested
+            - saved
+            - skipped
+            - failed
+            - timed_out
+        reason:
+          type: string
+        message:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+      required:
+        - phase
+    BilledBreakdown:
+      type: object
+      properties:
+        creditsBilled:
+          type: string
+        creditsBilledMinutes:
+          type: integer
+          format: int64
+        subscriptionBilledCredits:
+          type: object
+          additionalProperties:
+            type: string
+        subscriptionBilledMinutes:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        planBilledMinutes:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        onDemandBilledCredits:
+          type: string
+        onDemandBilledMinutes:
+          type: integer
+          format: int64
+      required:
+        - creditsBilledMinutes
+        - onDemandBilledMinutes
+    CostBreakdown:
+      type: object
+      properties:
+        creditsCost:
+          type: number
+          format: double
+        subscriptionCost:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        planCost:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        onDemandCost:
+          type: number
+          format: double
+      required:
+        - creditsCost
+        - onDemandCost
+    BackendIOSSnapshotList:
+      type: object
+      required:
+        - snapshots
+      properties:
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackendIOSSnapshot'
+        nextOffset:
+          type: integer
+    BackendAPIError:
+      type: object
+      properties:
+        message:
+          type: string
+        reason:
+          type: string
+          enum:
+            - NoSubscription
+            - NoRemainingMinutes
+            - ConcurrencyLimitReached
+      required:
+        - message
+    BackendIOSSnapshot:
+      type: object
+      required:
+        - key
+        - createdAt
+        - lastUsedAt
+        - saved
+      properties:
+        key:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+        saved:
+          type: boolean
+        archiveSizeBytes:
+          type: integer
+          format: int64
+        publishedAt:
+          type: string
+          format: date-time
+        iosVersion:
+          type: string
+    BackendXcodeSnapshotList:
+      type: object
+      required:
+        - snapshots
+      properties:
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackendXcodeSnapshot'
+        nextOffset:
+          type: integer
+    BackendXcodeSnapshot:
+      type: object
+      required:
+        - key
+        - directoryKey
+        - rootName
+        - xcodeVersionKey
+        - archiveFormat
+        - archiveSizeBytes
+        - sha256
+        - publishedAt
+      properties:
+        key:
+          type: string
+        directoryKey:
+          type: string
+        rootName:
+          type: string
+        paths:
+          type: array
+          items:
+            type: string
+        xcodeVersionKey:
+          type: string
+        archiveFormat:
+          type: string
+        archiveSizeBytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        sourceInstanceId:
+          type: string
+  securitySchemes:
+    SCIMBearer:
+      type: http
+      scheme: bearer
+      description: Organization-scoped SCIM provisioning credential. Limrun API keys and sessions are not accepted.

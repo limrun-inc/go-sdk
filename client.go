@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
@@ -16,21 +17,37 @@ import (
 // interacting with the limrun API. You should not instantiate this client
 // directly, and instead use the [NewClient] method instead.
 type Client struct {
+	AccessTokens   AccessTokenService
+	XcodeSnapshots XcodeSnapshotService
+	IosSnapshots   IosSnapshotService
+
 	Options          []option.RequestOption
 	AndroidInstances AndroidInstanceService
 	Assets           AssetService
 	IosInstances     IosInstanceService
+	XcodeInstances   XcodeInstanceService
+	GradleInstances  GradleInstanceService
+	Analytics        AnalyticsService
+	ScopedTokens     ScopedTokenService
 }
 
 // DefaultClientOptions read from the environment (LIM_API_KEY, LIMRUN_BASE_URL).
 // This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
-	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
+	defaults := []option.RequestOption{option.WithHTTPClient(defaultHTTPClient()), option.WithEnvironmentProduction()}
 	if o, ok := os.LookupEnv("LIMRUN_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
 	if o, ok := os.LookupEnv("LIM_API_KEY"); ok {
 		defaults = append(defaults, option.WithAPIKey(o))
+	}
+	if o, ok := os.LookupEnv("LIMRUN_CUSTOM_HEADERS"); ok {
+		for _, line := range strings.Split(o, "\n") {
+			colon := strings.Index(line, ":")
+			if colon >= 0 {
+				defaults = append(defaults, option.WithHeader(strings.TrimSpace(line[:colon]), strings.TrimSpace(line[colon+1:])))
+			}
+		}
 	}
 	return defaults
 }
@@ -43,10 +60,17 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	opts = append(DefaultClientOptions(), opts...)
 
 	r = Client{Options: opts}
+	r.AccessTokens = NewAccessTokenService(opts...)
+	r.XcodeSnapshots = NewXcodeSnapshotService(opts...)
+	r.IosSnapshots = NewIosSnapshotService(opts...)
 
 	r.AndroidInstances = NewAndroidInstanceService(opts...)
 	r.Assets = NewAssetService(opts...)
 	r.IosInstances = NewIosInstanceService(opts...)
+	r.XcodeInstances = NewXcodeInstanceService(opts...)
+	r.GradleInstances = NewGradleInstanceService(opts...)
+	r.Analytics = NewAnalyticsService(opts...)
+	r.ScopedTokens = NewScopedTokenService(opts...)
 
 	return
 }

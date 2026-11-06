@@ -1,0 +1,892 @@
+{
+  "contract": {
+    "version": 1,
+    "maxRoutes": 10,
+    "maxDomains": 64,
+    "fakeRange": "198.18.0.0/15",
+    "maxWindow": 67108864,
+    "defaultWindow": 1048576,
+    "maxWindowIncrement": 2147483647,
+    "defaultMaxBodyBytes": 10485760,
+    "maxBodyBytes": 67108864,
+    "defaultInspectionTTLSeconds": 259200,
+    "maxInspectionTTLSeconds": 2592000,
+    "connID": {
+      "jsonType": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "binaryHeaderBytes": 4,
+      "binaryByteOrder": "big_endian",
+      "invalidJSONValues": [
+        -1,
+        1.5,
+        4294967296
+      ]
+    },
+    "transports": [
+      "tcp",
+      "tls"
+    ],
+    "openFailureReasons": [
+      "dns_not_found",
+      "dns_temporary_failure",
+      "connection_refused",
+      "connection_reset",
+      "connection_timed_out",
+      "unreachable",
+      "permission_denied",
+      "resource_exhausted",
+      "selector_not_allowed",
+      "tls_handshake_failed",
+      "tls_validation_failed",
+      "tls_protocol_error",
+      "cancelled",
+      "internal"
+    ],
+    "resetReasons": [
+      "cancelled",
+      "connection_error",
+      "protocol_error",
+      "resource_exhausted",
+      "internal"
+    ],
+    "sessionErrorCodes": [
+      "unsupported_version",
+      "invalid_message",
+      "invalid_selector",
+      "already_active",
+      "unavailable",
+      "internal"
+    ],
+    "bindStatuses": [
+      "ok",
+      "conflict",
+      "error"
+    ]
+  },
+  "routeCases": [
+    {
+      "input": {
+        "host": "LOCALHOST",
+        "port": 3000
+      },
+      "canonical": {
+        "host": "localhost",
+        "port": 3000
+      }
+    },
+    {
+      "input": {
+        "host": "127.0.0.1",
+        "port": 8081
+      },
+      "canonical": {
+        "host": "127.0.0.1",
+        "port": 8081
+      }
+    },
+    {
+      "input": {
+        "host": "2001:0DB8:0:0:0:0:0:1",
+        "port": 8443
+      },
+      "canonical": {
+        "host": "2001:db8::1",
+        "port": 8443
+      }
+    },
+    {
+      "input": {
+        "host": "::FFFF:192.0.2.1",
+        "port": 9443
+      },
+      "canonical": {
+        "host": "192.0.2.1",
+        "port": 9443
+      }
+    },
+    {
+      "input": {
+        "host": "::0.0.0.1",
+        "port": 10443
+      },
+      "canonical": {
+        "host": "::1",
+        "port": 10443
+      }
+    }
+  ],
+  "invalidRouteSets": [
+    {
+      "name": "empty",
+      "routes": [],
+      "error": "empty"
+    },
+    {
+      "name": "localhost trailing dot",
+      "routes": [
+        {
+          "host": "localhost.",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "wildcard",
+      "routes": [
+        {
+          "host": "*.example.com",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "embedded NUL",
+      "routes": [
+        {
+          "host": "127.0.0.1\u0000.evil",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "Unicode case folding",
+      "routes": [
+        {
+          "host": "\u212A.example",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "short IPv4",
+      "routes": [
+        {
+          "host": "127.1",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "integer IPv4",
+      "routes": [
+        {
+          "host": "2130706433",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "hex IPv4",
+      "routes": [
+        {
+          "host": "0x7f000001",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "cidr",
+      "routes": [
+        {
+          "host": "10.0.0.0/8",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "bracketed IPv6",
+      "routes": [
+        {
+          "host": "[::1]",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "IPv4-compatible IPv6",
+      "routes": [
+        {
+          "host": "::192.0.2.1",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "canonical IPv4-compatible IPv6",
+      "routes": [
+        {
+          "host": "::2",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "expanded IPv4-compatible IPv6",
+      "routes": [
+        {
+          "host": "::c000:201",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "invalid IPv4",
+      "routes": [
+        {
+          "host": "999.0.0.1",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "non-ASCII",
+      "routes": [
+        {
+          "host": "münchen.example",
+          "port": 443
+        }
+      ],
+      "error": "invalid_host"
+    },
+    {
+      "name": "zero port",
+      "routes": [
+        {
+          "host": "10.20.30.40",
+          "port": 0
+        }
+      ],
+      "error": "invalid_port"
+    },
+    {
+      "name": "DNS port",
+      "routes": [
+        {
+          "host": "10.20.30.40",
+          "port": 53
+        }
+      ],
+      "error": "invalid_port"
+    },
+    {
+      "name": "high port",
+      "routes": [
+        {
+          "host": "10.20.30.40",
+          "port": 65536
+        }
+      ],
+      "error": "invalid_port"
+    },
+    {
+      "name": "too many routes",
+      "routes": [
+        { "host": "10.0.0.1", "port": 443 },
+        { "host": "10.0.0.2", "port": 443 },
+        { "host": "10.0.0.3", "port": 443 },
+        { "host": "10.0.0.4", "port": 443 },
+        { "host": "10.0.0.5", "port": 443 },
+        { "host": "10.0.0.6", "port": 443 },
+        { "host": "10.0.0.7", "port": 443 },
+        { "host": "10.0.0.8", "port": 443 },
+        { "host": "10.0.0.9", "port": 443 },
+        { "host": "10.0.0.10", "port": 443 },
+        { "host": "10.0.0.11", "port": 443 }
+      ],
+      "error": "too_many"
+    },
+    {
+      "name": "canonical localhost duplicate",
+      "routes": [
+        {
+          "host": "localhost",
+          "port": 3000
+        },
+        {
+          "host": "LOCALHOST",
+          "port": 3000
+        }
+      ],
+      "error": "duplicate"
+    },
+    {
+      "name": "canonical IPv6 duplicate",
+      "routes": [
+        {
+          "host": "2001:db8::1",
+          "port": 443
+        },
+        {
+          "host": "2001:0db8:0:0:0:0:0:1",
+          "port": 443
+        }
+      ],
+      "error": "duplicate"
+    }
+  ],
+  "domainCases": [
+    {
+      "input": "API.Corp.Example",
+      "canonical": "api.corp.example"
+    },
+    {
+      "input": "*.Corp.Example",
+      "canonical": "*.corp.example"
+    },
+    {
+      "input": "xn--mnchen-3ya.example",
+      "canonical": "xn--mnchen-3ya.example"
+    },
+    {
+      "input": "*.internal",
+      "canonical": "*.internal"
+    }
+  ],
+  "invalidDomainSets": [
+    {
+      "name": "trailing dot",
+      "domains": ["corp.example."],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "non-ASCII",
+      "domains": ["münchen.example"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "Unicode case folding",
+      "domains": ["\u212A.example"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "embedded wildcard",
+      "domains": ["api.*.example"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "bare wildcard",
+      "domains": ["*."],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "localhost",
+      "domains": ["localhost"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "IP literal",
+      "domains": ["192.0.2.1"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "numeric final label",
+      "domains": ["service.1234"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "empty label",
+      "domains": ["api..example"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "hyphen edge label",
+      "domains": ["-api.example"],
+      "error": "invalid_domain"
+    },
+    {
+      "name": "wildcard duplicate",
+      "domains": ["*.corp.example", "*.CORP.example"],
+      "error": "duplicate"
+    }
+  ],
+  "domainMatchCases": [
+    {
+      "pattern": "api.corp.example",
+      "host": "api.corp.example",
+      "matches": true
+    },
+    {
+      "pattern": "api.corp.example",
+      "host": "API.corp.example",
+      "matches": true
+    },
+    {
+      "pattern": "api.corp.example",
+      "host": "sub.api.corp.example",
+      "matches": false
+    },
+    {
+      "pattern": "*.corp.example",
+      "host": "api.corp.example",
+      "matches": true
+    },
+    {
+      "pattern": "*.corp.example",
+      "host": "a.b.corp.example",
+      "matches": true
+    },
+    {
+      "pattern": "*.corp.example",
+      "host": "corp.example",
+      "matches": false
+    },
+    {
+      "pattern": "*.corp.example",
+      "host": "evilcorp.example",
+      "matches": false
+    }
+  ],
+  "configHashCases": [
+    {
+      "name": "routes only",
+      "selectors": ["localhost:3000"],
+      "inspection": {
+        "enabled": false,
+        "captureBodies": false,
+        "maxBodyBytes": 10485760,
+        "persist": false,
+        "ttlSeconds": 259200
+      },
+      "canonicalJson": "{\"version\":1,\"selectors\":[\"localhost:3000\"],\"inspection\":{\"enabled\":false,\"captureBodies\":false,\"maxBodyBytes\":10485760,\"persist\":false,\"ttlSeconds\":259200}}",
+      "sha256": "4ee21ba346d8798a4de0e7a96f9f230510c6f73a292b364bcaaac8fb87bcbeeb"
+    },
+    {
+      "name": "mixed selectors",
+      "selectors": ["*.corp.example", "10.20.30.40:8000", "api.internal"],
+      "inspection": {
+        "enabled": true,
+        "captureBodies": false,
+        "maxBodyBytes": 10485760,
+        "persist": true,
+        "ttlSeconds": 604800
+      },
+      "canonicalJson": "{\"version\":1,\"selectors\":[\"*.corp.example\",\"10.20.30.40:8000\",\"api.internal\"],\"inspection\":{\"enabled\":true,\"captureBodies\":false,\"maxBodyBytes\":10485760,\"persist\":true,\"ttlSeconds\":604800}}",
+      "sha256": "d99138b30aae243276d53f9a16bcf2fcc51a55a265eefc20688f767a04ff4b5e"
+    },
+    {
+      "name": "domains only",
+      "selectors": ["db.internal"],
+      "inspection": {
+        "enabled": true,
+        "captureBodies": true,
+        "maxBodyBytes": 2097152,
+        "persist": false,
+        "ttlSeconds": 259200
+      },
+      "canonicalJson": "{\"version\":1,\"selectors\":[\"db.internal\"],\"inspection\":{\"enabled\":true,\"captureBodies\":true,\"maxBodyBytes\":2097152,\"persist\":false,\"ttlSeconds\":259200}}",
+      "sha256": "18d9ab8960865cdae278cc86107cd6c550b133e732d40cdb01c5d44d2005941c"
+    }
+  ],
+  "openAllowedCases": [
+    {
+      "name": "exact route",
+      "selectors": ["localhost:8080"],
+      "open": {
+        "selectorId": "selector-1",
+        "host": "localhost",
+        "port": 8080
+      },
+      "allowed": true
+    },
+    {
+      "name": "wildcard domain any port",
+      "selectors": ["*.corp.example"],
+      "open": {
+        "selectorId": "selector-1",
+        "host": "api.corp.example",
+        "port": 5432
+      },
+      "allowed": true
+    },
+    {
+      "name": "domain base not covered by wildcard",
+      "selectors": ["*.corp.example"],
+      "open": {
+        "selectorId": "selector-1",
+        "host": "corp.example",
+        "port": 443
+      },
+      "allowed": false
+    },
+    {
+      "name": "wrong selector kind",
+      "selectors": ["localhost:8080", "api.corp.example"],
+      "open": {
+        "selectorId": "selector-2",
+        "host": "localhost",
+        "port": 8080
+      },
+      "allowed": false
+    },
+    {
+      "name": "DNS port never allowed",
+      "selectors": ["api.corp.example"],
+      "open": {
+        "selectorId": "selector-1",
+        "host": "api.corp.example",
+        "port": 53
+      },
+      "allowed": false
+    }
+  ],
+  "client": [
+    {
+      "name": "start",
+      "message": {
+        "type": "start",
+        "version": 1,
+        "selectors": ["10.20.30.40:8000", "localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "start with name",
+      "message": {
+        "type": "start",
+        "version": 1,
+        "selectors": ["10.20.30.40:8000", "localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "window": 1048576,
+        "name": "acme-staging"
+      }
+    },
+    {
+      "name": "start without inactivity reset",
+      "message": {
+        "type": "start",
+        "version": 1,
+        "selectors": ["10.20.30.40:8000", "localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "window": 1048576,
+        "resetsInactivityTimeout": false
+      }
+    },
+    {
+      "name": "start with selectors and window",
+      "message": {
+        "type": "start",
+        "version": 1,
+        "selectors": ["localhost:8080", "*.corp.example", "db.internal"],
+        "inspection": {
+          "enabled": true,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "openOk",
+      "message": {
+        "type": "openOk",
+        "connId": 4294967295,
+        "transport": {
+          "type": "tcp"
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "openOk with window",
+      "message": {
+        "type": "openOk",
+        "connId": 11,
+        "transport": {
+          "type": "tls",
+          "alpnProtocol": "h2",
+          "remoteAddress": "192.0.2.10:443",
+          "dnsMs": 4,
+          "connectMs": 12,
+          "tlsMs": 31
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "openFail",
+      "message": {
+        "type": "openFail",
+        "connId": 8,
+        "reason": "connection_refused",
+        "osCode": "ECONNREFUSED"
+      }
+    },
+    {
+      "name": "fin",
+      "message": {
+        "type": "fin",
+        "connId": 9
+      }
+    },
+    {
+      "name": "reset",
+      "message": {
+        "type": "reset",
+        "connId": 10,
+        "reason": "cancelled"
+      }
+    },
+    {
+      "name": "windowUpdate",
+      "message": {
+        "type": "windowUpdate",
+        "connId": 12,
+        "increment": 65536
+      }
+    }
+  ],
+  "server": [
+    {
+      "name": "ready",
+      "message": {
+        "type": "ready",
+        "version": 1,
+        "tunnelId": "123e4567-e89b-12d3-a456-426614174000",
+        "selectors": [
+          { "id": "selector-1", "kind": "route", "value": "localhost:3000" }
+        ],
+        "configHash": "4ee21ba346d8798a4de0e7a96f9f230510c6f73a292b364bcaaac8fb87bcbeeb"
+      }
+    },
+    {
+      "name": "ready with name",
+      "message": {
+        "type": "ready",
+        "version": 1,
+        "tunnelId": "123e4567-e89b-12d3-a456-426614174000",
+        "selectors": [
+          { "id": "selector-1", "kind": "route", "value": "localhost:3000" }
+        ],
+        "configHash": "4ee21ba346d8798a4de0e7a96f9f230510c6f73a292b364bcaaac8fb87bcbeeb",
+        "name": "acme-staging"
+      }
+    },
+    {
+      "name": "ready with selectors",
+      "message": {
+        "type": "ready",
+        "version": 1,
+        "tunnelId": "tunnel-2",
+        "selectors": [
+          {
+            "id": "selector-1",
+            "kind": "route",
+            "value": "localhost:8080",
+            "binds": [
+              {
+                "address": "127.0.0.1:8080",
+                "status": "ok"
+              },
+              {
+                "address": "[::1]:8080",
+                "status": "ok"
+              },
+              {
+                "address": "10.0.2.2:8080",
+                "status": "conflict",
+                "osCode": "EADDRINUSE"
+              }
+            ]
+          },
+          {
+            "id": "selector-2",
+            "kind": "domain",
+            "value": "*.corp.example"
+          }
+        ],
+        "configHash": "07ea88c0a508d9ecf911938e459a3c517b7b5fcbee4efad13e340426ee313315"
+      }
+    },
+    {
+      "name": "open",
+      "message": {
+        "type": "open",
+        "connId": 7,
+        "selectorId": "selector-1",
+        "host": "10.20.30.40",
+        "port": 8000,
+        "transport": {
+          "type": "tcp"
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "open with window",
+      "message": {
+        "type": "open",
+        "connId": 13,
+        "selectorId": "selector-1",
+        "host": "api.corp.example",
+        "port": 5432,
+        "transport": {
+          "type": "tls",
+          "serverName": "api.corp.example",
+          "alpnProtocols": ["h2", "http/1.1"]
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "fin",
+      "message": {
+        "type": "fin",
+        "connId": 7
+      }
+    },
+    {
+      "name": "reset",
+      "message": {
+        "type": "reset",
+        "connId": 8,
+        "reason": "connection_error",
+        "osCode": "ECONNRESET"
+      }
+    },
+    {
+      "name": "resetWithoutOSCode",
+      "message": {
+        "type": "reset",
+        "connId": 9,
+        "reason": "cancelled"
+      }
+    },
+    {
+      "name": "windowUpdate",
+      "message": {
+        "type": "windowUpdate",
+        "connId": 13,
+        "increment": 131072
+      }
+    },
+    {
+      "name": "error",
+      "message": {
+        "type": "error",
+        "code": "invalid_selector"
+      }
+    }
+  ],
+  "unknownFieldCases": [
+    {
+      "name": "client start ignores unknown field",
+      "direction": "client",
+      "input": {
+        "type": "start",
+        "version": 1,
+        "selectors": ["localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "window": 1048576,
+        "futureDiagnostic": "ignored"
+      },
+      "decoded": {
+        "type": "start",
+        "version": 1,
+        "selectors": ["localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "window": 1048576
+      }
+    },
+    {
+      "name": "client start drops the default inactivity reset",
+      "direction": "client",
+      "input": {
+        "type": "start",
+        "version": 1,
+        "window": 1048576,
+        "selectors": ["localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        },
+        "resetsInactivityTimeout": true
+      },
+      "decoded": {
+        "type": "start",
+        "version": 1,
+        "window": 1048576,
+        "selectors": ["localhost:3000"],
+        "inspection": {
+          "enabled": false,
+          "captureBodies": false,
+          "maxBodyBytes": 10485760,
+          "persist": false,
+          "ttlSeconds": 259200
+        }
+      }
+    },
+    {
+      "name": "server ready ignores unknown field",
+      "direction": "server",
+      "input": {
+        "type": "ready",
+        "version": 1,
+        "tunnelId": "123e4567-e89b-12d3-a456-426614174000",
+        "selectors": [
+          { "id": "selector-1", "kind": "route", "value": "localhost:3000" }
+        ],
+        "configHash": "4ee21ba346d8798a4de0e7a96f9f230510c6f73a292b364bcaaac8fb87bcbeeb",
+        "futureDiagnostic": "ignored"
+      },
+      "decoded": {
+        "type": "ready",
+        "version": 1,
+        "tunnelId": "123e4567-e89b-12d3-a456-426614174000",
+        "selectors": [
+          { "id": "selector-1", "kind": "route", "value": "localhost:3000" }
+        ],
+        "configHash": "4ee21ba346d8798a4de0e7a96f9f230510c6f73a292b364bcaaac8fb87bcbeeb"
+      }
+    }
+  ]
+}
