@@ -3,10 +3,11 @@ package respjson_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/limrun-inc/go-sdk/internal/apijson"
-	rj "github.com/limrun-inc/go-sdk/packages/respjson"
 	"reflect"
 	"testing"
+
+	"github.com/limrun-inc/go-sdk/internal/apijson"
+	rj "github.com/limrun-inc/go-sdk/packages/respjson"
 )
 
 type UnionOfStringIntOrObject struct {
@@ -30,7 +31,7 @@ func (r *UnionOfStringIntOrObject) UnmarshalJSON(data []byte) error {
 
 type SubFields struct {
 	OfBool bool   `json:",inline"`
-	Name   string `json:"name,required"`
+	Name   string `json:"name" api:"required"`
 	JSON   struct {
 		OfBool      rj.Field
 		Name        rj.Field

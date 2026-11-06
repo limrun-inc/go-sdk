@@ -1,0 +1,8 @@
+{
+  "name": "go-sdk-example-appium-ios",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "webdriverio": "^9.21.0"
+  }
+}

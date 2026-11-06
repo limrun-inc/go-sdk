@@ -1,0 +1,996 @@
+{
+  "source": "typescript-sdk@319078ef75a7f8a4e1abf36b73570ff11064453d",
+  "files": {
+    ".gitignore": "vendor/\n*.tmp\n!keep.tmp\n*.xcconfig\n.env*\n*.xcodeproj/\nlogs/*\n!logs/keep/\nblocked/\n!blocked/keep.txt\na?c.txt\nfile[0-9].dat\n**/cache/**\nroot/**/temp.txt\nfoo/bar\n\\#secret\n\\!secret\n space.txt\n",
+    "app/.gitignore": "/build/\n!nested.tmp\n",
+    "app/nested/.gitignore": "!keep.tmp\n"
+  },
+  "cases": [
+    {
+      "options": {},
+      "paths": [
+        {
+          "path": ".cache/",
+          "ignored": true
+        },
+        {
+          "path": ".cache/app",
+          "ignored": true
+        },
+        {
+          "path": ".git/",
+          "ignored": true
+        },
+        {
+          "path": ".DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "a/.DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "vendor/",
+          "ignored": true
+        },
+        {
+          "path": "Vendor/",
+          "ignored": false
+        },
+        {
+          "path": "vendor/a",
+          "ignored": true
+        },
+        {
+          "path": "file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "app/nested.tmp",
+          "ignored": true
+        },
+        {
+          "path": "app/nested/keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/build/",
+          "ignored": false
+        },
+        {
+          "path": "app/build/a",
+          "ignored": false
+        },
+        {
+          "path": "some/build/",
+          "ignored": false
+        },
+        {
+          "path": "some/Pods/",
+          "ignored": false
+        },
+        {
+          "path": "build/",
+          "ignored": false
+        },
+        {
+          "path": "build/a",
+          "ignored": false
+        },
+        {
+          "path": "Pods/",
+          "ignored": false
+        },
+        {
+          "path": ".swiftpm/",
+          "ignored": false
+        },
+        {
+          "path": "a.xcodeproj/",
+          "ignored": true
+        },
+        {
+          "path": "a/xcuserdata/",
+          "ignored": false
+        },
+        {
+          "path": "a.dSYM/",
+          "ignored": false
+        },
+        {
+          "path": "a/thing.dSYM/file",
+          "ignored": false
+        },
+        {
+          "path": ".env",
+          "ignored": false
+        },
+        {
+          "path": ".env.local",
+          "ignored": false
+        },
+        {
+          "path": "a/.env.local",
+          "ignored": false
+        },
+        {
+          "path": "Config.xcconfig",
+          "ignored": false
+        },
+        {
+          "path": "blocked/keep.txt",
+          "ignored": true
+        },
+        {
+          "path": "logs/keep/",
+          "ignored": false
+        },
+        {
+          "path": "logs/a",
+          "ignored": true
+        },
+        {
+          "path": "a//file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "abc.txt",
+          "ignored": true
+        },
+        {
+          "path": "ac.txt",
+          "ignored": false
+        },
+        {
+          "path": "file1.dat",
+          "ignored": true
+        },
+        {
+          "path": "filea.dat",
+          "ignored": false
+        },
+        {
+          "path": "cache/",
+          "ignored": false
+        },
+        {
+          "path": "nested/cache/a",
+          "ignored": true
+        },
+        {
+          "path": "root/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "root/a/b/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "foo/bar",
+          "ignored": true
+        },
+        {
+          "path": "a/foo/bar",
+          "ignored": false
+        },
+        {
+          "path": "#secret",
+          "ignored": true
+        },
+        {
+          "path": "!secret",
+          "ignored": true
+        },
+        {
+          "path": " space.txt",
+          "ignored": true
+        },
+        {
+          "path": "space.txt",
+          "ignored": false
+        }
+      ]
+    },
+    {
+      "options": {
+        "xcodeDefaults": true
+      },
+      "paths": [
+        {
+          "path": ".cache/",
+          "ignored": true
+        },
+        {
+          "path": ".cache/app",
+          "ignored": true
+        },
+        {
+          "path": ".git/",
+          "ignored": true
+        },
+        {
+          "path": ".DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "a/.DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "vendor/",
+          "ignored": true
+        },
+        {
+          "path": "Vendor/",
+          "ignored": false
+        },
+        {
+          "path": "vendor/a",
+          "ignored": true
+        },
+        {
+          "path": "file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "app/nested.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/nested/keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/build/",
+          "ignored": true
+        },
+        {
+          "path": "app/build/a",
+          "ignored": true
+        },
+        {
+          "path": "some/build/",
+          "ignored": false
+        },
+        {
+          "path": "some/Pods/",
+          "ignored": false
+        },
+        {
+          "path": "build/",
+          "ignored": true
+        },
+        {
+          "path": "build/a",
+          "ignored": true
+        },
+        {
+          "path": "Pods/",
+          "ignored": true
+        },
+        {
+          "path": ".swiftpm/",
+          "ignored": true
+        },
+        {
+          "path": "a.xcodeproj/",
+          "ignored": true
+        },
+        {
+          "path": "a/xcuserdata/",
+          "ignored": true
+        },
+        {
+          "path": "a.dSYM/",
+          "ignored": true
+        },
+        {
+          "path": "a/thing.dSYM/file",
+          "ignored": true
+        },
+        {
+          "path": ".env",
+          "ignored": false
+        },
+        {
+          "path": ".env.local",
+          "ignored": false
+        },
+        {
+          "path": "a/.env.local",
+          "ignored": false
+        },
+        {
+          "path": "Config.xcconfig",
+          "ignored": false
+        },
+        {
+          "path": "blocked/keep.txt",
+          "ignored": true
+        },
+        {
+          "path": "logs/keep/",
+          "ignored": false
+        },
+        {
+          "path": "logs/a",
+          "ignored": true
+        },
+        {
+          "path": "a//file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "abc.txt",
+          "ignored": true
+        },
+        {
+          "path": "ac.txt",
+          "ignored": false
+        },
+        {
+          "path": "file1.dat",
+          "ignored": true
+        },
+        {
+          "path": "filea.dat",
+          "ignored": false
+        },
+        {
+          "path": "cache/",
+          "ignored": false
+        },
+        {
+          "path": "nested/cache/a",
+          "ignored": true
+        },
+        {
+          "path": "root/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "root/a/b/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "foo/bar",
+          "ignored": true
+        },
+        {
+          "path": "a/foo/bar",
+          "ignored": false
+        },
+        {
+          "path": "#secret",
+          "ignored": true
+        },
+        {
+          "path": "!secret",
+          "ignored": true
+        },
+        {
+          "path": " space.txt",
+          "ignored": true
+        },
+        {
+          "path": "space.txt",
+          "ignored": false
+        }
+      ]
+    },
+    {
+      "options": {
+        "nestedGitignore": true
+      },
+      "paths": [
+        {
+          "path": ".cache/",
+          "ignored": true
+        },
+        {
+          "path": ".cache/app",
+          "ignored": true
+        },
+        {
+          "path": ".git/",
+          "ignored": true
+        },
+        {
+          "path": ".DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "a/.DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "vendor/",
+          "ignored": true
+        },
+        {
+          "path": "Vendor/",
+          "ignored": false
+        },
+        {
+          "path": "vendor/a",
+          "ignored": true
+        },
+        {
+          "path": "file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "app/nested.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/nested/keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/build/",
+          "ignored": true
+        },
+        {
+          "path": "app/build/a",
+          "ignored": true
+        },
+        {
+          "path": "some/build/",
+          "ignored": false
+        },
+        {
+          "path": "some/Pods/",
+          "ignored": false
+        },
+        {
+          "path": "build/",
+          "ignored": false
+        },
+        {
+          "path": "build/a",
+          "ignored": false
+        },
+        {
+          "path": "Pods/",
+          "ignored": false
+        },
+        {
+          "path": ".swiftpm/",
+          "ignored": false
+        },
+        {
+          "path": "a.xcodeproj/",
+          "ignored": true
+        },
+        {
+          "path": "a/xcuserdata/",
+          "ignored": false
+        },
+        {
+          "path": "a.dSYM/",
+          "ignored": false
+        },
+        {
+          "path": "a/thing.dSYM/file",
+          "ignored": false
+        },
+        {
+          "path": ".env",
+          "ignored": false
+        },
+        {
+          "path": ".env.local",
+          "ignored": false
+        },
+        {
+          "path": "a/.env.local",
+          "ignored": false
+        },
+        {
+          "path": "Config.xcconfig",
+          "ignored": false
+        },
+        {
+          "path": "blocked/keep.txt",
+          "ignored": true
+        },
+        {
+          "path": "logs/keep/",
+          "ignored": false
+        },
+        {
+          "path": "logs/a",
+          "ignored": true
+        },
+        {
+          "path": "a//file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "abc.txt",
+          "ignored": true
+        },
+        {
+          "path": "ac.txt",
+          "ignored": false
+        },
+        {
+          "path": "file1.dat",
+          "ignored": true
+        },
+        {
+          "path": "filea.dat",
+          "ignored": false
+        },
+        {
+          "path": "cache/",
+          "ignored": false
+        },
+        {
+          "path": "nested/cache/a",
+          "ignored": true
+        },
+        {
+          "path": "root/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "root/a/b/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "foo/bar",
+          "ignored": true
+        },
+        {
+          "path": "a/foo/bar",
+          "ignored": false
+        },
+        {
+          "path": "#secret",
+          "ignored": true
+        },
+        {
+          "path": "!secret",
+          "ignored": true
+        },
+        {
+          "path": " space.txt",
+          "ignored": true
+        },
+        {
+          "path": "space.txt",
+          "ignored": false
+        }
+      ]
+    },
+    {
+      "options": {
+        "xcodeDefaults": true,
+        "includePrefixes": [
+          "vendor/",
+          ".cache/"
+        ],
+        "ignoreSuffixes": [
+          ".xcconfig"
+        ]
+      },
+      "paths": [
+        {
+          "path": ".cache/",
+          "ignored": true
+        },
+        {
+          "path": ".cache/app",
+          "ignored": true
+        },
+        {
+          "path": ".git/",
+          "ignored": true
+        },
+        {
+          "path": ".DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "a/.DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "vendor/",
+          "ignored": false
+        },
+        {
+          "path": "Vendor/",
+          "ignored": false
+        },
+        {
+          "path": "vendor/a",
+          "ignored": false
+        },
+        {
+          "path": "file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "app/nested.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/nested/keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/build/",
+          "ignored": true
+        },
+        {
+          "path": "app/build/a",
+          "ignored": true
+        },
+        {
+          "path": "some/build/",
+          "ignored": false
+        },
+        {
+          "path": "some/Pods/",
+          "ignored": false
+        },
+        {
+          "path": "build/",
+          "ignored": true
+        },
+        {
+          "path": "build/a",
+          "ignored": true
+        },
+        {
+          "path": "Pods/",
+          "ignored": true
+        },
+        {
+          "path": ".swiftpm/",
+          "ignored": true
+        },
+        {
+          "path": "a.xcodeproj/",
+          "ignored": true
+        },
+        {
+          "path": "a/xcuserdata/",
+          "ignored": true
+        },
+        {
+          "path": "a.dSYM/",
+          "ignored": true
+        },
+        {
+          "path": "a/thing.dSYM/file",
+          "ignored": true
+        },
+        {
+          "path": ".env",
+          "ignored": false
+        },
+        {
+          "path": ".env.local",
+          "ignored": false
+        },
+        {
+          "path": "a/.env.local",
+          "ignored": false
+        },
+        {
+          "path": "Config.xcconfig",
+          "ignored": true
+        },
+        {
+          "path": "blocked/keep.txt",
+          "ignored": true
+        },
+        {
+          "path": "logs/keep/",
+          "ignored": false
+        },
+        {
+          "path": "logs/a",
+          "ignored": true
+        },
+        {
+          "path": "a//file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "abc.txt",
+          "ignored": true
+        },
+        {
+          "path": "ac.txt",
+          "ignored": false
+        },
+        {
+          "path": "file1.dat",
+          "ignored": true
+        },
+        {
+          "path": "filea.dat",
+          "ignored": false
+        },
+        {
+          "path": "cache/",
+          "ignored": false
+        },
+        {
+          "path": "nested/cache/a",
+          "ignored": true
+        },
+        {
+          "path": "root/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "root/a/b/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "foo/bar",
+          "ignored": true
+        },
+        {
+          "path": "a/foo/bar",
+          "ignored": false
+        },
+        {
+          "path": "#secret",
+          "ignored": true
+        },
+        {
+          "path": "!secret",
+          "ignored": true
+        },
+        {
+          "path": " space.txt",
+          "ignored": true
+        },
+        {
+          "path": "space.txt",
+          "ignored": false
+        }
+      ]
+    },
+    {
+      "options": {
+        "xcodeDefaults": true,
+        "includePrefixes": [
+          "Config.xcconfig"
+        ],
+        "ignoreSuffixes": [
+          ".xcconfig"
+        ]
+      },
+      "paths": [
+        {
+          "path": ".cache/",
+          "ignored": true
+        },
+        {
+          "path": ".cache/app",
+          "ignored": true
+        },
+        {
+          "path": ".git/",
+          "ignored": true
+        },
+        {
+          "path": ".DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "a/.DS_Store",
+          "ignored": true
+        },
+        {
+          "path": "vendor/",
+          "ignored": true
+        },
+        {
+          "path": "Vendor/",
+          "ignored": false
+        },
+        {
+          "path": "vendor/a",
+          "ignored": true
+        },
+        {
+          "path": "file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "app/nested.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/nested/keep.tmp",
+          "ignored": false
+        },
+        {
+          "path": "app/build/",
+          "ignored": true
+        },
+        {
+          "path": "app/build/a",
+          "ignored": true
+        },
+        {
+          "path": "some/build/",
+          "ignored": false
+        },
+        {
+          "path": "some/Pods/",
+          "ignored": false
+        },
+        {
+          "path": "build/",
+          "ignored": true
+        },
+        {
+          "path": "build/a",
+          "ignored": true
+        },
+        {
+          "path": "Pods/",
+          "ignored": true
+        },
+        {
+          "path": ".swiftpm/",
+          "ignored": true
+        },
+        {
+          "path": "a.xcodeproj/",
+          "ignored": true
+        },
+        {
+          "path": "a/xcuserdata/",
+          "ignored": true
+        },
+        {
+          "path": "a.dSYM/",
+          "ignored": true
+        },
+        {
+          "path": "a/thing.dSYM/file",
+          "ignored": true
+        },
+        {
+          "path": ".env",
+          "ignored": false
+        },
+        {
+          "path": ".env.local",
+          "ignored": false
+        },
+        {
+          "path": "a/.env.local",
+          "ignored": false
+        },
+        {
+          "path": "Config.xcconfig",
+          "ignored": false
+        },
+        {
+          "path": "blocked/keep.txt",
+          "ignored": true
+        },
+        {
+          "path": "logs/keep/",
+          "ignored": false
+        },
+        {
+          "path": "logs/a",
+          "ignored": true
+        },
+        {
+          "path": "a//file.tmp",
+          "ignored": true
+        },
+        {
+          "path": "abc.txt",
+          "ignored": true
+        },
+        {
+          "path": "ac.txt",
+          "ignored": false
+        },
+        {
+          "path": "file1.dat",
+          "ignored": true
+        },
+        {
+          "path": "filea.dat",
+          "ignored": false
+        },
+        {
+          "path": "cache/",
+          "ignored": false
+        },
+        {
+          "path": "nested/cache/a",
+          "ignored": true
+        },
+        {
+          "path": "root/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "root/a/b/temp.txt",
+          "ignored": true
+        },
+        {
+          "path": "foo/bar",
+          "ignored": true
+        },
+        {
+          "path": "a/foo/bar",
+          "ignored": false
+        },
+        {
+          "path": "#secret",
+          "ignored": true
+        },
+        {
+          "path": "!secret",
+          "ignored": true
+        },
+        {
+          "path": " space.txt",
+          "ignored": true
+        },
+        {
+          "path": "space.txt",
+          "ignored": false
+        }
+      ]
+    }
+  ]
+}

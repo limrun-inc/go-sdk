@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"time"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
 	"github.com/limrun-inc/go-sdk/internal/apiquery"
@@ -43,7 +44,7 @@ func (r *AssetService) List(ctx context.Context, query AssetListParams, opts ...
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Delete the asset with given ID.
@@ -52,11 +53,11 @@ func (r *AssetService) Delete(ctx context.Context, assetID string, opts ...optio
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if assetID == "" {
 		err = errors.New("missing required assetId parameter")
-		return
+		return err
 	}
-	path := fmt.Sprintf("v1/assets/%s", assetID)
+	path := fmt.Sprintf("v1/assets/%s", url.PathEscape(assetID))
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
-	return
+	return err
 }
 
 // Get the asset with given ID.
@@ -64,11 +65,11 @@ func (r *AssetService) Get(ctx context.Context, assetID string, query AssetGetPa
 	opts = slices.Concat(r.Options, opts)
 	if assetID == "" {
 		err = errors.New("missing required assetId parameter")
-		return
+		return nil, err
 	}
-	path := fmt.Sprintf("v1/assets/%s", assetID)
+	path := fmt.Sprintf("v1/assets/%s", url.PathEscape(assetID))
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return
+	return res, err
 }
 
 // Creates an asset and returns upload and download URLs. If there is a
@@ -80,30 +81,43 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 	opts = slices.Concat(r.Options, opts)
 	path := "v1/assets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPut, path, body, &res, opts...)
-	return
+	return res, err
 }
 
 type Asset struct {
-	ID   string `json:"id,required"`
-	Name string `json:"name,required"`
+	ID string `json:"id" api:"required"`
+	// Any of "App", "Keychain".
+	Kind AssetKind `json:"kind" api:"required"`
+	Name string    `json:"name" api:"required"`
 	// Human-readable display name for the asset. If not set, the name should be used.
 	DisplayName string `json:"displayName"`
+	// When set, the time after which the asset is automatically deleted.
+	ExpiresAt time.Time `json:"expiresAt" format:"date-time"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
-	// The operating system this asset is for. If not set, the asset is available for
-	// all platforms.
+	// Deprecated: alias of platform, always mirrors it. Use platform instead.
 	//
-	// Any of "ios", "android".
-	Os                AssetOs `json:"os"`
-	SignedDownloadURL string  `json:"signedDownloadUrl"`
-	SignedUploadURL   string  `json:"signedUploadUrl"`
+	// Any of "ios", "android", "xcode".
+	//
+	// Deprecated: deprecated
+	Os AssetOs `json:"os"`
+	// The platform this asset is for. If not set, the asset is available for all
+	// platforms.
+	//
+	// Any of "ios", "android", "xcode".
+	Platform          AssetPlatform `json:"platform"`
+	SignedDownloadURL string        `json:"signedDownloadUrl"`
+	SignedUploadURL   string        `json:"signedUploadUrl"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID                respjson.Field
+		Kind              respjson.Field
 		Name              respjson.Field
 		DisplayName       respjson.Field
+		ExpiresAt         respjson.Field
 		Md5               respjson.Field
 		Os                respjson.Field
+		Platform          respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
 		ExtraFields       map[string]respjson.Field
@@ -117,29 +131,55 @@ func (r *Asset) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// The operating system this asset is for. If not set, the asset is available for
-// all platforms.
+type AssetKind string
+
+const (
+	AssetKindApp      AssetKind = "App"
+	AssetKindKeychain AssetKind = "Keychain"
+)
+
+// Deprecated: alias of platform, always mirrors it. Use platform instead.
 type AssetOs string
 
 const (
 	AssetOsIos     AssetOs = "ios"
 	AssetOsAndroid AssetOs = "android"
+	AssetOsXcode   AssetOs = "xcode"
+)
+
+// The platform this asset is for. If not set, the asset is available for all
+// platforms.
+type AssetPlatform string
+
+const (
+	AssetPlatformIos     AssetPlatform = "ios"
+	AssetPlatformAndroid AssetPlatform = "android"
+	AssetPlatformXcode   AssetPlatform = "xcode"
 )
 
 type AssetGetOrNewResponse struct {
-	ID                string `json:"id,required"`
-	Name              string `json:"name,required"`
-	SignedDownloadURL string `json:"signedDownloadUrl,required"`
-	SignedUploadURL   string `json:"signedUploadUrl,required"`
+	ID string `json:"id" api:"required"`
+	// Any of "App", "Keychain".
+	Kind              AssetGetOrNewResponseKind `json:"kind" api:"required"`
+	Name              string                    `json:"name" api:"required"`
+	SignedDownloadURL string                    `json:"signedDownloadUrl" api:"required"`
+	SignedUploadURL   string                    `json:"signedUploadUrl" api:"required"`
+	// When set, the time after which the asset is automatically deleted.
+	ExpiresAt time.Time `json:"expiresAt" format:"date-time"`
 	// Returned only if there is a corresponding file uploaded already.
 	Md5 string `json:"md5"`
+	// Any of "ios", "android", "xcode".
+	Platform AssetGetOrNewResponsePlatform `json:"platform"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID                respjson.Field
+		Kind              respjson.Field
 		Name              respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
+		ExpiresAt         respjson.Field
 		Md5               respjson.Field
+		Platform          respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -151,7 +191,23 @@ func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type AssetGetOrNewResponseKind string
+
+const (
+	AssetGetOrNewResponseKindApp      AssetGetOrNewResponseKind = "App"
+	AssetGetOrNewResponseKindKeychain AssetGetOrNewResponseKind = "Keychain"
+)
+
+type AssetGetOrNewResponsePlatform string
+
+const (
+	AssetGetOrNewResponsePlatformIos     AssetGetOrNewResponsePlatform = "ios"
+	AssetGetOrNewResponsePlatformAndroid AssetGetOrNewResponsePlatform = "android"
+	AssetGetOrNewResponsePlatformXcode   AssetGetOrNewResponsePlatform = "xcode"
+)
+
 type AssetListParams struct {
+
 	// If true, also includes assets from Limrun App Store where you have access to.
 	// App Store assets will be returned with a "appstore/" prefix in their names.
 	IncludeAppStore param.Opt[bool] `query:"includeAppStore,omitzero" json:"-"`
@@ -161,8 +217,22 @@ type AssetListParams struct {
 	IncludeUploadURL param.Opt[bool] `query:"includeUploadUrl,omitzero" json:"-"`
 	// Maximum number of items to be returned. The default is 50.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
-	// Query by file name
+	// Case-sensitive exact match on the asset name. Cannot be combined with
+	// namePrefixFilter. When combined with includeAppStore=true, a leading "appstore/"
+	// is stripped before querying App Store assets (whose stored names never carry the
+	// prefix).
 	NameFilter param.Opt[string] `query:"nameFilter,omitzero" json:"-"`
+	// Case-sensitive prefix match on the asset name. LIKE wildcards ("%", "\_") in the
+	// value are treated as literal characters, not wildcards. Empty string is rejected
+	// with 400; omit the parameter if no filtering is desired. Cannot be combined with
+	// nameFilter. When combined with includeAppStore=true, a leading "appstore/" is
+	// stripped before querying App Store assets (whose stored names never carry the
+	// prefix); a partial prefix like "appstor" will not match any App Store assets.
+	NamePrefixFilter param.Opt[string] `query:"namePrefixFilter,omitzero" json:"-"`
+	// Filters assets by kind.
+	//
+	// Any of "App", "Keychain".
+	KindFilter AssetListParamsKindFilter `query:"kindFilter,omitzero" json:"-"`
 	paramObj
 }
 
@@ -174,7 +244,16 @@ func (r AssetListParams) URLQuery() (v url.Values, err error) {
 	})
 }
 
+// Filters assets by kind.
+type AssetListParamsKindFilter string
+
+const (
+	AssetListParamsKindFilterApp      AssetListParamsKindFilter = "App"
+	AssetListParamsKindFilterKeychain AssetListParamsKindFilter = "Keychain"
+)
+
 type AssetGetParams struct {
+
 	// Toggles whether a download URL should be included in the response
 	IncludeDownloadURL param.Opt[bool] `query:"includeDownloadUrl,omitzero" json:"-"`
 	// Toggles whether an upload URL should be included in the response
@@ -191,7 +270,33 @@ func (r AssetGetParams) URLQuery() (v url.Values, err error) {
 }
 
 type AssetGetOrNewParams struct {
-	Name string `json:"name,required"`
+	// Human-readable app title for the uploaded bundle, as users see it on iOS.
+	// Builds through limbuild record it automatically from the bundle's
+	// Info.plist; set it here for hand-uploaded bundles.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// CFBundleIdentifier of the uploaded app bundle. Used by over-the-air
+	// installation when present.
+	BundleIdentifier param.Opt[string] `json:"bundleIdentifier,omitzero"`
+	// CFBundleShortVersionString of the uploaded app bundle, e.g. 1.2.3.
+	ShortVersion param.Opt[string] `json:"shortVersion,omitzero"`
+	// CFBundleVersion of the uploaded app bundle, e.g. 42. Used by
+	// over-the-air installation when present.
+	BuildVersion param.Opt[string] `json:"buildVersion,omitzero"`
+	// The app's primary URL scheme, e.g. "myapp" for myapp:// deep links.
+	// Consumers such as the registry's OTA install page use it to offer an Open
+	// button after installation.
+	Deeplink param.Opt[string] `json:"deeplink,omitzero"`
+
+	Name string `json:"name" api:"required"`
+	// Optional time-to-live as a Go duration string (e.g. "24h"). When set, the asset
+	// is deleted this long after now; minimum is 1m. Omit for no expiry. On re-upload
+	// of an existing asset, a value updates the expiry while omitting it leaves the
+	// current expiry unchanged.
+	Ttl param.Opt[string] `json:"ttl,omitzero"`
+	// Any of "App", "Keychain".
+	Kind AssetGetOrNewParamsKind `json:"kind,omitzero"`
+	// Any of "ios", "android", "xcode".
+	Platform AssetGetOrNewParamsPlatform `json:"platform,omitzero"`
 	paramObj
 }
 
@@ -201,4 +306,67 @@ func (r AssetGetOrNewParams) MarshalJSON() (data []byte, err error) {
 }
 func (r *AssetGetOrNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+type AssetGetOrNewParamsKind string
+
+const (
+	AssetGetOrNewParamsKindApp      AssetGetOrNewParamsKind = "App"
+	AssetGetOrNewParamsKindKeychain AssetGetOrNewParamsKind = "Keychain"
+)
+
+type AssetGetOrNewParamsPlatform string
+
+const (
+	AssetGetOrNewParamsPlatformIos     AssetGetOrNewParamsPlatform = "ios"
+	AssetGetOrNewParamsPlatformAndroid AssetGetOrNewParamsPlatform = "android"
+	AssetGetOrNewParamsPlatformXcode   AssetGetOrNewParamsPlatform = "xcode"
+)
+
+type AssetUpdateParams struct {
+	DisplayName      param.Opt[string] `json:"displayName,omitzero"`
+	BundleIdentifier param.Opt[string] `json:"bundleIdentifier,omitzero"`
+	ShortVersion     param.Opt[string] `json:"shortVersion,omitzero"`
+	BuildVersion     param.Opt[string] `json:"buildVersion,omitzero"`
+	Deeplink         param.Opt[string] `json:"deeplink,omitzero"`
+	TargetSdk        param.Opt[string] `json:"targetSdk,omitzero"`
+	Ttl              param.Opt[string] `json:"ttl,omitzero"`
+	paramObj
+}
+
+func (r AssetUpdateParams) MarshalJSON() ([]byte, error) {
+	type shadow AssetUpdateParams
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+
+type AssetUploadURLs struct {
+	// Existing file MD5. Omitted when no file exists; storage-check failures return an error.
+	Md5             string `json:"md5"`
+	SignedUploadURL string `json:"signedUploadUrl"`
+	// Upload the icon PNG with PUT and Content-Type: image/png. No other headers are required.
+	SignedIconUploadURL string `json:"signedIconUploadUrl"`
+	// Included only with read permission.
+	IconURL string `json:"iconUrl"`
+	JSON    struct {
+		Md5                 respjson.Field
+		SignedUploadURL     respjson.Field
+		SignedIconUploadURL respjson.Field
+		IconURL             respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+func (r AssetUploadURLs) RawJSON() string                  { return r.JSON.raw }
+func (r *AssetUploadURLs) UnmarshalJSON(data []byte) error { return apijson.UnmarshalRoot(data, r) }
+
+type AssetListResponse = []Asset
+
+func (r *AssetService) Update(ctx context.Context, id string, params AssetUpdateParams, opts ...option.RequestOption) error {
+	return requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, "v1/assets/"+url.PathEscape(id), params, nil, slices.Concat(r.Options, opts)...)
+}
+
+func (r *AssetService) CreateUploadURL(ctx context.Context, id string, opts ...option.RequestOption) (res *AssetUploadURLs, err error) {
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, "v1/assets/"+url.PathEscape(id)+"/upload_urls", nil, &res, slices.Concat(r.Options, opts)...)
+	return
 }

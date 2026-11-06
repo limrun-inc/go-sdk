@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/limrun-inc/go-sdk"
+	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/internal"
 	"github.com/limrun-inc/go-sdk/option"
 )
@@ -38,7 +38,7 @@ func TestUserAgentHeader(t *testing.T) {
 			},
 		}),
 	)
-	client.AndroidInstances.New(context.Background(), limrun.AndroidInstanceNewParams{})
+	_, _ = client.AndroidInstances.New(context.Background(), limrun.AndroidInstanceNewParams{})
 	if userAgent != fmt.Sprintf("Limrun/Go %s", internal.PackageVersion) {
 		t.Errorf("Expected User-Agent to be correct, but got: %#v", userAgent)
 	}

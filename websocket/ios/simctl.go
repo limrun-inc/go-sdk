@@ -3,14 +3,12 @@ package ios
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 // SimctlCmd represents a simctl command to be run remotely.
@@ -18,6 +16,10 @@ import (
 type SimctlCmd struct {
 	// Args holds the command arguments (not including "simctl" itself).
 	Args []string
+
+	// Stdin is sent as base64 in the command frame.
+	Stdin            []byte
+	DisconnectOnExit bool
 
 	// Stdout specifies the process's standard output.
 	// If Stdout is nil, output is discarded.
@@ -41,6 +43,8 @@ type SimctlCmd struct {
 	stdoutPipe     *io.PipeWriter
 	stderrPipe     *io.PipeWriter
 	closeAfterWait []io.Closer
+	queue          []simctlOutput
+	wake           chan struct{}
 }
 
 // Run starts the command and waits for it to complete.
@@ -63,7 +67,11 @@ func (c *SimctlCmd) Start() error {
 	}
 	c.started = true
 
-	if c.client.closed.Load() {
+	if c.client.closed.Load() || c.client.transport == nil {
+		c.done = make(chan struct{})
+		c.err = ErrNotConnected
+		c.finished = true
+		close(c.done)
 		return ErrNotConnected
 	}
 
@@ -71,22 +79,19 @@ func (c *SimctlCmd) Start() error {
 	c.done = make(chan struct{})
 	c.client.simctlExecutions.Store(c.id, c)
 
-	req := &request{Type: "simctl", ID: c.id, Args: c.Args}
-	data, err := json.Marshal(req)
-	if err != nil {
-		c.client.simctlExecutions.Delete(c.id)
-		return fmt.Errorf("marshal request: %w", err)
+	req := map[string]any{"type": "simctl", "id": c.id, "args": c.Args}
+	if c.Stdin != nil {
+		req["stdin"] = base64.StdEncoding.EncodeToString(c.Stdin)
 	}
-
-	c.client.logger.Debug("sending simctl request", "id", c.id, "args", c.Args)
-
-	c.client.wsMu.Lock()
-	err = c.client.ws.WriteMessage(websocket.TextMessage, data)
-	c.client.wsMu.Unlock()
-	if err != nil {
+	c.wake = make(chan struct{}, 1)
+	if err := c.client.transport.Send(req); err != nil {
 		c.client.simctlExecutions.Delete(c.id)
-		return fmt.Errorf("send request: %w", err)
+		c.err = err
+		c.finished = true
+		close(c.done)
+		return err
 	}
+	go c.drain()
 
 	// If context was provided, watch for cancellation
 	if c.ctx != nil {
@@ -94,6 +99,7 @@ func (c *SimctlCmd) Start() error {
 			select {
 			case <-c.ctx.Done():
 				c.Kill()
+				c.handleError(c.ctx.Err())
 			case <-c.done:
 				// Command finished normally
 			}
@@ -201,35 +207,77 @@ func (c *SimctlCmd) CombinedOutput() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// handleOutput is called by the client's readLoop to deliver output data.
-func (c *SimctlCmd) handleOutput(stdout, stderr []byte, exitCode *int) {
-	if len(stdout) > 0 && c.Stdout != nil {
-		c.Stdout.Write(stdout)
-	}
-	if len(stderr) > 0 && c.Stderr != nil {
-		c.Stderr.Write(stderr)
-	}
-	if exitCode != nil {
-		c.mu.Lock()
-		c.exitCode = *exitCode
-		c.finished = true
-		c.mu.Unlock()
-		close(c.done)
-	}
+type simctlOutput struct {
+	stdout, stderr []byte
+	exitCode       *int
 }
 
-// handleError is called when the connection is closed unexpectedly.
-func (c *SimctlCmd) handleError(err error) {
+func (c *SimctlCmd) handleOutput(stdout, stderr []byte, exitCode *int) {
+	c.mu.Lock()
+	if !c.finished {
+		c.queue = append(c.queue, simctlOutput{stdout, stderr, exitCode})
+		select {
+		case c.wake <- struct{}{}:
+		default:
+		}
+	}
+	c.mu.Unlock()
+}
+func (c *SimctlCmd) drain() {
+	for {
+		select {
+		case <-c.done:
+			return
+		case <-c.wake:
+		}
+		for {
+			c.mu.Lock()
+			if c.finished || len(c.queue) == 0 {
+				c.mu.Unlock()
+				break
+			}
+			item := c.queue[0]
+			c.queue = c.queue[1:]
+			c.mu.Unlock()
+			if len(item.stdout) > 0 && c.Stdout != nil {
+				if _, err := c.Stdout.Write(item.stdout); err != nil {
+					c.handleError(err)
+					return
+				}
+			}
+			if len(item.stderr) > 0 && c.Stderr != nil {
+				if _, err := c.Stderr.Write(item.stderr); err != nil {
+					c.handleError(err)
+					return
+				}
+			}
+			if item.exitCode != nil {
+				c.finish(*item.exitCode, nil)
+				return
+			}
+		}
+	}
+}
+func (c *SimctlCmd) finish(code int, err error) {
 	c.mu.Lock()
 	if c.finished {
 		c.mu.Unlock()
 		return
 	}
-	c.err = err
 	c.finished = true
-	c.mu.Unlock()
+	c.exitCode = code
+	c.err = err
+	for _, p := range c.closeAfterWait {
+		p.Close()
+	}
 	close(c.done)
+	c.mu.Unlock()
+	c.client.simctlExecutions.Delete(c.id)
+	if c.DisconnectOnExit {
+		c.client.Close()
+	}
 }
+func (c *SimctlCmd) handleError(err error) { c.finish(-1, err) }
 
 // Kill terminates the running command by sending a terminate request to the server.
 // The process will exit and Wait will return with an error indicating termination.
@@ -246,25 +294,5 @@ func (c *SimctlCmd) Kill() error {
 	id := c.id
 	c.mu.Unlock()
 
-	req := struct {
-		Type string `json:"type"`
-		ID   string `json:"id"`
-	}{
-		Type: "simctlTerminate",
-		ID:   id,
-	}
-
-	data, err := json.Marshal(req)
-	if err != nil {
-		return fmt.Errorf("marshal terminate request: %w", err)
-	}
-
-	c.client.wsMu.Lock()
-	err = c.client.ws.WriteMessage(websocket.TextMessage, data)
-	c.client.wsMu.Unlock()
-	if err != nil {
-		return fmt.Errorf("send terminate request: %w", err)
-	}
-
-	return nil
+	return c.client.transport.Send(map[string]any{"type": "simctlTerminate", "id": id})
 }

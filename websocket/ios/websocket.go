@@ -19,13 +19,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/limrun-inc/go-sdk/internal/proxy"
+
+	"github.com/limrun-inc/go-sdk/internal/control"
 )
 
 // Common errors returned by the client.
 var (
-	ErrNotConnected    = errors.New("websocket: not connected")
-	ErrConnectionClose = errors.New("websocket: connection closed")
+	ErrNotConnected    = control.ErrNotConnected
+	ErrConnectionClose = control.ErrClosed
 )
 
 // AccessibilitySelector defines criteria for finding accessibility elements.
@@ -84,6 +86,7 @@ type ScreenshotData struct {
 
 // TapElementResult contains information about a tapped element.
 type TapElementResult struct {
+	Method       string `json:"method"`
 	ElementLabel string
 	ElementType  string
 }
@@ -95,9 +98,11 @@ type ElementResult struct {
 
 // InstalledApp represents an installed application on the simulator.
 type InstalledApp struct {
-	BundleID    string `json:"bundleId"`
-	Name        string `json:"name"`
-	InstallType string `json:"installType"`
+	BundleID    string   `json:"bundleId"`
+	Name        string   `json:"name"`
+	InstallType string   `json:"installType"`
+	Icon        string   `json:"icon,omitempty"`
+	InstalledAt *float64 `json:"installedAt,omitempty"`
 }
 
 // LsofEntry represents an open file entry.
@@ -126,6 +131,7 @@ const (
 
 // AppInstallationOptions configures app installation behavior.
 type AppInstallationOptions struct {
+	Timeout time.Duration
 	// MD5 hash for caching - if provided and matches cached version, skips download
 	MD5 string
 	// LaunchMode after installation. Leave empty to not launch after installation.
@@ -143,8 +149,8 @@ func WithLogger(logger *slog.Logger) Option {
 }
 
 // WithHTTPClient sets a custom *http.Client used for the HTTP-based methods
-// (Cp, StoreKit config, SoftReset, recording download). Defaults to
-// http.DefaultClient.
+// (Cp, StoreKit config, SoftReset, recording download). The default client
+// honors HTTP proxy environment variables.
 func WithHTTPClient(client *http.Client) Option {
 	return func(c *Client) {
 		c.httpClient = client
@@ -160,13 +166,16 @@ type Client struct {
 
 	keepAliveSessionID string
 
-	ws               *websocket.Conn
-	wsMu             sync.Mutex
-	pendingRequests  sync.Map // map[string]chan *response
-	simctlExecutions sync.Map // map[string]*SimctlCmd
-	requestID        atomic.Uint64
-	closed           atomic.Bool
-	done             chan struct{}
+	transport         *control.Client
+	reconnectAttempts int
+	reconnectDelay    time.Duration
+	maxReconnectDelay time.Duration
+	simctlExecutions  sync.Map
+	notifications     sync.Map
+	requestID         atomic.Uint64
+	closed            atomic.Bool
+	cleanupsMu        sync.Mutex
+	cleanups          []func()
 }
 
 // Orientation represents a device orientation.
@@ -202,6 +211,7 @@ type ScrollOptions struct {
 	// 0 (default) is a slow scroll with no momentum; 1 is fastest with max
 	// inertia.
 	Momentum float64
+	Display  DuoDisplay
 }
 
 // LaunchAppRuntime is an optional runtime injected during LaunchApp. Runtime
@@ -223,6 +233,9 @@ type LaunchAppOption func(*launchAppConfig)
 type launchAppConfig struct {
 	mode    LaunchMode
 	runtime *LaunchAppRuntime
+	env     map[string]string
+	onExit  LaunchAppExitCallback
+	onHang  AppHangCallback
 }
 
 // WithLaunchMode sets the launch behavior when the app may already be running.
@@ -255,11 +268,16 @@ type DeviceInfo struct {
 	// ScreenHeight is the screen height in points.
 	ScreenHeight float64
 	// Model is the device model name.
-	Model string
+	Model     string
+	OSVersion string
 }
 
 // RecordingOptions configures StartRecording.
 type RecordingOptions struct {
+	Persist         *PersistOption
+	Display         DuoDisplay
+	TouchIndicators *bool
+	RecordingID     string
 	// Quality must be one of 5, 6, 7, 8, 9, 10. A zero value uses the server
 	// default (5).
 	Quality int
@@ -281,6 +299,8 @@ type recordingUpload struct {
 
 // request is an internal type for WebSocket requests.
 type request struct {
+	Extra        map[string]any         `json:"-"`
+	Timeout      time.Duration          `json:"-"`
 	Type         string                 `json:"type"`
 	ID           string                 `json:"id"`
 	X            float64                `json:"x,omitempty"`
@@ -334,6 +354,8 @@ type response struct {
 	ScreenWidth  float64 `json:"screenWidth,omitempty"`
 	ScreenHeight float64 `json:"screenHeight,omitempty"`
 	Model        string  `json:"model,omitempty"`
+	OSVersion    string  `json:"osVersion,omitempty"`
+	Method       string  `json:"method,omitempty"`
 	// simctlStream / command (xcrun, xcodebuild) fields
 	Stdout   string `json:"stdout,omitempty"`
 	Stderr   string `json:"stderr,omitempty"`
@@ -346,9 +368,9 @@ func NewClient(apiURL, token string, opts ...Option) (*Client, error) {
 		apiURL:             apiURL,
 		token:              token,
 		logger:             slog.Default(),
-		httpClient:         http.DefaultClient,
+		httpClient:         proxy.Client(),
 		keepAliveSessionID: newSessionID(),
-		done:               make(chan struct{}),
+		reconnectAttempts:  6,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -387,148 +409,90 @@ func newSessionID() string {
 }
 
 func (c *Client) connect() error {
-	wsURL, err := signalingURL(c.apiURL, c.token)
+	endpoint, err := signalingURL(c.apiURL, c.token)
 	if err != nil {
 		return err
 	}
-
-	ws, _, err := websocket.DefaultDialer.Dial(wsURL, http.Header{})
-	if err != nil {
-		return fmt.Errorf("websocket dial: %w", err)
-	}
-
-	c.wsMu.Lock()
-	c.ws = ws
-	c.wsMu.Unlock()
-
-	go c.readLoop()
-	go c.pingLoop()
-
-	return nil
-}
-
-// Close closes the WebSocket connection and releases resources.
-func (c *Client) Close() error {
-	if c.closed.Swap(true) {
-		return nil // Already closed
-	}
-	close(c.done)
-
-	c.wsMu.Lock()
-	err := c.ws.Close()
-	c.wsMu.Unlock()
-
-	// Fail all pending requests
-	c.pendingRequests.Range(func(key, value any) bool {
-		close(value.(chan *response))
-		c.pendingRequests.Delete(key)
-		return true
-	})
-
-	// Fail all simctl executions
-	c.simctlExecutions.Range(func(key, value any) bool {
-		cmd := value.(*SimctlCmd)
-		cmd.handleError(ErrConnectionClose)
-		c.simctlExecutions.Delete(key)
-		return true
-	})
-
+	c.transport, err = control.New(context.Background(), endpoint, control.Options{MaxReconnectAttempts: c.reconnectAttempts, ReconnectDelay: c.reconnectDelay, MaxReconnectDelay: c.maxReconnectDelay, OnMessage: c.handleMessage, OnDisconnect: c.failExecutions, OnPermanentDisconnect: func() { c.notifications.Range(func(k, v any) bool { c.notifications.Delete(k); return true }) }})
 	return err
 }
-
-func (c *Client) readLoop() {
-	for {
-		_, message, err := c.ws.ReadMessage()
-		if err != nil {
-			if !c.closed.Load() {
-				c.logger.Error("websocket read error", "error", err)
+func (c *Client) Close() error {
+	if c.closed.Swap(true) {
+		return nil
+	}
+	c.notifications.Range(func(k, v any) bool { c.notifications.Delete(k); return true })
+	c.cleanupsMu.Lock()
+	cleanups := c.cleanups
+	c.cleanups = nil
+	c.cleanupsMu.Unlock()
+	for _, f := range cleanups {
+		f()
+	}
+	if c.transport == nil {
+		return nil
+	}
+	return c.transport.Close()
+}
+func (c *Client) Disconnect() error { return c.Close() }
+func (c *Client) failExecutions(err error) {
+	c.simctlExecutions.Range(func(k, v any) bool { v.(*SimctlCmd).handleError(err); c.simctlExecutions.Delete(k); return true })
+}
+func (c *Client) handleMessage(data json.RawMessage) bool {
+	var msg struct {
+		Type     string `json:"type"`
+		ID       string `json:"id"`
+		Stdout   string `json:"stdout"`
+		Stderr   string `json:"stderr"`
+		ExitCode *int   `json:"exitCode"`
+		Error    string `json:"error"`
+	}
+	if json.Unmarshal(data, &msg) != nil {
+		return false
+	}
+	if msg.Type == "appExit" || msg.Type == "appHang" {
+		c.handleNotification(data)
+		return true
+	}
+	if v, ok := c.simctlExecutions.Load(msg.ID); ok {
+		cmd := v.(*SimctlCmd)
+		if msg.Error != "" {
+			cmd.handleError(errors.New(msg.Error))
+			c.simctlExecutions.Delete(msg.ID)
+			return true
+		}
+		if msg.Type == "simctlStream" {
+			stdout, _ := decodeBase64(msg.Stdout)
+			stderr, _ := decodeBase64(msg.Stderr)
+			cmd.handleOutput(stdout, stderr, msg.ExitCode)
+			if msg.ExitCode != nil {
+				c.simctlExecutions.Delete(msg.ID)
 			}
-			return
-		}
-
-		var resp response
-		if err := json.Unmarshal(message, &resp); err != nil {
-			c.logger.Error("failed to parse message", "error", err)
-			continue
-		}
-
-		// Handle simctl streaming separately
-		if resp.Type == "simctlStream" {
-			if val, ok := c.simctlExecutions.Load(resp.ID); ok {
-				cmd := val.(*SimctlCmd)
-				var stdout, stderr []byte
-				if resp.Stdout != "" {
-					stdout, _ = base64.StdEncoding.DecodeString(resp.Stdout)
-				}
-				if resp.Stderr != "" {
-					stderr, _ = base64.StdEncoding.DecodeString(resp.Stderr)
-				}
-				cmd.handleOutput(stdout, stderr, resp.ExitCode)
-				if resp.ExitCode != nil {
-					c.simctlExecutions.Delete(resp.ID)
-				}
-			}
-			continue
-		}
-
-		if ch, ok := c.pendingRequests.LoadAndDelete(resp.ID); ok {
-			ch.(chan *response) <- &resp
+			return true
 		}
 	}
+	return false
 }
-
-func (c *Client) pingLoop() {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-c.done:
-			return
-		case <-ticker.C:
-			c.wsMu.Lock()
-			_ = c.ws.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
-			c.wsMu.Unlock()
-		}
+func (c *Client) call(ctx context.Context, kind string, params any, out any, timeout time.Duration) error {
+	if c.closed.Load() || c.transport == nil {
+		return ErrNotConnected
 	}
+	data, err := c.transport.Call(ctx, kind, params, timeout)
+	if err != nil {
+		return err
+	}
+	if out != nil {
+		return json.Unmarshal(data, out)
+	}
+	return nil
 }
-
 func (c *Client) sendRequest(ctx context.Context, req *request) (*response, error) {
-	if c.closed.Load() {
-		return nil, ErrNotConnected
+	timeout := req.Timeout
+	if timeout == 0 && req.Type == "appInstallation" {
+		timeout = 120 * time.Second
 	}
-
-	req.ID = fmt.Sprintf("go-%d-%d", time.Now().UnixNano(), c.requestID.Add(1))
-	respCh := make(chan *response, 1)
-	c.pendingRequests.Store(req.ID, respCh)
-	defer c.pendingRequests.Delete(req.ID)
-
-	data, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
-	}
-
-	c.logger.Debug("sending request", "type", req.Type, "id", req.ID)
-
-	c.wsMu.Lock()
-	err = c.ws.WriteMessage(websocket.TextMessage, data)
-	c.wsMu.Unlock()
-	if err != nil {
-		return nil, fmt.Errorf("send request: %w", err)
-	}
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case resp, ok := <-respCh:
-		if !ok {
-			return nil, ErrConnectionClose
-		}
-		if resp.Error != "" {
-			return nil, errors.New(resp.Error)
-		}
-		return resp, nil
-	}
+	var res response
+	err := c.call(ctx, req.Type, req, &res, timeout)
+	return &res, err
 }
 
 // ============================================================================
@@ -536,8 +500,13 @@ func (c *Client) sendRequest(ctx context.Context, req *request) (*response, erro
 // ============================================================================
 
 // Screenshot takes a screenshot of the current simulator screen.
-func (c *Client) Screenshot(ctx context.Context) (*ScreenshotData, error) {
-	resp, err := c.sendRequest(ctx, &request{Type: "screenshot"})
+func (c *Client) Screenshot(ctx context.Context, opts ...ScreenshotOptions) (*ScreenshotData, error) {
+	var options ScreenshotOptions
+	if len(opts) > 0 {
+		options = opts[0]
+	}
+	var resp response
+	err := c.call(ctx, "screenshot", options, &resp, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -591,15 +560,11 @@ func (c *Client) TapWithScreenSize(ctx context.Context, x, y, screenWidth, scree
 }
 
 // TapElement taps an accessibility element matching the selector.
-func (c *Client) TapElement(ctx context.Context, selector AccessibilitySelector) (*TapElementResult, error) {
-	resp, err := c.sendRequest(ctx, &request{Type: "tapElement", Selector: &selector})
-	if err != nil {
-		return nil, err
+func (c *Client) TapElement(ctx context.Context, selector AccessibilitySelector, opts ...TapElementOptions) (*TapElementResult, error) {
+	if len(opts) > 0 {
+		return c.tapElementWithOptions(ctx, selector, opts[0])
 	}
-	return &TapElementResult{
-		ElementLabel: resp.ElementLabel,
-		ElementType:  resp.ElementType,
-	}, nil
+	return c.tapElementWithOptions(ctx, selector, TapElementOptions{})
 }
 
 // IncrementElement increments an accessibility element (useful for sliders, steppers).
@@ -621,8 +586,15 @@ func (c *Client) DecrementElement(ctx context.Context, selector AccessibilitySel
 }
 
 // SetElementValue sets the value of an accessibility element.
-func (c *Client) SetElementValue(ctx context.Context, text string, selector AccessibilitySelector) (*ElementResult, error) {
-	resp, err := c.sendRequest(ctx, &request{Type: "setElementValue", Text: text, Selector: &selector})
+func (c *Client) SetElementValue(ctx context.Context, text string, selectors ...AccessibilitySelector) (*ElementResult, error) {
+	params := map[string]any{"text": text}
+	if len(selectors) > 0 {
+		params["selector"] = selectors[0]
+	} else {
+		params["focused"] = true
+	}
+	var resp response
+	err := c.call(ctx, "setElementValue", params, &resp, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -630,8 +602,12 @@ func (c *Client) SetElementValue(ctx context.Context, text string, selector Acce
 }
 
 // TypeText types text into the currently focused input field.
-func (c *Client) TypeText(ctx context.Context, text string, pressEnter bool) error {
-	_, err := c.sendRequest(ctx, &request{Type: "typeText", Text: text, PressEnter: pressEnter})
+func (c *Client) TypeText(ctx context.Context, text string, pressEnter bool, opts ...TypeTextOptions) error {
+	params := map[string]any{"text": text, "pressEnter": pressEnter}
+	if len(opts) > 0 && opts[0].RequireFocus != nil && !*opts[0].RequireFocus {
+		params["requireFocus"] = false
+	}
+	err := c.call(ctx, "typeText", params, nil, 0)
 	return err
 }
 
@@ -665,7 +641,32 @@ func (c *Client) LaunchApp(ctx context.Context, bundleID string, opts ...LaunchA
 		}
 		mode = LaunchModeRelaunchIfRunning
 	}
-	_, err := c.sendRequest(ctx, &request{Type: "launchApp", BundleID: bundleID, Mode: mode, Runtime: cfg.runtime})
+	if mode == "" && len(cfg.env) > 0 {
+		mode = LaunchModeRelaunchIfRunning
+	}
+	params := map[string]any{"bundleId": bundleID}
+	if mode != "" {
+		params["mode"] = mode
+	}
+	if cfg.runtime != nil {
+		params["runtime"] = cfg.runtime
+	}
+	if cfg.env != nil {
+		params["env"] = cfg.env
+	}
+	execID := ""
+	if cfg.onExit != nil || cfg.onHang != nil {
+		execID = newSessionID()
+		c.registerNotification(execID, AppMonitorCallbacks{OnExit: cfg.onExit, OnHang: cfg.onHang}, false)
+		params["execId"] = execID
+		if cfg.onHang != nil {
+			params["hangs"] = true
+		}
+	}
+	err := c.call(ctx, "launchApp", params, nil, 0)
+	if err != nil && execID != "" {
+		c.notifications.Delete(execID)
+	}
 	return err
 }
 
@@ -710,6 +711,7 @@ func (c *Client) OpenURL(ctx context.Context, urlStr string) error {
 func (c *Client) InstallApp(ctx context.Context, urlStr string, opts *AppInstallationOptions) (*AppInstallationResult, error) {
 	req := &request{Type: "appInstallation", URL: urlStr}
 	if opts != nil {
+		req.Timeout = opts.Timeout
 		req.MD5 = opts.MD5
 		req.LaunchMode = opts.LaunchMode
 	}
@@ -753,6 +755,9 @@ func (c *Client) Scroll(ctx context.Context, direction ScrollDirection, pixels f
 			req.Coordinate = []float64{opts.Coordinate[0], opts.Coordinate[1]}
 		}
 		req.Momentum = opts.Momentum
+		if opts.Display != "" {
+			req.Extra = map[string]any{"display": opts.Display}
+		}
 	}
 	_, err := c.sendRequest(ctx, req)
 	return err
@@ -761,35 +766,20 @@ func (c *Client) Scroll(ctx context.Context, direction ScrollDirection, pixels f
 // StartRecording starts recording simulator video. Use StopRecording to stop.
 // When opts.Quality is set it must be one of 5, 6, 7, 8, 9, or 10.
 func (c *Client) StartRecording(ctx context.Context, opts *RecordingOptions) error {
-	req := &request{Type: "startVideoRecording"}
-	if opts != nil && opts.Quality != 0 {
-		if opts.Quality < 5 || opts.Quality > 10 {
-			return errors.New("quality must be one of: 5, 6, 7, 8, 9, 10")
-		}
-		req.Quality = opts.Quality
+	params, err := recordingFields(opts)
+	if err != nil {
+		return err
 	}
-	_, err := c.sendRequest(ctx, req)
-	return err
+	return c.call(ctx, "startVideoRecording", params, nil, 0)
 }
 
 // KeepAlive sends an application-level keepAlive message on the control
 // websocket. It is fire-and-forget and does not wait for a response.
 func (c *Client) KeepAlive() error {
-	if c.closed.Load() {
+	if c.closed.Load() || c.transport == nil {
 		return ErrNotConnected
 	}
-	msg := struct {
-		Type      string `json:"type"`
-		SessionID string `json:"sessionId"`
-	}{Type: "keepAlive", SessionID: c.keepAliveSessionID}
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	c.wsMu.Lock()
-	err = c.ws.WriteMessage(websocket.TextMessage, data)
-	c.wsMu.Unlock()
-	return err
+	return c.transport.Send(map[string]any{"type": "keepAlive", "sessionId": c.keepAliveSessionID})
 }
 
 // Xcrun runs an xcrun command with the given arguments and returns the
@@ -847,6 +837,7 @@ func (c *Client) DeviceInfo(ctx context.Context) (*DeviceInfo, error) {
 		ScreenWidth:  resp.ScreenWidth,
 		ScreenHeight: resp.ScreenHeight,
 		Model:        resp.Model,
+		OSVersion:    resp.OSVersion,
 	}, nil
 }
 
@@ -882,4 +873,36 @@ func (c *Client) Simctl(ctx context.Context, args ...string) *SimctlCmd {
 		client: c,
 		ctx:    ctx,
 	}
+}
+
+// MarshalJSON retains required zero coordinates, empty strings and empty batches.
+func (r request) MarshalJSON() ([]byte, error) {
+	type plain request
+	b, err := json.Marshal(plain(r))
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]any
+	if err = json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	switch r.Type {
+	case "tap":
+		m["x"] = r.X
+		m["y"] = r.Y
+	case "setElementValue", "typeText":
+		m["text"] = r.Text
+	case "scroll":
+		m["pixels"] = r.Pixels
+	case "performActions":
+		if r.Actions == nil {
+			m["actions"] = []PerformAction{}
+		} else {
+			m["actions"] = r.Actions
+		}
+	}
+	for k, v := range r.Extra {
+		m[k] = v
+	}
+	return json.Marshal(m)
 }

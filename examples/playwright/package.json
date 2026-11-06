@@ -1,0 +1,8 @@
+{
+  "name": "go-sdk-example-playwright",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.60.0"
+  }
+}
