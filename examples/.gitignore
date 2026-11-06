@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.secrets/
+artifacts/
+*.tsbuildinfo
+*.mp4
+screenshot*.jpg
+android-screenshot*.png
+screenshot.png

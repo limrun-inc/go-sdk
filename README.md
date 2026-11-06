@@ -13,6 +13,8 @@ It includes app monitoring, log streams, file sync, and network tunnels.
 The REST client is generated with [Stainless](https://www.stainless.com/).
 The instance clients and helpers follow the TypeScript SDK's protocols.
 
+See the [examples index](examples/README.md) for the Go equivalents of all TypeScript SDK examples, including simulator monitoring, builds, recording, and fullstack integration.
+
 ## Installation
 
 <!-- x-release-please-start-version -->
