@@ -86,5 +86,7 @@ go doc github.com/limrun-inc/go-sdk/tunnel
 `./scripts/test` starts Prism with the checked-in SDK OpenAPI fixture and runs
 the Go tests. `./scripts/test -race` also enables Go's race detector. The suite
 uses local HTTP and WebSocket servers; it does not create Limrun instances.
-Tests for the xcrun executable and native delta interoperability run when Node.js
-and `xdelta3`, respectively, are installed.
+Tests for the xcrun executable run when Node.js is installed, and the delta test
+that decodes a patch with the daemons' codec runs when `xdelta3` is installed.
+Encoding itself needs neither: the SDK embeds the xdelta3 WebAssembly module the
+TypeScript SDK ships and runs it through wazero.

@@ -390,7 +390,7 @@ func syncOnce(ctx context.Context, root string, opts Options) (*Result, error) {
 		p := payload{Kind: "full", Path: f.Path, TargetSHA256: f.SHA256, Length: f.Size, local: f.local}
 		if basisHash != "" && f.Size >= 64*1024 {
 			patch := filepath.Join(temp, control.ID())
-			size, err := EncodePatch(basis, f.local, patch, (f.Size*9+9)/10-1)
+			size, err := EncodePatch(ctx, basis, f.local, patch, (f.Size*9+9)/10-1)
 			if err != nil {
 				return nil, err
 			}
