@@ -148,9 +148,11 @@ func dialWebSocket(ctx context.Context, remote, token string) (*websocket.Conn, 
 			body = body[:200]
 		}
 		if body != "" {
-			return nil, fmt.Errorf("unexpected server response: %d: %s: %w", res.StatusCode, body, err)
+			//lint:ignore ST1005 Match the TypeScript ws error text consumed by UpgradeStatus.
+			return nil, fmt.Errorf("Unexpected server response: %d: %s: %w", res.StatusCode, body, err)
 		}
-		return nil, fmt.Errorf("unexpected server response: %d: %w", res.StatusCode, err)
+		//lint:ignore ST1005 Match the TypeScript ws error text consumed by UpgradeStatus.
+		return nil, fmt.Errorf("Unexpected server response: %d: %w", res.StatusCode, err)
 	}
 	return ws, err
 }

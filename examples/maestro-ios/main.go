@@ -63,7 +63,7 @@ func run(ctx context.Context) error {
 			return err
 		}
 		if !ios.WaitForMaestroRunner(ctx, runnerURL, instance.Status.Token) {
-			return fmt.Errorf("Maestro runner did not become ready")
+			return fmt.Errorf("maestro runner did not become ready")
 		}
 	}
 	prepared, err := ios.PrepareMaestroRun(ctx, client, runnerURL)

@@ -55,7 +55,7 @@ func run(ctx context.Context) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("Safari Web Inspector socket is not available yet")
+		return fmt.Errorf("the Safari Web Inspector socket is not available yet")
 	}); err != nil {
 		return err
 	}
@@ -87,14 +87,14 @@ func run(ctx context.Context) error {
 	})
 	defer unsubscribe()
 	if forward.GetConnectionState() == tunnel.Disconnected {
-		return fmt.Errorf("Web Inspector tunnel disconnected")
+		return fmt.Errorf("web inspector tunnel disconnected")
 	}
 	fmt.Println("Connect a Web Inspector protocol client to 127.0.0.1:27753. Press Ctrl+C to stop.")
 	select {
 	case <-ctx.Done():
 		return nil
 	case <-disconnected:
-		return fmt.Errorf("Web Inspector tunnel disconnected")
+		return fmt.Errorf("web inspector tunnel disconnected")
 	}
 }
 

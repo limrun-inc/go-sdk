@@ -17,6 +17,38 @@ import (
 )
 
 func wsURL(s string) string { return "ws" + strings.TrimPrefix(s, "http") }
+
+func TestRejectedWebSocketUpgradeRetainsStatus(t *testing.T) {
+	for _, status := range []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusTooManyRequests, http.StatusServiceUnavailable} {
+		for _, body := range []string{"", "upgrade rejected"} {
+			t.Run(fmt.Sprintf("%d/body=%t", status, body != ""), func(t *testing.T) {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(status)
+					fmt.Fprint(w, body)
+				}))
+				defer server.Close()
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				conn, err := dialWebSocket(ctx, wsURL(server.URL), "expired")
+				if conn != nil {
+					conn.Close()
+				}
+				if err == nil {
+					t.Fatal("expected the server to reject the upgrade")
+				}
+				// Both connector retry policy and instance tunnel retry policy must
+				// recognize errors produced by the actual WebSocket dialer.
+				if got := UpgradeStatus(err.Error()); got != status {
+					t.Errorf("status=%d, want %d: %v", got, status, err)
+				}
+				if got, want := IsNonRetryableError(err.Error()), status >= 400 && status < 500; got != want {
+					t.Errorf("non-retryable=%t, want %t: %v", got, want, err)
+				}
+			})
+		}
+	}
+}
+
 func TestDestinationCreditAndHalfClose(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
