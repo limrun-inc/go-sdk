@@ -147,7 +147,7 @@ func (t *transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 		// TLS to the destination must be layered over the proxy connection.
 		selected.DialTLSContext = nil
-		selected.DialTLS = nil
+		selected.DialTLS = nil //nolint:staticcheck // cleared so the deprecated hook cannot bypass the proxy dial
 		t.proxies[key] = selected
 	}
 	t.mu.Unlock()

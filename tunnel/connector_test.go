@@ -134,7 +134,7 @@ func TestConnectorResumesWithoutDroppingInstance(t *testing.T) {
 }
 func TestConnectorRejectsTerminalUpgrade(t *testing.T) {
 	var calls atomic.Int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls.Add(1); http.Error(w, "token expired", 401) }))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { calls.Add(1); http.Error(w, "token expired", http.StatusUnauthorized) }))
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

@@ -57,11 +57,11 @@ func startHTTPProxy(port, matchPort int, base string, headers http.Header) (*HTT
 		target := r.URL
 		if matchPort > 0 {
 			if r.Method == "CONNECT" {
-				http.Error(w, "Limrun forward proxy does not tunnel CONNECT.", 501)
+				http.Error(w, "Limrun forward proxy does not tunnel CONNECT.", http.StatusNotImplemented)
 				return
 			}
 			if !target.IsAbs() || (target.Scheme != "http" && target.Scheme != "https") {
-				http.Error(w, "Limrun forward proxy only accepts absolute-form request targets.", 400)
+				http.Error(w, "Limrun forward proxy only accepts absolute-form request targets.", http.StatusBadRequest)
 				return
 			}
 			n, _ := strconv.Atoi(target.Port())
@@ -69,7 +69,7 @@ func startHTTPProxy(port, matchPort int, base string, headers http.Header) (*HTT
 			ip := net.ParseIP(host)
 			loopback := host == "localhost" || host == "::1" || ip != nil && ip.To4() != nil && ip.To4()[0] == 127
 			if !loopback || n != matchPort {
-				http.Error(w, fmt.Sprintf("Limrun forward proxy only forwards 127.0.0.1:%d.", matchPort), 403)
+				http.Error(w, fmt.Sprintf("Limrun forward proxy only forwards 127.0.0.1:%d.", matchPort), http.StatusForbidden)
 				return
 			}
 		}
@@ -82,7 +82,7 @@ func startHTTPProxy(port, matchPort int, base string, headers http.Header) (*HTT
 		}
 		upstream, err := url.Parse(strings.TrimRight(base, "/") + path)
 		if err != nil {
-			http.Error(w, err.Error(), 502)
+			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
 		request := r.Clone(r.Context())
@@ -98,7 +98,7 @@ func startHTTPProxy(port, matchPort int, base string, headers http.Header) (*HTT
 		}
 		response, err := transport.RoundTrip(request)
 		if err != nil {
-			http.Error(w, err.Error(), 502)
+			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
 		defer response.Body.Close()

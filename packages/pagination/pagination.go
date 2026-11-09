@@ -45,9 +45,6 @@ func (r *Items[T]) GetNextPage() (res *Items[T], err error) {
 		return nil, nil
 	}
 	items := r.Items
-	if items == nil || len(items) == 0 {
-		return nil, nil
-	}
 	cfg := r.cfg.Clone(r.cfg.Context)
 
 	index, key := len(items)-1, "startingAfter"
