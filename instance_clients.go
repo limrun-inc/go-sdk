@@ -60,23 +60,37 @@ type AttachedSimulator struct {
 	Simulator     *IosInstance
 }
 
-func (c *XcodeClient) AttachNewSimulator(ctx context.Context, device *IosInstanceNewParamsSpec) (*AttachedSimulator, error) {
-	var spec IosInstanceNewParamsSpec
+// SimulatorDevice selects the simulator AttachNewSimulator creates, for
+// example a Model of "ipad" or an OSVersion clue. These are the only spec
+// fields the attachment honours; the simulator always gets no delegated
+// permissions.
+type SimulatorDevice struct {
+	Model string
+	Clues []IosInstanceNewParamsSpecClue
+}
+
+// AttachNewSimulator creates a simulator, waits for it, and attaches it to the
+// Xcode instance. A simulator that fails to attach is deleted so no orphan is
+// left for the caller to reap.
+func (c *XcodeClient) AttachNewSimulator(ctx context.Context, device *SimulatorDevice) (*AttachedSimulator, error) {
+	spec := IosInstanceNewParamsSpec{Role: IosInstanceNewParamsSpecRole{Permissions: []string{}}}
 	if device != nil {
 		spec.Model = device.Model
 		spec.Clues = device.Clues
 	}
-	spec.Role = IosInstanceNewParamsSpecRole{Permissions: []string{}}
 	instance, err := c.ios.New(ctx, IosInstanceNewParams{Wait: Bool(true), Spec: spec})
 	if err != nil {
 		return nil, err
 	}
 	if _, err = c.AttachSimulator(ctx, instance.Status.APIURL, instance.Status.Token); err != nil {
-		_ = c.ios.Delete(context.Background(), instance.Metadata.ID)
+		_ = c.ios.Delete(context.WithoutCancel(ctx), instance.Metadata.ID)
 		return nil, err
 	}
-	return &AttachedSimulator{instance.Metadata.ID, instance}, nil
+	return &AttachedSimulator{IosInstanceID: instance.Metadata.ID, Simulator: instance}, nil
 }
+
+// DeleteSimulator deletes a simulator instance on a best-effort basis and
+// reports whether it succeeded.
 func (c *XcodeClient) DeleteSimulator(ctx context.Context, id string) bool {
 	return c.ios.Delete(ctx, id) == nil
 }

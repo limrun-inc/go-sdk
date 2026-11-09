@@ -572,9 +572,9 @@ func (r IosInstanceNewParamsSpecRole) MarshalJSON() ([]byte, error) {
 
 type IosInstanceNewParamsSpecClueClientLocation struct {
 	// Latitude in decimal degrees, from -90 to 90 inclusive. Zero is valid.
-	Latitude float64 `json:"latitude,omitzero" api:"required"`
+	Latitude float64 `json:"latitude" api:"required"`
 	// Longitude in decimal degrees, from -180 to 180 inclusive. Zero is valid.
-	Longitude float64 `json:"longitude,omitzero" api:"required"`
+	Longitude float64 `json:"longitude" api:"required"`
 	paramObj
 }
 

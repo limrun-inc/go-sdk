@@ -121,13 +121,19 @@ func (p *Process) Wait(ctx context.Context) (ExecResult, error) {
 		return p.result, p.err
 	}
 }
+
+// Detach returns once the remote execution has been accepted, without opening
+// its event stream or waiting for completion. Call it right after starting the
+// process: a detach that lands before following begins leaves Wait pending for
+// good, while one that lands later changes nothing and Wait still settles on
+// exit. The remote execution keeps running either way; observe it through a
+// build-finish webhook or the build-log APIs.
 func (p *Process) Detach(ctx context.Context) (string, error) {
 	p.detached.Store(true)
 	select {
 	case <-ctx.Done():
 		return "", ctx.Err()
 	case <-p.started:
-		p.cancel()
 		p.mu.Lock()
 		defer p.mu.Unlock()
 		return p.id, p.startErr
@@ -246,9 +252,6 @@ func (p *Process) run(ctx context.Context, request ExecRequest) {
 		}
 		return nil
 	}, func(t time.Time) { deadSince = t })
-	if p.detached.Load() {
-		return
-	}
 	if err != nil {
 		if p.killed.Load() {
 			code = -1
