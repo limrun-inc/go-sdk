@@ -98,6 +98,8 @@ func Read(r io.Reader, onEvent func(Event) error, onActivity func(), onRetry fun
 	if err := reader.Err(); err != nil {
 		return err
 	}
+	// SSE requires a final blank line: EOF discards an incomplete event, matching
+	// TypeScript's eventsource-client and the EventSource parsing specification.
 	return io.EOF
 }
 

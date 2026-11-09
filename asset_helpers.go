@@ -1,7 +1,6 @@
 package limrun
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
 	"fmt"
@@ -65,33 +64,52 @@ func (r *AssetService) GetOrUpload(ctx context.Context, body AssetGetOrUploadPar
 	if err != nil {
 		return nil, fmt.Errorf("failed to put asset: %w", err)
 	}
-	data, err := os.ReadFile(body.Path)
+	file, err := os.Open(body.Path)
 	if err != nil {
 		return nil, err
 	}
-	md5sum := fmt.Sprintf("%x", md5.Sum(data))
+	defer file.Close()
+	// Hash and upload in bounded chunks, so large bundles do not have to fit in
+	// memory. Progress observers see only the upload, not this checksum pass.
+	hash := md5.New()
+	size, err := io.Copy(hash, file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate asset MD5: %w", err)
+	}
+	md5sum := fmt.Sprintf("%x", hash.Sum(nil))
 	if result.Md5 != "" && result.Md5 == md5sum {
 		return result, nil
 	}
-	var reader io.Reader = bytes.NewReader(data)
+	var reader io.Reader = io.NewSectionReader(file, 0, size)
 	if body.ProgressWriter != nil {
 		reader = io.TeeReader(reader, body.ProgressWriter)
 	}
 	if body.OnUploadProgress != nil {
-		reader = &assetUploadProgressReader{reader: reader, total: int64(len(data)), onProgress: body.OnUploadProgress}
+		reader = &assetUploadProgressReader{reader: reader, total: size, onProgress: body.OnUploadProgress}
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, result.SignedUploadURL, reader)
 	if err != nil {
 		return nil, err
 	}
-	req.ContentLength = int64(len(data))
+	req.ContentLength = size
+	if size == 0 {
+		// A non-nil body with ContentLength 0 otherwise means an unknown length
+		// to net/http, causing chunked encoding instead of Content-Length: 0.
+		req.Body = http.NoBody
+		req.GetBody = func() (io.ReadCloser, error) { return http.NoBody, nil }
+	} else if body.ProgressWriter == nil && body.OnUploadProgress == nil {
+		// Preserve the replay support that bytes.Reader provided for redirects.
+		req.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(io.NewSectionReader(file, 0, size)), nil
+		}
+	}
 	req.Header.Set("Content-Type", "application/octet-stream")
 	res, err := proxy.Client().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload asset: %w", err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
 		text, _ := io.ReadAll(res.Body)
 		return nil, fmt.Errorf("failed to upload asset: %d %s", res.StatusCode, text)
 	}
