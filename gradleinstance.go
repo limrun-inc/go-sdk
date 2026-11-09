@@ -367,7 +367,7 @@ func (r *GradleInstanceSpecRole) UnmarshalJSON(data []byte) error {
 }
 
 type GradleInstanceUpdateParams struct {
-	// Required quoted ETag from a live GET. Missing/empty values return HTTP 428;
+	// Required quoted ETag from a live GET. Missing/empty values are rejected;
 	// a concurrent change returns HTTP 412. Unconditional updates are not supported.
 	IfMatch string `json:"-"`
 	// Replaces all customer labels. Use {} to clear them. Omission preserves labels.

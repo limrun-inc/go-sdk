@@ -374,7 +374,7 @@ func (r *XcodeInstanceSpecRole) UnmarshalJSON(data []byte) error {
 }
 
 type XcodeInstanceUpdateParams struct {
-	// Required quoted ETag from a live GET. Missing/empty values return HTTP 428;
+	// Required quoted ETag from a live GET. Missing/empty values are rejected;
 	// a concurrent change returns HTTP 412. Unconditional updates are not supported.
 	IfMatch string `json:"-"`
 	// Replaces all customer labels. Use {} to clear them. Omission preserves labels.

@@ -3,7 +3,7 @@ module github.com/limrun-inc/go-sdk
 go 1.22.0
 
 require (
-	github.com/andybalholm/brotli v1.1.1
+	github.com/andybalholm/brotli v1.2.7
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/klauspost/compress v1.18.0
