@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.10.0 (2026-11-09)
+
+Full Changelog: [v0.9.0...v0.10.0](https://github.com/limrun-inc/go-sdk/compare/v0.9.0...v0.10.0)
+
+### Compatibility
+
+* Raise the minimum supported Go version from 1.22 to **1.25** to adopt patched compression, networking, and text dependencies. Use a currently supported Go release with the latest security patches for production builds.
+
+### Features
+
+* Bring the Go SDK's instance clients and helpers in line with TypeScript SDK v0.69.1, including app monitoring with crash and hang details, app logs, iOS syslog, and Android logcat streams.
+* Add simulator and emulator controls, accessibility helpers, file transfer, screenshots, recording, and network tunnels with HTTP inspection and HAR output.
+* Add Xcode and Gradle sandbox clients, remote execution and build-log streaming, incremental folder sync, and RBE lifecycle and tunnel helpers.
+* Add access-token, analytics, Xcode/Gradle instance, and snapshot services, plus the corresponding asset and instance API fields.
+* Use the same embedded xdelta3 WebAssembly encoder as TypeScript for incremental sync; SDK users do not need cgo or a separately installed xdelta binary.
+* Add self-contained Go equivalents of all 18 TypeScript example scenarios, including app monitoring, Appium, Playwright, fullstack applications, device installation, and store publishing.
+
+### Bug Fixes
+
+* Stream asset checksums and uploads with bounded buffers, accept successful HTTP 2xx responses, and preserve progress reporting and redirect replay.
+* Preserve zero-valued location coordinates and correct late-detach process completion behavior.
+* Preserve WebSocket handshake status classification and retry behavior.
+* Update Brotli, Zstandard, IDNA, and Unicode-normalization dependencies for reported security fixes.
+
+### Known Limitations
+
+* Live validation reproduced iOS destination-tunnel unavailability, Android inspected-forwarding failures, and missing Safari system-app exit notifications in both Go and TypeScript. These service behaviors remain unresolved; custom-app monitoring and uninspected Android forwarding passed.
+* The device-install and publish-to-stores example backends retain caller-selected filesystem paths. Security review of that behavior remains open; these are local development examples with an unauthenticated loopback API and a separately authenticated webhook listener.
+
 ## 0.9.0 (2026-02-11)
 
 Full Changelog: [v0.8.0...v0.9.0](https://github.com/limrun-inc/go-sdk/compare/v0.8.0...v0.9.0)
