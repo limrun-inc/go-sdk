@@ -2,7 +2,9 @@ package ios
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 )
 
 // PerformAction is a single action in a PerformActions batch. The Type field
@@ -17,6 +19,12 @@ import (
 // buttonUp) are deliberately unpaired so callers can build their own gestures
 // (e.g. long-press = touchDown + wait + touchUp).
 type PerformAction struct {
+	X2           *float64               `json:"x2,omitempty"`
+	Y2           *float64               `json:"y2,omitempty"`
+	Display      DuoDisplay             `json:"display,omitempty"`
+	Focused      *bool                  `json:"focused,omitempty"`
+	RequireFocus *bool                  `json:"requireFocus,omitempty"`
+	Activate     string                 `json:"activate,omitempty"`
 	Type         string                 `json:"type"`
 	X            float64                `json:"x,omitempty"`
 	Y            float64                `json:"y,omitempty"`
@@ -63,8 +71,23 @@ type PerformActionsResult struct {
 // The supplied context governs the client-side timeout. Because a batch may
 // include arbitrary wait durations, use a context with a deadline that
 // accounts for the total expected duration of the batch.
-func (c *Client) PerformActions(ctx context.Context, actions []PerformAction) (*PerformActionsResult, error) {
-	resp, err := c.sendRequest(ctx, &request{Type: "performActions", Actions: actions})
+func (c *Client) PerformActions(ctx context.Context, actions []PerformAction, opts ...PerformActionsOptions) (*PerformActionsResult, error) {
+	timeout := 30*time.Second + time.Duration(len(actions))*2*time.Second
+	for _, a := range actions {
+		if a.Type == "wait" && a.DurationMs > 0 {
+			timeout += time.Duration(a.DurationMs) * time.Millisecond
+		}
+	}
+	var extra map[string]any
+	if len(opts) > 0 {
+		if opts[0].Timeout > 0 {
+			timeout = opts[0].Timeout
+		}
+		if opts[0].Display != "" {
+			extra = map[string]any{"display": opts[0].Display}
+		}
+	}
+	resp, err := c.sendRequest(ctx, &request{Type: "performActions", Actions: actions, Timeout: timeout, Extra: extra})
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +160,7 @@ func ActionScroll(direction ScrollDirection, pixels float64, opts *ScrollOptions
 			a.Coordinate = []float64{opts.Coordinate[0], opts.Coordinate[1]}
 		}
 		a.Momentum = opts.Momentum
+		a.Display = opts.Display
 	}
 	return a
 }
@@ -196,4 +220,35 @@ func ActionButtonDown(button string) PerformAction {
 // "side", "applePay", "softwareKeyboard").
 func ActionButtonUp(button string) PerformAction {
 	return PerformAction{Type: "buttonUp", Button: button}
+}
+
+type PerformActionsOptions struct {
+	Timeout time.Duration
+	Display DuoDisplay
+}
+
+func (a PerformAction) MarshalJSON() ([]byte, error) {
+	type plain PerformAction
+	b, err := json.Marshal(plain(a))
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]any
+	if err = json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	switch a.Type {
+	case "tap", "touchDown", "touchMove", "touchUp":
+		m["x"] = a.X
+		m["y"] = a.Y
+	case "typeText", "setElementValue":
+		m["text"] = a.Text
+	case "scroll":
+		m["pixels"] = a.Pixels
+	case "wait":
+		m["durationMs"] = a.DurationMs
+	case "keyDown", "keyUp":
+		m["keyCode"] = a.KeyCode
+	}
+	return json.Marshal(m)
 }

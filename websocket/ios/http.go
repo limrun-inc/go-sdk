@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/limrun-inc/go-sdk/internal/direct"
 )
 
 // activeRecordingFilename is the server-side filename of the active recording.
@@ -50,7 +52,7 @@ func (c *Client) httpJSON(ctx context.Context, method, rawURL string, reqBody, r
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("%s %s failed: %d %s", method, rawURL, resp.StatusCode, string(b))
+		return direct.ResponseError(method+" "+req.URL.Path, resp, string(b))
 	}
 	if respBody != nil {
 		if err := json.NewDecoder(resp.Body).Decode(respBody); err != nil {
@@ -97,7 +99,7 @@ func (c *Client) Cp(ctx context.Context, name, filePath string) (string, error) 
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("upload failed: %d %s", resp.StatusCode, string(b))
+		return "", direct.ResponseError("upload", resp, string(b))
 	}
 	var result struct {
 		Path string `json:"path"`
@@ -132,7 +134,7 @@ func (c *Client) SetStoreKitConfig(ctx context.Context, bundleID string, storeki
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("setStoreKitConfig failed: %d %s", resp.StatusCode, string(b))
+		return direct.ResponseError("setStoreKitConfig", resp, string(b))
 	}
 	return nil
 }
@@ -307,7 +309,7 @@ func (c *Client) downloadFile(ctx context.Context, rawURL, localPath string) err
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("download failed: %d %s", resp.StatusCode, string(b))
+		return direct.ResponseError("download", resp, string(b))
 	}
 	f, err := os.Create(localPath)
 	if err != nil {

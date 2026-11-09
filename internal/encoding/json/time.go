@@ -2,9 +2,10 @@
 package json
 
 import (
-	"github.com/limrun-inc/go-sdk/internal/encoding/json/shims"
 	"reflect"
 	"time"
+
+	"github.com/limrun-inc/go-sdk/internal/encoding/json/shims"
 )
 
 type TimeMarshaler interface {
@@ -50,7 +51,7 @@ func timeMarshalEncoder(e *encodeState, v reflect.Value, opts encOpts) bool {
 	if b != nil {
 		e.Grow(len(b))
 		out := e.AvailableBuffer()
-		out, _ = appendCompact(out, b, opts.escapeHTML)
+		out, _ = appendCompact(out, b, opts)
 		e.Buffer.Write(out)
 		return true
 	}

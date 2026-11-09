@@ -8,13 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/limrun-inc/go-sdk"
+	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/internal/testutil"
 	"github.com/limrun-inc/go-sdk/option"
 )
 
 func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -56,10 +55,12 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 				URL:    limrun.String("url"),
 				URLs:   []string{"string"},
 			}},
-			Region: limrun.String("region"),
+			Jurisdiction: "us",
+			Region:       limrun.String("region"),
 			Sandbox: limrun.AndroidInstanceNewParamsSpecSandbox{
 				PlaywrightAndroid: limrun.AndroidInstanceNewParamsSpecSandboxPlaywrightAndroid{
 					Enabled: limrun.Bool(true),
+					Version: "1.56.1-lim.1",
 				},
 			},
 		},
@@ -74,7 +75,6 @@ func TestAndroidInstanceNewWithOptionalParams(t *testing.T) {
 }
 
 func TestAndroidInstanceListWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -104,7 +104,6 @@ func TestAndroidInstanceListWithOptionalParams(t *testing.T) {
 }
 
 func TestAndroidInstanceDelete(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -127,7 +126,6 @@ func TestAndroidInstanceDelete(t *testing.T) {
 }
 
 func TestAndroidInstanceGet(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL

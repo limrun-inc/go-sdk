@@ -8,13 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/limrun-inc/go-sdk"
+	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/internal/testutil"
 	"github.com/limrun-inc/go-sdk/option"
 )
 
 func TestIosInstanceNewWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -40,17 +39,21 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 				Kind:     "ClientIP",
 				ClientIP: limrun.String("clientIp"),
 			}},
+			ForceBundleID:     limrun.String("x"),
 			HardTimeout:       limrun.String("hardTimeout"),
 			InactivityTimeout: limrun.String("inactivityTimeout"),
 			InitialAssets: []limrun.IosInstanceNewParamsSpecInitialAsset{{
-				Kind:       "App",
-				Source:     "URL",
-				AssetID:    limrun.String("assetId"),
-				AssetName:  limrun.String("assetName"),
-				LaunchMode: "ForegroundIfRunning",
-				URL:        limrun.String("url"),
+				Kind:          "App",
+				Source:        "URL",
+				AssetID:       limrun.String("assetId"),
+				AssetName:     limrun.String("assetName"),
+				EncryptionKey: limrun.String("encryptionKey"),
+				LaunchMode:    "ForegroundIfRunning",
+				URL:           limrun.String("url"),
 			}},
-			Region: limrun.String("region"),
+			Jurisdiction: "us",
+			Model:        "iphone",
+			Region:       limrun.String("region"),
 			Sandbox: limrun.IosInstanceNewParamsSpecSandbox{
 				Xcode: limrun.IosInstanceNewParamsSpecSandboxXcode{
 					Enabled: limrun.Bool(true),
@@ -68,7 +71,6 @@ func TestIosInstanceNewWithOptionalParams(t *testing.T) {
 }
 
 func TestIosInstanceListWithOptionalParams(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -98,7 +100,6 @@ func TestIosInstanceListWithOptionalParams(t *testing.T) {
 }
 
 func TestIosInstanceDelete(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -121,7 +122,6 @@ func TestIosInstanceDelete(t *testing.T) {
 }
 
 func TestIosInstanceGet(t *testing.T) {
-	t.Skip("Prism tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL

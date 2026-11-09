@@ -1,18 +1,21 @@
-# Tunnel Example
+# Tunnel app traffic through this computer
 
-This example shows how you can connect to Android instances from your local `adb` daemon so that you can have all your
-Android tooling to recognize and use them.
+Creates an Android instance and calls `StartTunnel` with `*.example.test` selectors.
+HTTP inspection captures bodies and persists the capture for 72 hours.
+`HARAssembler.Add` combines inspection events and prints each completed request’s
+method, URL, and status. The example runs for 30 seconds, then closes the tunnel
+and deletes the instance; Ctrl+C also cleans up.
 
-Run the example:
-```bash
-LIM_API_KEY=lim_somevalue
+Run from the repository root with `LIM_API_KEY` set:
 
-go run examples/tunnel/main.go
+```sh
+go run ./examples/tunnel
 ```
 
-Once it's running, you can see it pop up in Android Studio and others. An easy way to test is to use `scrcpy` which
-is a GUI program to stream the screen of Android devices.
+Send traffic from the emulator to a matching host reachable from this computer.
+Edit `Selectors` in [main.go](main.go) to match your development service. Without
+matching traffic the tunnel remains idle and prints no requests.
 
-```bash
-scrcpy -s <reported address>
-```
+The older ADB-forwarding example is now [adb-tunnel](../adb-tunnel).
+
+[TypeScript counterpart](https://github.com/limrun-inc/typescript-sdk/tree/319078ef75a7f8a4e1abf36b73570ff11064453d/examples/tunnel) · [All examples](../README.md)

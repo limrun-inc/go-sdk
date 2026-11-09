@@ -1,0 +1,1114 @@
+{
+  "source": "typescript-sdk@319078ef75a7f8a4e1abf36b73570ff11064453d",
+  "cases": [
+    {
+      "name": "plain",
+      "body": "eyJtZXNzYWdlIjoiaMOpbGxvIHfDtnJsZCDinJMiLCJyZWFkeSI6dHJ1ZX0=",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": ""
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 44
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": ""
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json",
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 44
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "gzip",
+      "body": "H4sIAAAAAAAAE6tWyk0tLk5MT1WyUso4vDInJ1+h/PC2opwUhUdzJivpKBWlJqZUKlmVFJWm1gIAYyQvbywAAAA=",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 65
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 44,
+            "mimeType": "application/json",
+            "compression": -21,
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 65
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "brotli",
+      "body": "ixWAeyJtZXNzYWdlIjoiaMOpbGxvIHfDtnJsZCDinJMiLCJyZWFkeSI6dHJ1ZX0D",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "br"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "text/plain"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 48
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "br"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 44,
+            "mimeType": "text/plain",
+            "compression": -4,
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 48
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "deflate",
+      "body": "eJyrVspNLS5OTE9VslLKOLwyJydfofzwtqKcFIVHcyYr6SgVpSamVCpZlRSVptYCAI6wEb0=",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "deflate"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 53
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "deflate"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 44,
+            "mimeType": "application/json",
+            "compression": -9,
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 53
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "raw-deflate",
+      "body": "q1bKTS0uTkxPVbJSyji8MicnX6H88LainBSFR3MmK+koFaUmplQqWZUUlabWAgA=",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "deflate"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 47
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "deflate"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 44,
+            "mimeType": "application/json",
+            "compression": -3,
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 47
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "stacked",
+      "body": "CyCAH4sIAAAAAAAAE6tWyk0tLk5MT1WyUso4vDInJ1+h/PC2opwUhUdzJivpKBWlJqZUKlmVFJWm1gIAYyQvbywAAAAD",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip, br"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 69
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip, br"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 44,
+            "mimeType": "application/json",
+            "compression": -25,
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 69
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "truncated",
+      "body": "H4sIAAAAAAAAE6tWyk0tLk5MT1WyUso4vDInJ1+h/PC2opwUhUdzJivpKBWlJqZUKlmVFJWm1gIAYyQvbywAAAA=",
+      "limit": 8,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 65
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json",
+            "text": "H4sIAAAAAAA=",
+            "encoding": "base64"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 65
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": true
+        }
+      }
+    },
+    {
+      "name": "binary",
+      "body": "/4AA",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": ""
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "text/plain"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 3
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": ""
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "text/plain",
+            "text": "/4AA",
+            "encoding": "base64"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 3
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "unknown",
+      "body": "dW5rbm93biBjb2Rpbmc=",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "compress"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "text/plain"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 14
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "compress"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "text/plain",
+            "text": "dW5rbm93biBjb2Rpbmc=",
+            "encoding": "base64"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 14
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    },
+    {
+      "name": "zstd",
+      "body": "KLUv/SAsYQEAeyJtZXNzYWdlIjoiaMOpbGxvIHfDtnJsZCDinJMiLCJyZWFkeSI6dHJ1ZX0=",
+      "limit": 0,
+      "complete": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "zstd"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 999,
+            "mimeType": "application/json"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 53
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      },
+      "expected": {
+        "startedDateTime": "2026-11-05T00:00:00.000Z",
+        "time": 12,
+        "request": {
+          "method": "POST",
+          "url": "https://example.test/",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          ],
+          "queryString": [],
+          "cookies": [],
+          "headersSize": -1,
+          "bodySize": 5,
+          "postData": {
+            "mimeType": "text/plain",
+            "text": "hello"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "zstd"
+            }
+          ],
+          "cookies": [],
+          "content": {
+            "size": 44,
+            "mimeType": "application/json",
+            "compression": -9,
+            "text": "{\"message\":\"héllo wörld ✓\",\"ready\":true}"
+          },
+          "redirectURL": "",
+          "headersSize": -1,
+          "bodySize": 53
+        },
+        "cache": {},
+        "timings": {
+          "send": 1,
+          "wait": 10,
+          "receive": 1
+        },
+        "_limrun": {
+          "tunnelId": "tunnel-test",
+          "selectorId": "route-1",
+          "requestBodyTruncated": false,
+          "responseBodyTruncated": false
+        }
+      }
+    }
+  ]
+}

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/limrun-inc/go-sdk/internal/proxy"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -60,8 +62,11 @@ func (c *Client) startLogStream(ctx context.Context, subscribe map[string]any, t
 		return nil, err
 	}
 
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL, http.Header{})
+	conn, res, err := proxy.WebSocketDialer(wsURL).DialContext(ctx, wsURL, http.Header{})
 	if err != nil {
+		if res != nil && res.Body != nil {
+			res.Body.Close()
+		}
 		return nil, fmt.Errorf("websocket dial: %w", err)
 	}
 
@@ -105,6 +110,7 @@ func (s *LogStream) Err() <-chan error {
 
 func (s *LogStream) readLoop() {
 	defer close(s.linesCh)
+	defer close(s.errCh)
 
 	for {
 		_, message, err := s.ws.ReadMessage()

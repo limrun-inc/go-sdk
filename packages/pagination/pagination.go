@@ -3,8 +3,8 @@
 package pagination
 
 import (
+	"encoding/json"
 	"net/http"
-	"reflect"
 
 	"github.com/limrun-inc/go-sdk/internal/apijson"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
@@ -45,13 +45,33 @@ func (r *Items[T]) GetNextPage() (res *Items[T], err error) {
 		return nil, nil
 	}
 	items := r.Items
-	if items == nil || len(items) == 0 {
+	cfg := r.cfg.Clone(r.cfg.Context)
+
+	index, key := len(items)-1, "startingAfter"
+	if cfg.Request.URL.Query().Has("endingBefore") {
+		index, key = 0, "endingBefore"
+	}
+	data, marshalErr := json.Marshal(items[index])
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+	var item struct {
+		ID       string `json:"id"`
+		Metadata struct {
+			ID string `json:"id"`
+		} `json:"metadata"`
+	}
+	if err = json.Unmarshal(data, &item); err != nil {
+		return nil, err
+	}
+	id := item.Metadata.ID
+	if id == "" {
+		id = item.ID
+	}
+	if id == "" {
 		return nil, nil
 	}
-	cfg := r.cfg.Clone(r.cfg.Context)
-	value := reflect.ValueOf(items[len(items)-1])
-	field := value.FieldByName("ID")
-	err = cfg.Apply(option.WithQuery("startingAfter", field.Interface().(string)))
+	err = cfg.Apply(option.WithQuery(key, id))
 	if err != nil {
 		return nil, err
 	}
