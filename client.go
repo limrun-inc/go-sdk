@@ -17,18 +17,16 @@ import (
 // interacting with the limrun API. You should not instantiate this client
 // directly, and instead use the [NewClient] method instead.
 type Client struct {
-	AccessTokens   AccessTokenService
-	XcodeSnapshots XcodeSnapshotService
-	IosSnapshots   IosSnapshotService
-
 	Options          []option.RequestOption
+	AccessTokens     AccessTokenService
 	AndroidInstances AndroidInstanceService
 	Assets           AssetService
 	IosInstances     IosInstanceService
 	XcodeInstances   XcodeInstanceService
 	GradleInstances  GradleInstanceService
+	XcodeSnapshots   XcodeSnapshotService
+	IosSnapshots     IosSnapshotService
 	Analytics        AnalyticsService
-	ScopedTokens     ScopedTokenService
 }
 
 // DefaultClientOptions read from the environment (LIM_API_KEY, LIMRUN_BASE_URL).
@@ -61,16 +59,14 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 
 	r = Client{Options: opts}
 	r.AccessTokens = NewAccessTokenService(opts...)
-	r.XcodeSnapshots = NewXcodeSnapshotService(opts...)
-	r.IosSnapshots = NewIosSnapshotService(opts...)
-
 	r.AndroidInstances = NewAndroidInstanceService(opts...)
 	r.Assets = NewAssetService(opts...)
 	r.IosInstances = NewIosInstanceService(opts...)
 	r.XcodeInstances = NewXcodeInstanceService(opts...)
 	r.GradleInstances = NewGradleInstanceService(opts...)
+	r.XcodeSnapshots = NewXcodeSnapshotService(opts...)
+	r.IosSnapshots = NewIosSnapshotService(opts...)
 	r.Analytics = NewAnalyticsService(opts...)
-	r.ScopedTokens = NewScopedTokenService(opts...)
 
 	return
 }

@@ -18,7 +18,6 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs` |
 | `Assets` | `List`, `Get`, `GetOrNew`, `GetOrUpload`, `Update`, `CreateUploadURL`, `Delete` |
 | `AccessTokens` | `New`, `Revoke` |
-| `ScopedTokens` | `New`, the deprecated access-token alias |
 | `XcodeSnapshots`, `IosSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
 | `Analytics` | `Get`, `GetInstances` |
 

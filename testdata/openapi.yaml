@@ -34,68 +34,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIError'
-  /v1/scoped_tokens:
-    post:
-      deprecated: true
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ScopedTokenCreate'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ScopedToken'
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-        '500':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
   /v1/access_tokens/{tokenId}:
     delete:
-      parameters:
-        - name: tokenId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-        '500':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-  /v1/scoped_tokens/{tokenId}:
-    delete:
-      deprecated: true
       parameters:
         - name: tokenId
           in: path
@@ -1453,14 +1393,6 @@ components:
             - ConcurrencyLimitReached
       required:
         - message
-    ScopedTokenCreate:
-      deprecated: true
-      allOf:
-        - $ref: '#/components/schemas/AccessTokenCreate'
-    ScopedToken:
-      deprecated: true
-      allOf:
-        - $ref: '#/components/schemas/AccessToken'
     SuccessResponse:
       type: object
       properties:
