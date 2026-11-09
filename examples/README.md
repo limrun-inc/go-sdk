@@ -4,7 +4,8 @@ These examples mirror all 18 example directories in the
 [TypeScript SDK](https://github.com/limrun-inc/typescript-sdk/tree/319078ef75a7f8a4e1abf36b73570ff11064453d/examples)
 used for the v0.69.1 parity port. The existing Go ADB and iOS monitoring examples
 are included too. Read each `main.go` (or `backend/main.go`) for the public Go
-interfaces; `examples/internal` contains shared setup and local workflow helpers.
+interfaces. Every example is self-contained: the few setup helpers it needs live
+in its own directory, so any example can be copied out as a starting point.
 
 Start with [ios-monitor](ios-monitor) for the original monitoring/crash/syslog
 question, [websocket-ios](websocket-ios) for simulator control, and
@@ -45,8 +46,8 @@ to point the Go REST client at another endpoint.
 | [playwright](playwright) | Android sandbox configuration and Playwright | No |
 | [detox-ios](detox-ios) | Go provisioning with the JavaScript Detox integration | Only with LIMRUN_KEEP_INSTANCE=true |
 | [fullstack](fullstack) | Go instance API and React remote control | Until Stop Instance |
-| [device-install](device-install) | Scoped tokens, exact asset authorization, OTA installation | CLI build lifecycle |
-| [publish-to-stores](publish-to-stores) | Scoped relay token, signed iOS/Android publishing | CLI build lifecycle |
+| [device-install](device-install) | Access tokens, exact asset authorization, OTA installation | CLI build lifecycle |
+| [publish-to-stores](publish-to-stores) | Relay access token, signed iOS/Android publishing | CLI build lifecycle |
 
 ## Language boundaries
 

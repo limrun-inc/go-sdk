@@ -2,21 +2,36 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	limrun "github.com/limrun-inc/go-sdk"
-	"github.com/limrun-inc/go-sdk/examples/internal/exampleutil"
 	"github.com/limrun-inc/go-sdk/websocket/android"
 	"github.com/limrun-inc/go-sdk/websocket/ios"
 )
 
-func main() { exampleutil.Main(run) }
+func main() {
+	if os.Getenv("LIM_API_KEY") == "" {
+		log.Fatal("set LIM_API_KEY before running this example")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx)
+	stop()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatal(err)
+	}
+}
 
 func run(ctx context.Context) error {
 	api := limrun.NewClient()
@@ -46,8 +61,8 @@ func run(ctx context.Context) error {
 			IOSModel     string `json:"iosModel"`
 			WithExpoGo54 *bool  `json:"withExpoGo54"`
 		}
-		if err := exampleutil.Decode(w, r, &body); err != nil {
-			exampleutil.Error(w, 400, err)
+		if err := decodeJSON(w, r, &body); err != nil {
+			writeError(w, 400, err)
 			return
 		}
 		if body.Platform == "" {
@@ -84,13 +99,13 @@ func run(ctx context.Context) error {
 				Metadata:      limrun.IosInstanceNewParamsMetadata{Labels: labels},
 			})
 			if err != nil {
-				exampleutil.Error(w, 500, err)
+				writeError(w, 500, err)
 				return
 			}
 			if withExpo {
 				client, err := api.IosInstances.CreateClient(*instance)
 				if err != nil {
-					exampleutil.Error(w, 500, err)
+					writeError(w, 500, err)
 					return
 				}
 				// Use the server context: monitoring outlives the create request.
@@ -105,12 +120,12 @@ func run(ctx context.Context) error {
 				}))
 				if err != nil {
 					client.Close()
-					exampleutil.Error(w, 500, err)
+					writeError(w, 500, err)
 					return
 				}
 				retain(instance.Metadata.ID, client)
 			}
-			exampleutil.JSON(w, 200, map[string]string{
+			writeJSON(w, 200, map[string]string{
 				"id":        instance.Metadata.ID,
 				"webrtcUrl": instance.Status.EndpointWebSocketURL,
 				"token":     instance.Status.Token,
@@ -131,13 +146,13 @@ func run(ctx context.Context) error {
 				Metadata: limrun.AndroidInstanceNewParamsMetadata{Labels: labels},
 			})
 			if err != nil {
-				exampleutil.Error(w, 500, err)
+				writeError(w, 500, err)
 				return
 			}
 			if withExpo {
 				client, err := api.AndroidInstances.CreateClient(*instance)
 				if err != nil {
-					exampleutil.Error(w, 500, err)
+					writeError(w, 500, err)
 					return
 				}
 				_, err = client.LaunchApp(ctx, "host.exp.exponent", &android.LaunchAppOptions{Mode: android.RelaunchIfRunning, OnExit: func(lines []string, info android.AppExitInfo) {
@@ -151,18 +166,18 @@ func run(ctx context.Context) error {
 				}})
 				if err != nil {
 					client.Close()
-					exampleutil.Error(w, 500, err)
+					writeError(w, 500, err)
 					return
 				}
 				retain(instance.Metadata.ID, client)
 			}
-			exampleutil.JSON(w, 200, map[string]string{
+			writeJSON(w, 200, map[string]string{
 				"id":        instance.Metadata.ID,
 				"webrtcUrl": instance.Status.EndpointWebSocketURL,
 				"token":     instance.Status.Token,
 			})
 		default:
-			exampleutil.Error(w, 400, fmt.Errorf("platform must be ios or android"))
+			writeError(w, 400, fmt.Errorf("platform must be ios or android"))
 		}
 	})
 	mux.HandleFunc("POST /stop-instance", func(w http.ResponseWriter, r *http.Request) {
@@ -170,12 +185,12 @@ func run(ctx context.Context) error {
 			InstanceID string `json:"instanceId"`
 			Platform   string `json:"platform"`
 		}
-		if err := exampleutil.Decode(w, r, &body); err != nil {
-			exampleutil.Error(w, 400, err)
+		if err := decodeJSON(w, r, &body); err != nil {
+			writeError(w, 400, err)
 			return
 		}
 		if body.InstanceID == "" {
-			exampleutil.Error(w, 400, fmt.Errorf("instanceId is required"))
+			writeError(w, 400, fmt.Errorf("instanceId is required"))
 			return
 		}
 		var err error
@@ -185,11 +200,11 @@ func run(ctx context.Context) error {
 		case "", "android":
 			err = api.AndroidInstances.Delete(r.Context(), body.InstanceID)
 		default:
-			exampleutil.Error(w, 400, fmt.Errorf("platform must be ios or android"))
+			writeError(w, 400, fmt.Errorf("platform must be ios or android"))
 			return
 		}
 		if err != nil {
-			exampleutil.Error(w, 500, err)
+			writeError(w, 500, err)
 			return
 		}
 		mu.Lock()
@@ -199,8 +214,61 @@ func run(ctx context.Context) error {
 		if client != nil {
 			client.Close()
 		}
-		exampleutil.JSON(w, 200, map[string]string{"status": "success", "message": "Instance stopped successfully"})
+		writeJSON(w, 200, map[string]string{"status": "success", "message": "Instance stopped successfully"})
 	})
 	fmt.Println("Backend: http://localhost:3000; start the frontend and open http://localhost:5173")
-	return exampleutil.Serve(ctx, &http.Server{Addr: "127.0.0.1:3000", Handler: exampleutil.CORS(mux)})
+	return serve(ctx, &http.Server{Addr: "127.0.0.1:3000", Handler: cors(mux)})
+}
+
+func serve(ctx context.Context, server *http.Server) error {
+	done := make(chan struct{})
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		select {
+		case <-done:
+			return
+		case <-ctx.Done():
+		}
+		// Shut down on a fresh context: ctx is already canceled when this runs.
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("cleanup: %v", err)
+		}
+	}()
+	err := server.ListenAndServe()
+	close(done)
+	<-shutdownDone
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(value)
+}
+
+func writeError(w http.ResponseWriter, status int, err error) {
+	writeJSON(w, status, map[string]string{"status": "error", "message": err.Error()})
+}
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, value any) error {
+	return json.NewDecoder(http.MaxBytesReader(w, r.Body, 10<<20)).Decode(value)
+}
+
+func cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

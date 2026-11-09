@@ -1,10 +1,13 @@
 # Device Install
 
-The [Go backend](backend/main.go) replaces the TypeScript backend. The React
-frontend is unchanged and uses the same browser packages. Shared local signing,
-CLI execution, and webhook code lives in [storebackend](../internal/storebackend).
-Builds still use the `lim` CLI, as in the TypeScript example. The secret-file
-format is compatible with the TypeScript examples, including encoded names.
+The [Go backend](backend) replaces the TypeScript backend and mirrors its
+files: [`main.go`](backend/main.go) serves the HTTP routes and mints access
+tokens, [`install.go`](backend/install.go) runs the detached CLI build and
+tracks its webhook, and [`secret_store.go`](backend/secret_store.go) is the
+file-backed signing-secret store. The React frontend is unchanged and uses the
+same browser packages. Builds still use the `lim` CLI, as in the TypeScript
+example. The secret-file format is compatible with the TypeScript examples,
+including encoded names.
 
 An end-to-end physical iPhone installation example, optimized for QR-based
 over-the-air installation: one ad-hoc-signed build, then a QR code pointing

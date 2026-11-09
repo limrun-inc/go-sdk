@@ -2,17 +2,32 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"log"
 	"os"
+	"os/signal"
 	"slices"
+	"strings"
+	"syscall"
 	"time"
 
 	limrun "github.com/limrun-inc/go-sdk"
-	"github.com/limrun-inc/go-sdk/examples/internal/exampleutil"
 	"github.com/limrun-inc/go-sdk/websocket/ios"
 )
 
-func main() { exampleutil.Main(run) }
+func main() {
+	if os.Getenv("LIM_API_KEY") == "" {
+		log.Fatal("set LIM_API_KEY before running this example")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx)
+	stop()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatal(err)
+	}
+}
 
 func run(ctx context.Context) error {
 	api := limrun.NewClient()
@@ -34,7 +49,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 	fmt.Printf("Screenshot: %gx%g\n", screenshot.Width, screenshot.Height)
-	if err := exampleutil.SaveBase64("screenshot.jpg", screenshot.Base64); err != nil {
+	if err := saveBase64("screenshot.jpg", screenshot.Base64); err != nil {
 		return err
 	}
 	tree, err := client.ElementTreeNodes(ctx, nil)
@@ -47,11 +62,11 @@ func run(ctx context.Context) error {
 	if _, err := client.PerformActions(ctx, []ios.PerformAction{{Type: "buttonDown", Button: "home"}, {Type: "buttonUp", Button: "home"}}); err != nil {
 		return err
 	}
-	if err := exampleutil.Sleep(ctx, time.Second); err != nil {
+	if err := sleep(ctx, time.Second); err != nil {
 		return err
 	}
 	tap := func(selector ios.AccessibilitySelector, timeout time.Duration) error {
-		return exampleutil.Retry(ctx, timeout, time.Second, func(ctx context.Context) error {
+		return retry(ctx, timeout, time.Second, func(ctx context.Context) error {
 			element, err := client.TapElement(ctx, selector)
 			if err == nil {
 				fmt.Printf("Tapped %s: %s\n", element.ElementType, element.ElementLabel)
@@ -66,10 +81,10 @@ func run(ctx context.Context) error {
 	if err := tap(textField, 90*time.Second); err != nil {
 		return err
 	}
-	if err := exampleutil.Sleep(ctx, 3*time.Second); err != nil {
+	if err := sleep(ctx, 3*time.Second); err != nil {
 		return err
 	}
-	if err := exampleutil.Retry(ctx, time.Minute, 2*time.Second, func(ctx context.Context) error {
+	if err := retry(ctx, time.Minute, 2*time.Second, func(ctx context.Context) error {
 		if err := client.TypeText(ctx, "Hello from Go SDK!", false); err != nil {
 			// The address bar can lose focus during its opening animation.
 			_, _ = client.TapElement(ctx, textField)
@@ -83,26 +98,26 @@ func run(ctx context.Context) error {
 		if err := client.ToggleKeyboard(ctx); err != nil {
 			return err
 		}
-		if err := exampleutil.Sleep(ctx, time.Second); err != nil {
+		if err := sleep(ctx, time.Second); err != nil {
 			return err
 		}
 	}
 	if err := client.PressKey(ctx, "enter"); err != nil {
 		return err
 	}
-	if err := exampleutil.Sleep(ctx, 3*time.Second); err != nil {
+	if err := sleep(ctx, 3*time.Second); err != nil {
 		return err
 	}
 	if err := tap(ios.AccessibilitySelector{ElementType: "Button", Label: "Close"}, 10*time.Second); err != nil {
 		fmt.Println("No Close overlay to dismiss")
 	}
-	if err := exampleutil.Sleep(ctx, 5*time.Second); err != nil {
+	if err := sleep(ctx, 5*time.Second); err != nil {
 		return err
 	}
 	if _, err := client.TapElement(ctx, textField); err != nil {
 		fmt.Printf("No address field: %v\n", err)
 	} else {
-		if err := exampleutil.Sleep(ctx, 2*time.Second); err != nil {
+		if err := sleep(ctx, 2*time.Second); err != nil {
 			return err
 		}
 		if _, err := client.SetElementValue(ctx, "https://apple.com", textField); err != nil {
@@ -111,7 +126,7 @@ func run(ctx context.Context) error {
 			return err
 		}
 	}
-	if err := exampleutil.Sleep(ctx, 3*time.Second); err != nil {
+	if err := sleep(ctx, 3*time.Second); err != nil {
 		return err
 	}
 
@@ -156,14 +171,14 @@ func run(ctx context.Context) error {
 		return err
 	}
 	fmt.Printf("Soft reset: %+v\n", reset)
-	if err := exampleutil.Sleep(ctx, 3*time.Second); err != nil {
+	if err := sleep(ctx, 3*time.Second); err != nil {
 		return err
 	}
 	final, err := client.Screenshot(ctx)
 	if err != nil {
 		return err
 	}
-	if err := exampleutil.SaveBase64("screenshot-final.jpg", final.Base64); err != nil {
+	if err := saveBase64("screenshot-final.jpg", final.Base64); err != nil {
 		return err
 	}
 	fmt.Printf("Instance %s remains available.\n", instance.Metadata.ID)
@@ -184,4 +199,44 @@ func printWebContent(nodes []ios.ElementTreeNode) {
 		}
 		printWebContent(node.Children)
 	}
+}
+
+func sleep(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func retry(ctx context.Context, timeout, delay time.Duration, fn func(context.Context) error) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	for {
+		err := fn(ctx)
+		if err == nil {
+			return nil
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return fmt.Errorf("retry stopped: %w (last attempt: %v)", ctx.Err(), err)
+		case <-timer.C:
+		}
+	}
+}
+
+func saveBase64(path, data string) error {
+	if strings.HasPrefix(data, "data:") {
+		_, data, _ = strings.Cut(data, ",")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, decoded, 0600)
 }

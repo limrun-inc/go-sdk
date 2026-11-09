@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	limrun "github.com/limrun-inc/go-sdk"
-	"github.com/limrun-inc/go-sdk/examples/internal/exampleutil"
 	"github.com/limrun-inc/go-sdk/syncfolder"
 	"github.com/limrun-inc/go-sdk/websocket/ios"
 )
@@ -17,7 +21,15 @@ var watch = flag.Bool("watch", false, "watch the app bundle and sync changes")
 
 func main() {
 	flag.Parse()
-	exampleutil.Main(run)
+	if os.Getenv("LIM_API_KEY") == "" {
+		log.Fatal("set LIM_API_KEY before running this example")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx)
+	stop()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatal(err)
+	}
 }
 
 func run(ctx context.Context) error {

@@ -2,18 +2,34 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
 	limrun "github.com/limrun-inc/go-sdk"
-	"github.com/limrun-inc/go-sdk/examples/internal/exampleutil"
 )
 
-func main() { exampleutil.Main(run) }
+func main() {
+	if os.Getenv("LIM_API_KEY") == "" {
+		log.Fatal("set LIM_API_KEY before running this example")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx)
+	stop()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatal(err)
+	}
+}
 
 func run(ctx context.Context) error {
 	api := limrun.NewClient()
@@ -75,7 +91,20 @@ func run(ctx context.Context) error {
 		return err
 	}
 	fmt.Printf("Device %s; instance %s remains available after the test.\n", info.UDID, instance.Metadata.ID)
-	return exampleutil.RunNode(ctx, "examples/appium-ios", "runner.mjs", map[string]string{
+	return runNode(ctx, "examples/appium-ios", "runner.mjs", map[string]string{
 		"udid": info.UDID, "apiUrl": instance.Status.APIURL, "token": instance.Status.Token, "wdaUrl": wda.String(),
 	})
+}
+
+// runNode sends instance credentials through stdin, not command-line arguments.
+func runNode(ctx context.Context, directory, script string, input any) error {
+	data, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, "node", script)
+	cmd.Dir = directory
+	cmd.Stdin = strings.NewReader(string(data))
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	return cmd.Run()
 }

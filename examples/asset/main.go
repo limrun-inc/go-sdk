@@ -2,15 +2,30 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	limrun "github.com/limrun-inc/go-sdk"
-	"github.com/limrun-inc/go-sdk/examples/internal/exampleutil"
 )
 
-func main() { exampleutil.Main(run) }
+func main() {
+	if os.Getenv("LIM_API_KEY") == "" {
+		log.Fatal("set LIM_API_KEY before running this example")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx)
+	stop()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatal(err)
+	}
+}
 
 func run(ctx context.Context) error {
 	dir, err := os.MkdirTemp("", "limrun-asset-")
@@ -19,7 +34,7 @@ func run(ctx context.Context) error {
 	}
 	defer os.RemoveAll(dir)
 	archive := filepath.Join(dir, "Expo-Go-54.0.6.tar.gz")
-	if err := exampleutil.Download(ctx, "https://github.com/expo/expo-go-releases/releases/download/Expo-Go-54.0.6/Expo-Go-54.0.6.tar.gz", archive); err != nil {
+	if err := download(ctx, "https://github.com/expo/expo-go-releases/releases/download/Expo-Go-54.0.6/Expo-Go-54.0.6.tar.gz", archive); err != nil {
 		return err
 	}
 	api := limrun.NewClient()
@@ -49,4 +64,25 @@ func run(ctx context.Context) error {
 	fmt.Printf("Uploaded %s; Expo Go is installed.\nOpen https://console.limrun.com/stream/%s\n", asset.Name, instance.Metadata.ID)
 	// Keep the instance available for interactive use, as in the TypeScript example.
 	return nil
+}
+
+func download(ctx context.Context, url, path string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("download: %s", res.Status)
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	_, copyErr := io.Copy(file, res.Body)
+	return errors.Join(copyErr, file.Close())
 }

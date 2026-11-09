@@ -2,22 +2,34 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/build"
-	"github.com/limrun-inc/go-sdk/examples/internal/exampleutil"
 )
 
 func main() {
 	flag.Parse()
-	exampleutil.Main(run)
+	if os.Getenv("LIM_API_KEY") == "" {
+		log.Fatal("set LIM_API_KEY before running this example")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := run(ctx)
+	stop()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatal(err)
+	}
 }
 
 func run(ctx context.Context) error {
@@ -105,11 +117,47 @@ func run(ctx context.Context) error {
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain")
-		out := exampleutil.FlushWriter{Writer: w}
+		out := flushWriter{writer: w}
 		if err := runBuild(r.Context(), out, sdk, target); err != nil {
 			fmt.Fprintf(out, "Error: %v\n", err)
 		}
 	})
 	fmt.Printf("Watching files on Xcode instance %s.\nBuild: http://localhost:3000/xcodebuild\nUpload: http://localhost:3000/xcodebuild?sdk=iphoneos&target=name/xcode-example/device-build.ipa\n", instance.Metadata.ID)
-	return exampleutil.Serve(ctx, &http.Server{Addr: "127.0.0.1:3000", Handler: mux})
+	return serve(ctx, &http.Server{Addr: "127.0.0.1:3000", Handler: mux})
+}
+
+func serve(ctx context.Context, server *http.Server) error {
+	done := make(chan struct{})
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		select {
+		case <-done:
+			return
+		case <-ctx.Done():
+		}
+		// Shut down on a fresh context: ctx is already canceled when this runs.
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("cleanup: %v", err)
+		}
+	}()
+	err := server.ListenAndServe()
+	close(done)
+	<-shutdownDone
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
+}
+
+type flushWriter struct{ writer http.ResponseWriter }
+
+func (w flushWriter) Write(p []byte) (int, error) {
+	n, err := w.writer.Write(p)
+	if f, ok := w.writer.(http.Flusher); ok {
+		f.Flush()
+	}
+	return n, err
 }
