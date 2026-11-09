@@ -2,7 +2,7 @@
 
 Creates or reuses Xcode and iOS instances, calls `AttachSimulator`, watches project files with `Sync`, and builds with `Xcodebuild`. Both instances remain available. Ctrl+C stops the local watcher and HTTP server.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/ios-with-xcode /absolute/path/to/project

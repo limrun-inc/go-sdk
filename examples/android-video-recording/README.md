@@ -2,7 +2,7 @@
 
 Records browser navigation and a Home key press, then downloads `android-video.mp4` to the repository root. It closes the client and deletes the instance on completion or interruption.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/android-video-recording

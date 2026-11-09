@@ -2,7 +2,7 @@
 
 Go creates a simulator with WebDriverAgent, reads `DeviceInfo`, checks the WDA endpoint, and restarts WDA with `Simctl` when needed. [runner.mjs](runner.mjs) retains the TypeScript example’s WebdriverIO test: open Hacker News in Safari, switch to its webview, scroll, and click More. The simulator remains available.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 npm --prefix examples/appium-ios ci

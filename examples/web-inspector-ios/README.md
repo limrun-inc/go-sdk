@@ -2,7 +2,7 @@
 
 Opens example.com, finds Safari’s UNIX socket with `Lsof`, and forwards it to `127.0.0.1:27753` with `tunnel.StartTCP` in multiplexed mode. Connect a Web Inspector protocol client to that TCP address. Ctrl+C closes the tunnel and deletes the simulator.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/web-inspector-ios

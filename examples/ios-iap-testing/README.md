@@ -2,7 +2,7 @@
 
 Creates an Xcode instance and iOS simulator, attaches them, syncs and builds your project, then registers a StoreKit configuration. Both instances remain available for interactive purchase testing.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/ios-iap-testing -bundle-id com.example.app -storekit /absolute/path/to/Products.storekit /absolute/path/to/project

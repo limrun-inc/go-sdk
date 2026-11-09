@@ -2,7 +2,7 @@
 
 Creates an Xcode instance, watches and syncs a local project, runs an initial build, and serves an HTTP endpoint for subsequent builds. The workload can upload only under `xcode-example/`. The instance remains available after Ctrl+C.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/xcode-sandbox /absolute/path/to/project

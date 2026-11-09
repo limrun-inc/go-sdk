@@ -2,7 +2,7 @@
 
 The Go backend creates iOS or Android instances, optionally installs Expo Go, and reports app exits and crash details. The React frontend is copied from the TypeScript example and displays the `@limrun/ui` remote control.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/fullstack/backend

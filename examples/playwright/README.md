@@ -2,7 +2,7 @@
 
 Go creates an Android 15 instance with the Chrome command-line flag and Playwright Android sandbox `1.60.0-lim.1`. [runner.mjs](runner.mjs) uses Playwright 1.60.0 to browse the Playwright GitHub repository and save `examples/playwright/screenshot.png`. The instance is deleted after the test.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 npm --prefix examples/playwright ci

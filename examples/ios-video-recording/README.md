@@ -2,7 +2,7 @@
 
 Records a visit to Settings → General and apple.com, then downloads `video.mp4` to the repository root. It closes the client and deletes the instance on completion or interruption.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/ios-video-recording

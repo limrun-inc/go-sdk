@@ -13,7 +13,7 @@ question, [websocket-ios](websocket-ios) for simulator control, and
 
 ## Run
 
-Use Go 1.22 or newer and run commands from the repository root:
+Use Go 1.25 or newer and run commands from the repository root:
 
 ```sh
 export LIM_API_KEY="your API key"

@@ -69,7 +69,7 @@ carry their own one-time secret, since the phone's Safari presents no token.
 
 ## Requirements
 
-- Go 1.22+, Node.js, and Yarn 1
+- Go 1.25+, Node.js, and Yarn 1
 - The `lim` CLI on `PATH`
 - `LIM_API_KEY`
 - A public HTTPS URL that forwards to the webhook receiver on port 3001,

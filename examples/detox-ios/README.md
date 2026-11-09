@@ -2,7 +2,7 @@
 
 Go provisions the Expo Go simulator and deletes it after the run. The JavaScript adapter runs the same Detox configuration and four-screenshot test as the TypeScript example.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 npm --prefix examples/detox-ios ci

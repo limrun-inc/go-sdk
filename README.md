@@ -39,7 +39,9 @@ go get -u 'github.com/limrun-inc/go-sdk@v0.9.0'
 
 ## Requirements
 
-This library requires Go 1.22+.
+This library requires Go 1.25+.
+
+For production builds, use a currently supported Go release with the latest security patches.
 
 `StartXcrunShim` and `PrepareMaestroRun` also require Node.js on `PATH` to run
 the shared xcrun shim. `PrepareMaestroRun` requires the Maestro CLI, and

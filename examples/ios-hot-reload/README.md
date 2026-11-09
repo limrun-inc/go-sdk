@@ -2,7 +2,7 @@
 
 Syncs a local simulator `.app` bundle, installs it, and relaunches it when changes arrive. It streams app logs for 30 seconds, streams syslog filtered by bundle ID for another 30 seconds, then fetches the last ten app-log lines. The simulator remains available.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 go run ./examples/ios-hot-reload -watch /absolute/path/to/MyApp.app

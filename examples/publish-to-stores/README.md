@@ -128,7 +128,7 @@ See [play-auth](https://github.com/limrun-inc/typescript-sdk/tree/319078ef75a7f8
 
 ## Requirements
 
-- Go 1.22+, Node.js, and Yarn 1
+- Go 1.25+, Node.js, and Yarn 1
 - The `lim` CLI on `PATH`
 - `LIM_API_KEY`
 - A public HTTPS URL that forwards to the webhook receiver on port 3001,

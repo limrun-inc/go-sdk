@@ -2,7 +2,7 @@
 
 Creates a simulator with Expo Go and the Maestro runner, checks or launches the runner with `Simctl`, and uses `PrepareMaestroRun` to configure the local CLI. The copied YAML flow exercises the Expo sample app’s counter, greeting, and detail screen. The instance is deleted after the run.
 
-Run from the repository root with Go 1.22+ and `LIM_API_KEY` set:
+Run from the repository root with Go 1.25+ and `LIM_API_KEY` set:
 
 ```sh
 export EXPO_URL="exp://your-reachable-metro-host:8081"
