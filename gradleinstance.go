@@ -122,6 +122,9 @@ type GradleInstanceMetadata struct {
 	DisplayName    string            `json:"displayName"`
 	Labels         map[string]string `json:"labels"`
 	TerminatedAt   time.Time         `json:"terminatedAt" format:"date-time"`
+	// Billing cutoff for a deletion requested while the region is unavailable.
+	// Absent for normal regional deletions.
+	TerminatingAt time.Time `json:"terminatingAt" format:"date-time"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID             respjson.Field
@@ -130,6 +133,7 @@ type GradleInstanceMetadata struct {
 		DisplayName    respjson.Field
 		Labels         respjson.Field
 		TerminatedAt   respjson.Field
+		TerminatingAt  respjson.Field
 		ExtraFields    map[string]respjson.Field
 		raw            string
 	} `json:"-"`
@@ -168,17 +172,19 @@ func (r *GradleInstanceSpec) UnmarshalJSON(data []byte) error {
 
 type GradleInstanceStatus struct {
 	Token string `json:"token"`
-	// Any of "unknown", "creating", "assigned", "ready", "terminated".
+	// Any of "unknown", "creating", "assigned", "ready", "terminating", "terminated".
 	State        string `json:"state" api:"required"`
 	APIURL       string `json:"apiUrl"`
 	ErrorMessage string `json:"errorMessage"`
-	// Machine-readable reason the instance was terminated. Always present once state
-	// is "terminated", never present before that. New values may be added over time,
-	// so treat any unrecognized value as "Unknown". Known values:
+	// Machine-readable reason for instance termination. Present when state is
+	// "terminating" or "terminated". New values may be added over time, so treat any
+	// unrecognized value as "Unknown". Known values:
 	//
 	//   - "UserRequested": terminated by a delete request to the API.
 	//   - "InactivityTimeout": the timeout given in spec.inactivityTimeout elapsed.
 	//   - "HardTimeout": the timeout given in spec.hardTimeout elapsed.
+	//   - "CapacityTimeout": no instance was free when it was created, and none freed
+	//     up before its wait for capacity ended.
 	//   - "Unknown": terminated for a cause the platform did not attribute, including
 	//     instances that failed to get ready during creation. See errorMessage for
 	//     details when available.

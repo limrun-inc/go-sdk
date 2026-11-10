@@ -1482,6 +1482,9 @@ components:
             terminatedAt:
               type: string
               format: date-time
+            terminatingAt:
+              type: string
+              format: date-time
             labels:
               type: object
               additionalProperties:
@@ -1731,6 +1734,9 @@ components:
             terminatedAt:
               type: string
               format: date-time
+            terminatingAt:
+              type: string
+              format: date-time
             labels:
               type: object
               additionalProperties:
@@ -1914,6 +1920,9 @@ components:
             terminatedAt:
               type: string
               format: date-time
+            terminatingAt:
+              type: string
+              format: date-time
             labels:
               type: object
               additionalProperties:
@@ -2038,6 +2047,9 @@ components:
               type: string
               format: date-time
             terminatedAt:
+              type: string
+              format: date-time
+            terminatingAt:
               type: string
               format: date-time
             labels:
@@ -2397,6 +2409,7 @@ components:
         - creating
         - assigned
         - ready
+        - terminating
         - terminated
     AndroidSandboxStatus:
       type: object
@@ -2451,6 +2464,7 @@ components:
         - creating
         - assigned
         - ready
+        - terminating
         - terminated
     IOSDeviceStateStatus:
       type: object
@@ -2483,6 +2497,7 @@ components:
         - creating
         - assigned
         - ready
+        - terminating
         - terminated
     XcodeCacheConfig:
       type: object
@@ -2611,6 +2626,7 @@ components:
         - creating
         - assigned
         - ready
+        - terminating
         - terminated
     AssetPlatform:
       type: string
