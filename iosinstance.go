@@ -495,7 +495,7 @@ type IosInstanceListParams struct {
 	// will be used as part of an OR clause, e.g. "assigned,ready" will return all
 	// instances that are either assigned or ready.
 	//
-	// Valid states: creating, assigned, ready, terminated, unknown
+	// Valid states: creating, assigned, ready, terminating, terminated, unknown
 	State param.Opt[string] `query:"state,omitzero" json:"-"`
 	paramObj
 }
