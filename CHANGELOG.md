@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0 (2026-11-12)
+
+Full Changelog: [v0.10.0...v0.11.0](https://github.com/limrun-inc/go-sdk/compare/v0.10.0...v0.11.0)
+
+### Features
+
+* Add the `terminating` instance state for Android, iOS, Xcode, and Gradle instances deleted while their region is unavailable, plus the optional `metadata.terminatingAt` billing cutoff. `terminationReason` is now present in both `terminating` and `terminated`, and `CapacityTimeout` is documented as a reason. Callers that switch on `status.state` should handle `terminating` ([d7ac43b](https://github.com/limrun-inc/go-sdk/commit/d7ac43b))
+* Add `WithWebSocketDialer` for iOS, Android, and build clients, and accept a dialer in standalone tunnels and connectors, so callers can enforce SSRF/address policies on every WebSocket connection and reconnection ([33432f2](https://github.com/limrun-inc/go-sdk/commit/33432f2))
+
 ## 0.10.0 (2026-11-09)
 
 Full Changelog: [v0.9.0...v0.10.0](https://github.com/limrun-inc/go-sdk/compare/v0.9.0...v0.10.0)
