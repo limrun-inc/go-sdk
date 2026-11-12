@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode/utf16"
 
+	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/internal/control"
 	"github.com/limrun-inc/go-sdk/internal/direct"
 	"github.com/limrun-inc/go-sdk/internal/proxy"
@@ -33,6 +34,14 @@ func WithReconnect(attempts int, delay, maxDelay time.Duration) Option {
 		c.connectionOptions.ReconnectDelay = delay
 		c.connectionOptions.MaxReconnectDelay = maxDelay
 	}
+}
+
+// WithWebSocketDialer sets the dialer for WebSocket connections, including reconnects
+// and tunnels. Use NetDialContext on the dialer to enforce an address policy.
+// A nil dialer uses the SDK default. A custom dialer controls its own proxy settings.
+// Configure the dialer before use and do not modify it while the client is active.
+func WithWebSocketDialer(dialer *websocket.Dialer) Option {
+	return func(c *Client) { c.connectionOptions.Dialer = dialer }
 }
 
 type assetPending struct{ done chan error }

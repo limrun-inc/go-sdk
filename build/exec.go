@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/internal/direct"
 	"github.com/limrun-inc/go-sdk/internal/stream"
 )
@@ -72,6 +73,7 @@ type XctestEvent struct {
 type ExecOptions struct {
 	APIURL, Token           string
 	HTTPClient              *http.Client
+	WebSocketDialer         *websocket.Dialer
 	Command, Stdout, Stderr io.Writer
 	OnEvent                 func(ExecLogEvent)
 	OnXctestEvent           func(XctestEvent)

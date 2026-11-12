@@ -62,7 +62,11 @@ func (c *Client) startLogStream(ctx context.Context, subscribe map[string]any, t
 		return nil, err
 	}
 
-	conn, res, err := proxy.WebSocketDialer(wsURL).DialContext(ctx, wsURL, http.Header{})
+	dialer := c.websocketDialer
+	if dialer == nil {
+		dialer = proxy.WebSocketDialer(wsURL)
+	}
+	conn, res, err := dialer.DialContext(ctx, wsURL, http.Header{})
 	if err != nil {
 		if res != nil && res.Body != nil {
 			res.Body.Close()

@@ -67,6 +67,9 @@ func (s *connectionState) subscribe(f func(ConnectionState)) func() {
 }
 
 type TCPOptions struct {
+	// WebSocketDialer controls WebSocket connections. Nil uses the SDK default.
+	// A custom dialer controls its own proxy settings and must not be modified during use.
+	WebSocketDialer                   *websocket.Dialer
 	Mode                              string
 	MaxReconnectAttempts              *int
 	ReconnectDelay, MaxReconnectDelay time.Duration
@@ -135,8 +138,11 @@ func decodeMessage(b []byte) (uint32, []byte, error) {
 	}
 	return id, b[4:], nil
 }
-func dialWebSocket(ctx context.Context, remote, token string) (*websocket.Conn, error) {
-	ws, res, err := proxy.WebSocketDialer(remote).DialContext(ctx, remote, http.Header{"Authorization": []string{"Bearer " + token}})
+func dialWebSocket(ctx context.Context, remote, token string, dialer *websocket.Dialer) (*websocket.Conn, error) {
+	if dialer == nil {
+		dialer = proxy.WebSocketDialer(remote)
+	}
+	ws, res, err := dialer.DialContext(ctx, remote, http.Header{"Authorization": []string{"Bearer " + token}})
 	if err != nil && res != nil {
 		var body string
 		if res.Body != nil {
@@ -322,7 +328,7 @@ func startTCPListener(ctx context.Context, listener net.Listener, remote, token 
 		q.Set("mode", "multiplexed")
 		u.RawQuery = q.Encode()
 		t.remote = u.String()
-		ws, err := dialWebSocket(ctx, t.remote, token)
+		ws, err := dialWebSocket(ctx, t.remote, token, opts.WebSocketDialer)
 		if err != nil {
 			t.Close()
 			return nil, err
@@ -491,7 +497,7 @@ func (t *TCP) multiplexed(ws *websocket.Conn) {
 			attempt++
 			t.state.set(Connecting)
 			var err error
-			ws, err = dialWebSocket(t.ctx, t.remote, t.token)
+			ws, err = dialWebSocket(t.ctx, t.remote, t.token, t.opts.WebSocketDialer)
 			if err == nil {
 				attempt = 0
 				t.setWS(ws)
@@ -559,7 +565,7 @@ func (t *TCP) singleton(id uint32, p *tcpPeer) {
 	attempt := 0
 	for ctx.Err() == nil {
 		t.state.set(Connecting)
-		ws, e := dialWebSocket(ctx, u.String(), t.token)
+		ws, e := dialWebSocket(ctx, u.String(), t.token, t.opts.WebSocketDialer)
 		if e == nil {
 			attempt = 0
 			t.setWS(ws)
@@ -598,6 +604,9 @@ func (t *TCP) singleton(id uint32, p *tcpPeer) {
 }
 
 type ReverseTCPOptions struct {
+	// WebSocketDialer controls WebSocket connections. Nil uses the SDK default.
+	// A custom dialer controls its own proxy settings and must not be modified during use.
+	WebSocketDialer                              *websocket.Dialer
 	LocalHost                                    string
 	LocalPort                                    int
 	MaxConnections, MaxPendingBytesPerConnection int
@@ -641,7 +650,7 @@ func StartReverseTCP(ctx context.Context, remote, token string, opts ReverseTCPO
 		opts.ConnectTimeout = 10 * time.Second
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	ws, err := dialWebSocket(ctx, remote, token)
+	ws, err := dialWebSocket(ctx, remote, token, opts.WebSocketDialer)
 	if err != nil {
 		cancel()
 		return nil, err

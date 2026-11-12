@@ -15,6 +15,9 @@ import (
 )
 
 type ConnectorOptions struct {
+	// WebSocketDialer controls WebSocket connections. Nil uses the SDK default.
+	// A custom dialer controls its own proxy settings and must not be modified during use.
+	WebSocketDialer                          *websocket.Dialer
 	Token, BaseURL, OrganizationID, TunnelID string
 	Inspection                               *InspectionConfig
 	Replace                                  bool
@@ -203,7 +206,7 @@ func jitter(delay time.Duration) time.Duration {
 func (c *Connector) control(endpoint string) {
 	for c.ctx.Err() == nil {
 		handshakeCtx, cancel := context.WithTimeout(c.ctx, 15*time.Second)
-		ws, err := dialWebSocket(handshakeCtx, endpoint, c.opts.Token)
+		ws, err := dialWebSocket(handshakeCtx, endpoint, c.opts.Token, c.opts.WebSocketDialer)
 		cancel()
 		prompt := false
 		reason := ""
@@ -523,7 +526,7 @@ func (c *Connector) attach(id string, a *connectorAttachment) {
 		remote, err := DestinationURL(base)
 		var tunnel *Destination
 		if err == nil {
-			tunnel, err = StartDestinationTCP(a.ctx, remote, token, DestinationOptions{Selectors: a.selectors, Inspection: c.opts.Inspection, ResetsInactivityTimeout: c.opts.ResetsInactivityTimeout, Name: name})
+			tunnel, err = StartDestinationTCP(a.ctx, remote, token, DestinationOptions{WebSocketDialer: c.opts.WebSocketDialer, Selectors: a.selectors, Inspection: c.opts.Inspection, ResetsInactivityTimeout: c.opts.ResetsInactivityTimeout, Name: name})
 		}
 		if err != nil {
 			if a.ctx.Err() != nil {

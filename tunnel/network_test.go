@@ -29,7 +29,7 @@ func TestRejectedWebSocketUpgradeRetainsStatus(t *testing.T) {
 				defer server.Close()
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-				conn, err := dialWebSocket(ctx, wsURL(server.URL), "expired")
+				conn, err := dialWebSocket(ctx, wsURL(server.URL), "expired", nil)
 				if conn != nil {
 					conn.Close()
 				}

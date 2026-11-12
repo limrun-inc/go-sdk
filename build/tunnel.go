@@ -48,5 +48,5 @@ func (c *XcodeClient) StartRbeTunnel(ctx context.Context, options ...RBETunnelOp
 	if e != nil {
 		return nil, e
 	}
-	return tunnel.StartTCP(ctx, remote, c.http.Token, opts.Host, port, tunnel.TCPOptions{Mode: "multiplexed"})
+	return tunnel.StartTCP(ctx, remote, c.http.Token, opts.Host, port, tunnel.TCPOptions{Mode: "multiplexed", WebSocketDialer: c.options.WebSocketDialer})
 }

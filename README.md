@@ -529,6 +529,46 @@ You may also replace the default `http.Client` with
 accepted (this overwrites any previous client) and receives requests after any
 middleware has been applied.
 
+### WebSocket dialers
+
+Pass a `*websocket.Dialer` from `github.com/gorilla/websocket` to
+`ios.WithWebSocketDialer`, `android.WithWebSocketDialer`, or
+`build.WithWebSocketDialer` to control WebSocket connections. The client uses it
+for reconnects and any WebSocket tunnels it opens. iOS log streams also use it.
+
+For SSRF checks, set the dialer's `NetDialContext` to your application's checked
+dial function, with signature
+`func(context.Context, string, string) (net.Conn, error)`. That function must
+validate the destination and connect to the validated IP address without another
+DNS lookup. Returning an error rejects the connection; the SDK does not fall
+back to its default dialer.
+
+For example, given your `checkedDialContext` function:
+
+```go
+dialer := *websocket.DefaultDialer
+dialer.Proxy = nil // Dial destinations directly so your hook checks their IPs.
+dialer.NetDialContext = checkedDialContext
+
+sim, err := ios.NewClient(apiURL, token, ios.WithWebSocketDialer(&dialer))
+if err != nil {
+    return err
+}
+defer sim.Close()
+```
+
+Configure the dialer before passing it to the client and do not modify it during
+use. Your dial function must support concurrent calls. A custom dialer controls
+its own TLS and proxy settings. Passing `nil` keeps the SDK's default proxy-aware
+dialer. HTTP requests use the separate `WithHTTPClient` option.
+
+Standalone tunnels accept `WebSocketDialer` in `tunnel.TCPOptions`,
+`tunnel.ReverseTCPOptions`, `tunnel.DestinationOptions`, and
+`tunnel.ConnectorOptions`. A connector uses it for both its control connection
+and instance attachments. Use `tunnel.MultiplexedWithWebSocketDialer` for
+`NewMultiplexed`, or `tunnel.WithADBConnectionOptions` for `NewADB`.
+A destination tunnel inherits the client's dialer unless its options supply one.
+
 ## Semantic versioning
 
 This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) conventions, though certain backwards-incompatible changes may be released as minor versions:

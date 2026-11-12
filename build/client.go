@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/internal/direct"
 	"github.com/limrun-inc/go-sdk/internal/stream"
 	"github.com/limrun-inc/go-sdk/syncfolder"
@@ -23,6 +24,14 @@ type Option func(*ExecOptions)
 
 func WithHTTPClient(client *http.Client) Option {
 	return func(o *ExecOptions) { o.HTTPClient = client }
+}
+
+// WithWebSocketDialer sets the dialer for WebSocket connections, including reconnects
+// and tunnels. Use NetDialContext on the dialer to enforce an address policy.
+// A nil dialer uses the SDK default. A custom dialer controls its own proxy settings.
+// Configure the dialer before use and do not modify it while the client is active.
+func WithWebSocketDialer(dialer *websocket.Dialer) Option {
+	return func(o *ExecOptions) { o.WebSocketDialer = dialer }
 }
 func WithExecutionOptions(options ExecOptions) Option {
 	return func(o *ExecOptions) { api, token := o.APIURL, o.Token; *o = options; o.APIURL = api; o.Token = token }

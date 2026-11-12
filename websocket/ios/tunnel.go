@@ -49,7 +49,7 @@ func (c *Client) StartReverseTunnel(ctx context.Context, opts ReverseTunnelOptio
 	if e != nil {
 		return nil, e
 	}
-	return tunnel.StartReverseTCP(ctx, remote, c.token, tunnel.ReverseTCPOptions{LocalHost: opts.LocalHost, LocalPort: opts.LocalPort})
+	return tunnel.StartReverseTCP(ctx, remote, c.token, tunnel.ReverseTCPOptions{WebSocketDialer: c.websocketDialer, LocalHost: opts.LocalHost, LocalPort: opts.LocalPort})
 }
 func (c *Client) StartTunnel(ctx context.Context, opts TunnelOptions) (*tunnel.Destination, error) {
 	remote, e := tunnel.DestinationURL(c.apiURL)
@@ -58,6 +58,9 @@ func (c *Client) StartTunnel(ctx context.Context, opts TunnelOptions) (*tunnel.D
 	}
 	if opts.Inspection == nil {
 		opts.Inspection = &tunnel.InspectionConfig{Enabled: true}
+	}
+	if opts.WebSocketDialer == nil {
+		opts.WebSocketDialer = c.websocketDialer
 	}
 	return tunnel.StartDestinationTCP(ctx, remote, c.token, opts)
 }
