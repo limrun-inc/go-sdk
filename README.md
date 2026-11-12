@@ -96,6 +96,23 @@ For direct connections, use `ios.NewClient(apiURL, token)` or
 Xcode and Gradle instance services also provide `CreateClient`, with build
 operations defined in the `build` package.
 
+### Install an app by asset name
+
+Give the instance read permission for the asset, such as
+`asset:name/releases/app.zip:read`, in `spec.role.permissions`. Then use the
+device client to install it without fetching a download URL:
+
+```go
+result, err := iosClient.InstallAppByName(ctx, "releases/app.zip", nil)
+// Android requires read permission for releases/app.apk.
+err = androidClient.SendAssetByName(ctx, "releases/app.apk")
+```
+
+The instance resolves the exact name using its current role. The caller needs
+instance control permission. Existing `InstallApp(ctx, url, opts)` and
+`SendAsset(ctx, url)` calls still work. Android requests use `id` for correlation;
+URL installs also accept replies from older servers that omit `id`.
+
 ### Request fields
 
 The limrun library uses the [`omitzero`](https://tip.golang.org/doc/go1.24#encodingjsonpkgencodingjson)

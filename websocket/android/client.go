@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -44,7 +45,10 @@ func WithWebSocketDialer(dialer *websocket.Dialer) Option {
 	return func(c *Client) { c.connectionOptions.Dialer = dialer }
 }
 
-type assetPending struct{ done chan error }
+type assetPending struct {
+	id, url string
+	done    chan error
+}
 type Client struct {
 	transport                  *control.Client
 	http                       direct.Client
@@ -53,11 +57,11 @@ type Client struct {
 	connectionOptions          control.Options
 	callbacks                  sync.Map
 	assetsMu                   sync.Mutex
-	assets                     map[string][]*assetPending
+	assets                     []*assetPending
 }
 
 func NewClient(apiURL, token string, opts ...Option) (*Client, error) {
-	c := &Client{http: direct.Client{URL: strings.TrimRight(apiURL, "/"), Token: token, HTTPClient: proxy.Client()}, adbPath: "adb", sessionID: control.ID(), logger: slog.Default(), assets: make(map[string][]*assetPending), connectionOptions: control.Options{MaxReconnectAttempts: 6}}
+	c := &Client{http: direct.Client{URL: strings.TrimRight(apiURL, "/"), Token: token, HTTPClient: proxy.Client()}, adbPath: "adb", sessionID: control.ID(), logger: slog.Default(), connectionOptions: control.Options{MaxReconnectAttempts: 6}}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -129,8 +133,9 @@ func (c *Client) call(ctx context.Context, kind string, params any, out any, tim
 }
 func (c *Client) handleMessage(data json.RawMessage) bool {
 	var msg struct {
-		Type   string `json:"type"`
-		ExecID string `json:"execId"`
+		Type   string          `json:"type"`
+		ID     json.RawMessage `json:"id"`
+		ExecID string          `json:"execId"`
 		AppExitInfo
 		Logs    []string `json:"logs"`
 		URL     string   `json:"url"`
@@ -157,15 +162,18 @@ func (c *Client) handleMessage(data json.RawMessage) bool {
 		}
 		return true
 	case "assetResult":
+		var id string
+		if len(msg.ID) > 0 && (json.Unmarshal(msg.ID, &id) != nil || id == "") {
+			return true
+		}
 		c.assetsMu.Lock()
-		queue := c.assets[msg.URL]
-		if len(queue) > 0 {
-			pending := queue[0]
-			if len(queue) == 1 {
-				delete(c.assets, msg.URL)
-			} else {
-				c.assets[msg.URL] = queue[1:]
+		defer c.assetsMu.Unlock()
+		for i, pending := range c.assets {
+			// Only replies without id may use the legacy URL-order fallback.
+			if id != pending.id && !(len(msg.ID) == 0 && msg.URL != "" && msg.URL == pending.url) {
+				continue
 			}
+			c.assets = slices.Delete(c.assets, i, i+1)
 			var err error
 			if msg.Result != "success" {
 				err = errors.New(msg.Message)
@@ -174,8 +182,8 @@ func (c *Client) handleMessage(data json.RawMessage) bool {
 				}
 			}
 			pending.done <- err
+			break
 		}
-		c.assetsMu.Unlock()
 		return true
 	}
 	return false
@@ -183,12 +191,10 @@ func (c *Client) handleMessage(data json.RawMessage) bool {
 func (c *Client) failAssets(err error) {
 	c.assetsMu.Lock()
 	defer c.assetsMu.Unlock()
-	for _, queue := range c.assets {
-		for _, p := range queue {
-			p.done <- err
-		}
+	for _, pending := range c.assets {
+		pending.done <- err
 	}
-	c.assets = make(map[string][]*assetPending)
+	c.assets = nil
 }
 func (c *Client) Screenshot(ctx context.Context) (*ScreenshotData, error) {
 	var r ScreenshotData
