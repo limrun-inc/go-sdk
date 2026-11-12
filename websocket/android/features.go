@@ -44,13 +44,20 @@ func (c *Client) SendAsset(ctx context.Context, url string, timeout ...time.Dura
 	return c.sendAsset(ctx, "url", url, timeout...)
 }
 
-// SendAssetByName installs an APK using the instance's delegated asset read permission.
+// InstallAppByName installs an APK using the instance's delegated asset read permission.
 // It sends the exact asset name to the instance without calling Asset Storage.
-func (c *Client) SendAssetByName(ctx context.Context, assetName string, timeout ...time.Duration) error {
+func (c *Client) InstallAppByName(ctx context.Context, assetName string, timeout ...time.Duration) error {
 	if assetName == "" {
 		return errors.New("assetName must not be empty")
 	}
 	return c.sendAsset(ctx, "assetName", assetName, timeout...)
+}
+
+// SendAssetByName is a compatibility alias for InstallAppByName.
+//
+// Deprecated: Use InstallAppByName instead.
+func (c *Client) SendAssetByName(ctx context.Context, assetName string, timeout ...time.Duration) error {
+	return c.InstallAppByName(ctx, assetName, timeout...)
 }
 
 func (c *Client) sendAsset(ctx context.Context, field, value string, timeout ...time.Duration) error {

@@ -56,7 +56,7 @@ func TestSendAssetSources(t *testing.T) {
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if err := client.SendAssetByName(ctx, "team/app:prod+版本.apk"); err != nil {
+	if err := client.InstallAppByName(ctx, "team/app:prod+版本.apk"); err != nil {
 		t.Fatal(err)
 	}
 	if err := client.SendAsset(ctx, "https://storage.example/app.apk"); err != nil {
@@ -73,6 +73,9 @@ func TestSendAssetSources(t *testing.T) {
 		t.Fatalf("IDs: %v %v %v", named, url, denied)
 	}
 	if err := new(Client).SendAssetByName(ctx, ""); err == nil {
+		t.Fatal("accepted empty asset name")
+	}
+	if err := new(Client).InstallAppByName(ctx, ""); err == nil {
 		t.Fatal("accepted empty asset name")
 	}
 }
@@ -106,7 +109,7 @@ func TestAssetCorrelation(t *testing.T) {
 			defer cancel()
 			install := func() error {
 				if mode == "name" {
-					return client.SendAssetByName(ctx, "same.apk")
+					return client.InstallAppByName(ctx, "same.apk")
 				}
 				return client.SendAsset(ctx, "https://storage.example/same.apk")
 			}
@@ -147,7 +150,7 @@ func TestAssetLateReplyCannotCompleteRetry(t *testing.T) {
 
 func TestAssetDisconnectClearsPending(t *testing.T) {
 	client := assetClient(t, func(ws *websocket.Conn, _ map[string]string) { ws.Close() })
-	err := client.SendAssetByName(context.Background(), "app.apk", time.Second)
+	err := client.InstallAppByName(context.Background(), "app.apk", time.Second)
 	if err == nil || errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("disconnect: %v", err)
 	}

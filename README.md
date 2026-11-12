@@ -105,12 +105,13 @@ device client to install it without fetching a download URL:
 ```go
 result, err := iosClient.InstallAppByName(ctx, "releases/app.zip", nil)
 // Android requires read permission for releases/app.apk.
-err = androidClient.SendAssetByName(ctx, "releases/app.apk")
+err = androidClient.InstallAppByName(ctx, "releases/app.apk")
 ```
 
 The instance resolves the exact name using its current role. The caller needs
 instance control permission. Existing `InstallApp(ctx, url, opts)` and
-`SendAsset(ctx, url)` calls still work. Android requests use `id` for correlation;
+`SendAsset(ctx, url)` calls still work. Android's `SendAssetByName` remains as a
+deprecated alias for `InstallAppByName`. Android requests use `id` for correlation;
 URL installs also accept replies from older servers that omit `id`.
 
 ### Request fields
