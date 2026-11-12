@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -107,7 +108,12 @@ func TestConnectorResumesWithoutDroppingInstance(t *testing.T) {
 		}
 	}))
 	defer hub.Close()
-	connector, err := RunTunnel(ctx, ConnectorOptions{BaseURL: hub.URL, Token: "hub-token", OrganizationID: "org", TunnelID: "private-id", Replace: true})
+	var checkedDials atomic.Int32
+	dialer := &websocket.Dialer{NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		checkedDials.Add(1)
+		return (&net.Dialer{}).DialContext(ctx, network, addr)
+	}}
+	connector, err := RunTunnel(ctx, ConnectorOptions{WebSocketDialer: dialer, BaseURL: hub.URL, Token: "hub-token", OrganizationID: "org", TunnelID: "private-id", Replace: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +125,9 @@ func TestConnectorResumesWithoutDroppingInstance(t *testing.T) {
 		}
 	case <-ctx.Done():
 		t.Fatal(ctx.Err())
+	}
+	if checkedDials.Load() != 3 {
+		t.Fatalf("expected custom dialer for control, attachment, and reconnect; got %d calls", checkedDials.Load())
 	}
 	if instanceDials.Load() != 1 {
 		t.Fatalf("instance dialed %d times", instanceDials.Load())

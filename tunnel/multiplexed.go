@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 type MultiplexedOption func(*Multiplexed)
@@ -14,14 +16,21 @@ func MultiplexedWithLocalPort(port int) MultiplexedOption {
 	return func(t *Multiplexed) { t.LocalPort = &port }
 }
 
+// MultiplexedWithWebSocketDialer sets the dialer for connections and reconnects.
+// Nil uses the SDK default. Configure the dialer before starting the tunnel.
+func MultiplexedWithWebSocketDialer(dialer *websocket.Dialer) MultiplexedOption {
+	return func(t *Multiplexed) { t.websocketDialer = dialer }
+}
+
 type Multiplexed struct {
-	RemoteURL *url.URL
-	LocalPort *int
-	Token     string
-	listener  net.Listener
-	mu        sync.Mutex
-	tcp       *TCP
-	closed    bool
+	websocketDialer *websocket.Dialer
+	RemoteURL       *url.URL
+	LocalPort       *int
+	Token           string
+	listener        net.Listener
+	mu              sync.Mutex
+	tcp             *TCP
+	closed          bool
 }
 
 func NewMultiplexed(remoteURL *url.URL, remotePort int, token string, opts ...MultiplexedOption) (*Multiplexed, error) {
@@ -57,7 +66,7 @@ func (t *Multiplexed) Start() error {
 	if t.tcp != nil {
 		return nil
 	}
-	tcp, err := startTCPListener(context.Background(), t.listener, t.RemoteURL.String(), t.Token, TCPOptions{Mode: "multiplexed"})
+	tcp, err := startTCPListener(context.Background(), t.listener, t.RemoteURL.String(), t.Token, TCPOptions{Mode: "multiplexed", WebSocketDialer: t.websocketDialer})
 	t.tcp = tcp
 	return err
 }

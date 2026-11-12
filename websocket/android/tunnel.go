@@ -21,6 +21,9 @@ func (c *Client) StartTunnel(ctx context.Context, opts TunnelOptions) (*tunnel.D
 	if opts.Inspection == nil {
 		opts.Inspection = &tunnel.InspectionConfig{Enabled: true}
 	}
+	if opts.WebSocketDialer == nil {
+		opts.WebSocketDialer = c.connectionOptions.Dialer
+	}
 	return tunnel.StartDestinationTCP(ctx, remote, c.http.Token, opts)
 }
 func (c *Client) GetTunnelStatus(ctx context.Context) (*TunnelStatus, error) {

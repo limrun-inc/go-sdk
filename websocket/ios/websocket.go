@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/internal/proxy"
 
 	"github.com/limrun-inc/go-sdk/internal/control"
@@ -157,12 +158,21 @@ func WithHTTPClient(client *http.Client) Option {
 	}
 }
 
+// WithWebSocketDialer sets the dialer for WebSocket connections, including reconnects
+// and tunnels. Use NetDialContext on the dialer to enforce an address policy.
+// A nil dialer uses the SDK default. A custom dialer controls its own proxy settings.
+// Configure the dialer before use and do not modify it while the client is active.
+func WithWebSocketDialer(dialer *websocket.Dialer) Option {
+	return func(c *Client) { c.websocketDialer = dialer }
+}
+
 // Client is a WebSocket client for interacting with a Limrun iOS instance.
 type Client struct {
-	apiURL     string
-	token      string
-	logger     *slog.Logger
-	httpClient *http.Client
+	apiURL          string
+	token           string
+	logger          *slog.Logger
+	httpClient      *http.Client
+	websocketDialer *websocket.Dialer
 
 	keepAliveSessionID string
 
@@ -413,7 +423,7 @@ func (c *Client) connect() error {
 	if err != nil {
 		return err
 	}
-	c.transport, err = control.New(context.Background(), endpoint, control.Options{MaxReconnectAttempts: c.reconnectAttempts, ReconnectDelay: c.reconnectDelay, MaxReconnectDelay: c.maxReconnectDelay, OnMessage: c.handleMessage, OnDisconnect: c.failExecutions, OnPermanentDisconnect: func() { c.notifications.Range(func(k, v any) bool { c.notifications.Delete(k); return true }) }})
+	c.transport, err = control.New(context.Background(), endpoint, control.Options{Dialer: c.websocketDialer, MaxReconnectAttempts: c.reconnectAttempts, ReconnectDelay: c.reconnectDelay, MaxReconnectDelay: c.maxReconnectDelay, OnMessage: c.handleMessage, OnDisconnect: c.failExecutions, OnPermanentDisconnect: func() { c.notifications.Range(func(k, v any) bool { c.notifications.Delete(k); return true }) }})
 	return err
 }
 func (c *Client) Close() error {

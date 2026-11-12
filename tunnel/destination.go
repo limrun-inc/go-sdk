@@ -22,6 +22,9 @@ func IsTerminalDestinationTunnelError(err error) bool {
 }
 
 type DestinationOptions struct {
+	// WebSocketDialer controls WebSocket connections. Nil uses the SDK default.
+	// A custom dialer controls its own proxy settings and must not be modified during use.
+	WebSocketDialer                                                    *websocket.Dialer
 	Selectors                                                          []string
 	Inspection                                                         *InspectionConfig
 	OnInspectionEvent                                                  func(InspectionEvent)
@@ -118,7 +121,7 @@ func StartDestinationTCP(ctx context.Context, remote, token string, opts Destina
 	ctx, cancel := context.WithCancel(ctx)
 	handshakeCtx, stop := context.WithTimeout(ctx, opts.HandshakeTimeout)
 	defer stop()
-	ws, err := dialWebSocket(handshakeCtx, remote, token)
+	ws, err := dialWebSocket(handshakeCtx, remote, token, opts.WebSocketDialer)
 	if err != nil {
 		cancel()
 		return nil, err

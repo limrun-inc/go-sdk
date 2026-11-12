@@ -77,7 +77,7 @@ func (c *Client) StartADBTunnel() (*tunnel.ADB, error) {
 	if c.adbURL == "" {
 		return nil, errors.New("adbUrl is required to start an ADB tunnel")
 	}
-	t, err := tunnel.NewADB(c.adbURL, c.http.Token, tunnel.WithADBPath(c.adbPath), tunnel.WithADBConnectionOptions(tunnel.TCPOptions{MaxReconnectAttempts: &c.connectionOptions.MaxReconnectAttempts, ReconnectDelay: c.connectionOptions.ReconnectDelay, MaxReconnectDelay: c.connectionOptions.MaxReconnectDelay}))
+	t, err := tunnel.NewADB(c.adbURL, c.http.Token, tunnel.WithADBPath(c.adbPath), tunnel.WithADBConnectionOptions(tunnel.TCPOptions{WebSocketDialer: c.connectionOptions.Dialer, MaxReconnectAttempts: &c.connectionOptions.MaxReconnectAttempts, ReconnectDelay: c.connectionOptions.ReconnectDelay, MaxReconnectDelay: c.connectionOptions.MaxReconnectDelay}))
 	if err != nil {
 		return nil, err
 	}
