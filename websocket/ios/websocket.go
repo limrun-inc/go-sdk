@@ -114,8 +114,9 @@ type LsofEntry struct {
 
 // AppInstallationResult contains the result of a successful app installation.
 type AppInstallationResult struct {
-	URL      string // The URL the app was installed from
-	BundleID string // Bundle ID of the installed app (always set on success)
+	URL       string // The supplied URL; empty for an install by asset name
+	AssetName string // The supplied asset name, when used
+	BundleID  string // Bundle ID of the installed app (always set on success)
 }
 
 // LaunchMode specifies how to launch an app after installation.
@@ -325,6 +326,7 @@ type request struct {
 	Modifiers    []string               `json:"modifiers,omitempty"`
 	BundleID     string                 `json:"bundleId,omitempty"`
 	URL          string                 `json:"url,omitempty"`
+	AssetName    string                 `json:"assetName,omitempty"`
 	Kind         string                 `json:"kind,omitempty"`
 	Args         []string               `json:"args,omitempty"`
 	MD5          string                 `json:"md5,omitempty"`
@@ -356,6 +358,7 @@ type response struct {
 	Apps         string                `json:"apps,omitempty"`
 	Files        json.RawMessage       `json:"files,omitempty"`
 	URL          string                `json:"url,omitempty"`
+	AssetName    string                `json:"assetName,omitempty"`
 	BundleID     string                `json:"bundleId,omitempty"`
 	Logs         string                `json:"logs,omitempty"`
 	Results      []PerformActionResult `json:"results,omitempty"`
@@ -719,7 +722,19 @@ func (c *Client) OpenURL(ctx context.Context, urlStr string) error {
 // InstallApp installs an app from a URL (supports .ipa or .app files, optionally zipped).
 // Returns the installation result with bundle ID on success.
 func (c *Client) InstallApp(ctx context.Context, urlStr string, opts *AppInstallationOptions) (*AppInstallationResult, error) {
-	req := &request{Type: "appInstallation", URL: urlStr}
+	return c.installApp(ctx, &request{Type: "appInstallation", URL: urlStr}, opts)
+}
+
+// InstallAppByName installs an asset using the instance's delegated read permission.
+// It sends the exact asset name to the instance without calling Asset Storage.
+func (c *Client) InstallAppByName(ctx context.Context, assetName string, opts *AppInstallationOptions) (*AppInstallationResult, error) {
+	if assetName == "" {
+		return nil, errors.New("assetName must not be empty")
+	}
+	return c.installApp(ctx, &request{Type: "appInstallation", AssetName: assetName}, opts)
+}
+
+func (c *Client) installApp(ctx context.Context, req *request, opts *AppInstallationOptions) (*AppInstallationResult, error) {
 	if opts != nil {
 		req.Timeout = opts.Timeout
 		req.MD5 = opts.MD5
@@ -730,8 +745,9 @@ func (c *Client) InstallApp(ctx context.Context, urlStr string, opts *AppInstall
 		return nil, err
 	}
 	return &AppInstallationResult{
-		URL:      resp.URL,
-		BundleID: resp.BundleID,
+		URL:       resp.URL,
+		AssetName: resp.AssetName,
+		BundleID:  resp.BundleID,
 	}, nil
 }
 

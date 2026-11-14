@@ -5,8 +5,10 @@ import (
 	"errors"
 	"net/url"
 	"regexp"
+	"slices"
 	"time"
 
+	"github.com/limrun-inc/go-sdk/internal/control"
 	"github.com/limrun-inc/go-sdk/internal/direct"
 	"github.com/limrun-inc/go-sdk/session"
 	"github.com/limrun-inc/go-sdk/tunnel"
@@ -36,34 +38,55 @@ func (c *Client) SetCameraVideo(ctx context.Context, path string, loop ...bool) 
 func (c *Client) ClearCameraVideo(ctx context.Context) error {
 	return c.call(ctx, "cameraControl", map[string]any{"action": "reset"}, nil, 0)
 }
+
+// SendAsset installs an APK from a download URL. Older servers may correlate replies by URL.
 func (c *Client) SendAsset(ctx context.Context, url string, timeout ...time.Duration) error {
+	return c.sendAsset(ctx, "url", url, timeout...)
+}
+
+// InstallAppByName installs an APK using the instance's delegated asset read permission.
+// It sends the exact asset name to the instance without calling Asset Storage.
+func (c *Client) InstallAppByName(ctx context.Context, assetName string, timeout ...time.Duration) error {
+	if assetName == "" {
+		return errors.New("assetName must not be empty")
+	}
+	return c.sendAsset(ctx, "assetName", assetName, timeout...)
+}
+
+// SendAssetByName is a compatibility alias for InstallAppByName.
+//
+// Deprecated: Use InstallAppByName instead.
+func (c *Client) SendAssetByName(ctx context.Context, assetName string, timeout ...time.Duration) error {
+	return c.InstallAppByName(ctx, assetName, timeout...)
+}
+
+func (c *Client) sendAsset(ctx context.Context, field, value string, timeout ...time.Duration) error {
 	wait := 120 * time.Second
 	if len(timeout) > 0 {
 		wait = timeout[0]
 	}
 	ctx, cancel := context.WithTimeout(ctx, wait)
 	defer cancel()
-	p := &assetPending{done: make(chan error, 1)}
-	c.assetsMu.Lock()
-	c.assets[url] = append(c.assets[url], p)
-	c.assetsMu.Unlock()
+	p := &assetPending{id: control.ID(), done: make(chan error, 1)}
+	if field == "url" {
+		p.url = value
+	}
 	defer func() {
 		c.assetsMu.Lock()
 		defer c.assetsMu.Unlock()
-		queue := c.assets[url]
-		for i, item := range queue {
-			if item == p {
-				queue = append(queue[:i], queue[i+1:]...)
+		for i, pending := range c.assets {
+			if pending == p {
+				c.assets = slices.Delete(c.assets, i, i+1)
 				break
 			}
 		}
-		if len(queue) == 0 {
-			delete(c.assets, url)
-		} else {
-			c.assets[url] = queue
-		}
 	}()
-	if err := c.transport.Send(map[string]any{"type": "asset", "url": url}); err != nil {
+	// Keep registration order equal to wire order for legacy URL-only replies.
+	c.assetsMu.Lock()
+	c.assets = append(c.assets, p)
+	err := c.transport.Send(map[string]any{"type": "asset", "id": p.id, field: value})
+	c.assetsMu.Unlock()
+	if err != nil {
 		return err
 	}
 	select {
