@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.1 (2026-11-15)
+
+Full Changelog: [v0.11.0...v0.11.1](https://github.com/limrun-inc/go-sdk/compare/v0.11.0...v0.11.1)
+
+### Features
+
+* Add `InstallAppByName` for iOS and Android. The instance fetches the named asset using its delegated asset read permission, so callers do not need to obtain a signed download URL ([#26](https://github.com/limrun-inc/go-sdk/pull/26)).
+
+### Bug Fixes
+
+* Correlate Android asset replies by request ID so concurrent installs and late replies cannot complete the wrong request. Preserve URL-based reply matching for older servers ([#26](https://github.com/limrun-inc/go-sdk/pull/26)).
+
 ## 0.11.0 (2026-11-12)
 
 Full Changelog: [v0.10.0...v0.11.0](https://github.com/limrun-inc/go-sdk/compare/v0.10.0...v0.11.0)
