@@ -29,7 +29,7 @@ func TestWorkloadIdentityRenewal(t *testing.T) {
 		if err := r.ParseForm(); err != nil {
 			t.Error(err)
 		}
-		if r.Form.Get("audience") != "federation_customer" || r.Form.Get("grant_type") != "urn:ietf:params:oauth:grant-type:token-exchange" {
+		if r.Form.Get("audience") != "binding_customer" || r.Form.Get("grant_type") != "urn:ietf:params:oauth:grant-type:token-exchange" {
 			t.Error("invalid form")
 		}
 		mu.Lock()
@@ -38,7 +38,7 @@ func TestWorkloadIdentityRenewal(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"access_token": "limrun-session", "token_type": "Bearer", "expires_in": 900})
 	}))
 	defer server.Close()
-	c := &workloadCredentials{options: WorkloadIdentityOptions{TokenFile: path, BindingID: "federation_customer", STSBaseURL: server.URL}, client: server.Client()}
+	c := &workloadCredentials{options: WorkloadIdentityOptions{TokenFile: path, BindingID: "binding_customer", STSBaseURL: server.URL}, client: server.Client()}
 	var wg sync.WaitGroup
 	for range 10 {
 		wg.Add(1)
