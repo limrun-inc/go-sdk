@@ -42,7 +42,7 @@ func TestFederatedClient(t *testing.T) {
 
 func TestExplicitKeyOverridesFederationDiscovery(t *testing.T) {
 	t.Setenv("LIM_API_KEY", "")
-	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID", "federation_test")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID", "binding_test")
 	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE", "/does/not/exist")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer explicit-key" {

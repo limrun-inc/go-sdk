@@ -45,7 +45,7 @@ creates a [federation binding](https://docs.limrun.com/docs/platform/workload-id
 ```go
 client := limrun.NewClient(option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{
     TokenFile:           "/var/run/identity/token",
-    BindingID: "federation_REPLACE_WITH_BINDING_ID",
+    BindingID: "binding_REPLACE_WITH_BINDING_ID",
 }))
 ```
 
