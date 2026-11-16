@@ -38,7 +38,7 @@ func TestWorkloadIdentityRenewal(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"access_token": "limrun-session", "token_type": "Bearer", "expires_in": 900})
 	}))
 	defer server.Close()
-	c := &workloadCredentials{options: WorkloadIdentityOptions{TokenFile: path, FederationBindingID: "federation_customer", STSBaseURL: server.URL}, client: server.Client()}
+	c := &workloadCredentials{options: WorkloadIdentityOptions{TokenFile: path, BindingID: "federation_customer", STSBaseURL: server.URL}, client: server.Client()}
 	var wg sync.WaitGroup
 	for range 10 {
 		wg.Add(1)
@@ -70,7 +70,7 @@ func TestWorkloadIdentityRejectsInvalidResponses(t *testing.T) {
 	os.WriteFile(path, []byte("external"), 0600)
 	for _, response := range []string{`{"error":"invalid_grant"}`, `{"access_token":"token","token_type":"Bearer","expires_in":0}`, `{"access_token":"token","token_type":"Other","expires_in":900}`} {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(response)) }))
-		c := &workloadCredentials{options: WorkloadIdentityOptions{TokenFile: path, FederationBindingID: "binding", STSBaseURL: server.URL}, client: server.Client()}
+		c := &workloadCredentials{options: WorkloadIdentityOptions{TokenFile: path, BindingID: "binding", STSBaseURL: server.URL}, client: server.Client()}
 		if _, err := c.get(context.Background()); err == nil {
 			t.Errorf("accepted invalid response %s", response)
 		}

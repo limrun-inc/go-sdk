@@ -31,7 +31,7 @@ func TestFederatedClient(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	}))
 	defer server.Close()
-	client := limrun.NewClient(option.WithBaseURL(server.URL), option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{TokenFile: file, FederationBindingID: "binding", STSBaseURL: server.URL}))
+	client := limrun.NewClient(option.WithBaseURL(server.URL), option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{TokenFile: file, BindingID: "binding", STSBaseURL: server.URL}))
 	if _, err := client.IosInstances.List(context.Background(), limrun.IosInstanceListParams{}); err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestFederatedClient(t *testing.T) {
 
 func TestExplicitKeyOverridesFederationDiscovery(t *testing.T) {
 	t.Setenv("LIM_API_KEY", "")
-	t.Setenv("LIMRUN_FEDERATION_BINDING_ID", "federation_test")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID", "federation_test")
 	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE", "/does/not/exist")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer explicit-key" {
