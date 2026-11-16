@@ -109,7 +109,7 @@ func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, 
 		endpoint = "https://sts.limrun.com"
 	}
 	form := url.Values{"grant_type": {"urn:ietf:params:oauth:grant-type:token-exchange"}, "subject_token_type": {"urn:ietf:params:oauth:token-type:jwt"}, "subject_token": {jwt}, "audience": {c.options.FederationBindingID}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(endpoint, "/")+"/v1/token", strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(endpoint, "/")+"/v1/access_tokens", strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", time.Time{}, errors.New("invalid token service URL")
 	}

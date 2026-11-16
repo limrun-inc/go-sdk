@@ -21,7 +21,7 @@ func TestFederatedClient(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
 		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path == "/v1/token" {
+		if r.URL.Path == "/v1/access_tokens" {
 			json.NewEncoder(w).Encode(map[string]any{"access_token": "session", "token_type": "Bearer", "expires_in": 900})
 			return
 		}
