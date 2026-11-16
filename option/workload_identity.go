@@ -17,8 +17,8 @@ import (
 // WorkloadIdentityOptions exchanges a customer-issued JWT for a short-lived Limrun token.
 // TokenFile is read again on renewal, so the identity provider can rotate it atomically.
 type WorkloadIdentityOptions struct {
-	TokenFile           string
-	FederationBindingID string
+	TokenFile string
+	BindingID string
 	// STSBaseURL defaults to https://sts.limrun.com. Use only a trusted token service.
 	STSBaseURL string
 }
@@ -88,7 +88,7 @@ func (c *workloadCredentials) get(ctx context.Context) (string, error) {
 	}
 }
 func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, error) {
-	if c.options.TokenFile == "" || c.options.FederationBindingID == "" {
+	if c.options.TokenFile == "" || c.options.BindingID == "" {
 		return "", time.Time{}, errors.New("workload identity requires a token file and federation binding ID")
 	}
 	file, err := os.Open(c.options.TokenFile)
@@ -108,7 +108,7 @@ func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, 
 	if endpoint == "" {
 		endpoint = "https://sts.limrun.com"
 	}
-	form := url.Values{"grant_type": {"urn:ietf:params:oauth:grant-type:token-exchange"}, "subject_token_type": {"urn:ietf:params:oauth:token-type:jwt"}, "subject_token": {jwt}, "audience": {c.options.FederationBindingID}}
+	form := url.Values{"grant_type": {"urn:ietf:params:oauth:grant-type:token-exchange"}, "subject_token_type": {"urn:ietf:params:oauth:token-type:jwt"}, "subject_token": {jwt}, "audience": {c.options.BindingID}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(endpoint, "/")+"/v1/access_tokens", strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", time.Time{}, errors.New("invalid token service URL")

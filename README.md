@@ -45,12 +45,12 @@ creates a [federation binding](https://docs.limrun.com/docs/platform/workload-id
 ```go
 client := limrun.NewClient(option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{
     TokenFile:           "/var/run/identity/token",
-    FederationBindingID: "federation_REPLACE_WITH_BINDING_ID",
+    BindingID: "federation_REPLACE_WITH_BINDING_ID",
 }))
 ```
 
 Alternatively, set `LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE` and
-`LIMRUN_FEDERATION_BINDING_ID` and use the default client constructor.
+`LIMRUN_WORKLOAD_IDENTITY_BINDING_ID` and use the default client constructor.
 An API key takes precedence when configured. The SDK caches a short-lived Limrun
 access token and re-reads the identity file on renewal. Your runtime must rotate
 the external JWT. `LIMRUN_STS_BASE_URL` overrides the default token service at
