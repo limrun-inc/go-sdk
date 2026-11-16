@@ -37,6 +37,32 @@ go get -u 'github.com/limrun-inc/go-sdk@v0.11.1'
 
 <!-- x-release-please-end -->
 
+## Workload identity federation
+
+Authenticate with a JWT file from your identity provider after an organization admin
+creates a [federation binding](https://docs.limrun.com/docs/platform/workload-identity-federation).
+
+```go
+client := limrun.NewClient(option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{
+    TokenFile:           "/var/run/identity/token",
+    BindingID: "binding_REPLACE_WITH_BINDING_ID",
+}))
+```
+
+Alternatively, set `LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE` and
+`LIMRUN_WORKLOAD_IDENTITY_BINDING_ID` and use the default client constructor.
+An API key takes precedence when configured. The SDK caches a short-lived Limrun
+access token and re-reads the identity file on renewal. Your runtime must rotate
+the external JWT. `LIMRUN_STS_BASE_URL` overrides the default token service at
+`https://sts.limrun.com`.
+
+The instance's `status.token` grants `control` on that instance. It permits runtime
+operations and reading the instance record, but cannot create, update, or delete
+instance records. Use your configured API key or federated client for those calls,
+with the corresponding `create`, `update`, or `delete` permission. Existing `all`
+grants include both runtime control and lifecycle management. See the
+[permissions reference](https://docs.limrun.com/docs/reference/permissions).
+
 ## Requirements
 
 This library requires Go 1.25+.
