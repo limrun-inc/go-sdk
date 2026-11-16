@@ -15,6 +15,9 @@ import (
 )
 
 func TestFederatedClient(t *testing.T) {
+	t.Setenv("LIM_API_KEY", "")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID", "binding_wrong")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE", "/does/not/exist")
 	file := filepath.Join(t.TempDir(), "identity")
 	os.WriteFile(file, []byte("external"), 0600)
 	calls := 0
@@ -22,6 +25,13 @@ func TestFederatedClient(t *testing.T) {
 		calls++
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path == "/v1/access_tokens" {
+			if err := r.ParseForm(); err != nil {
+				t.Error(err)
+				return
+			}
+			if r.Form.Get("audience") != "binding" {
+				t.Errorf("wrong binding: %s", r.Form.Get("audience"))
+			}
 			json.NewEncoder(w).Encode(map[string]any{"access_token": "session", "token_type": "Bearer", "expires_in": 900})
 			return
 		}
