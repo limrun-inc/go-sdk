@@ -23,7 +23,7 @@ func TestWorkloadIdentityRenewal(t *testing.T) {
 	var identities []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
-		if r.URL.Path != "/v1/token" || r.Header.Get("Authorization") != "" {
+		if r.URL.Path != "/v1/access_tokens" || r.Header.Get("Authorization") != "" {
 			t.Error("unexpected exchange request")
 		}
 		if err := r.ParseForm(); err != nil {
