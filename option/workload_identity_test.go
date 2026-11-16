@@ -3,13 +3,16 @@ package option
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -76,4 +79,47 @@ func TestWorkloadIdentityRejectsInvalidResponses(t *testing.T) {
 		}
 		server.Close()
 	}
+}
+
+type exchangeTransport func(*http.Request) (*http.Response, error)
+
+func (f exchangeTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestWorkloadIdentitySharesFailedRefresh(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "identity")
+	if err := os.WriteFile(path, []byte("external"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	synctest.Test(t, func(t *testing.T) {
+		release := make(chan struct{})
+		var calls atomic.Int32
+		c := &workloadCredentials{
+			options: WorkloadIdentityOptions{TokenFile: path, BindingID: "binding"},
+			client: &http.Client{Transport: exchangeTransport(func(*http.Request) (*http.Response, error) {
+				calls.Add(1)
+				<-release
+				return &http.Response{StatusCode: 503, Body: io.NopCloser(strings.NewReader("")), Header: make(http.Header)}, nil
+			})},
+		}
+		var wg sync.WaitGroup
+		for range 10 {
+			wg.Go(func() {
+				if _, err := c.get(context.Background()); err == nil || !strings.Contains(err.Error(), "HTTP 503") {
+					t.Errorf("expected shared exchange failure, got %v", err)
+				}
+			})
+		}
+		synctest.Wait()
+		close(release)
+		wg.Wait()
+		if calls.Load() != 1 {
+			t.Fatalf("%d exchanges, want 1", calls.Load())
+		}
+		c.client.Transport = exchangeTransport(func(*http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"access_token":"recovered","token_type":"Bearer","expires_in":900}`)), Header: make(http.Header)}, nil
+		})
+		if token, err := c.get(context.Background()); token != "recovered" || err != nil {
+			t.Fatalf("later request did not recover: %q, %v", token, err)
+		}
+	})
 }

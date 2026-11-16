@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 )
 
 // WorkloadIdentityOptions exchanges a customer-issued JWT for a short-lived Limrun token.
@@ -28,7 +30,7 @@ func WithWorkloadIdentityFile(options WorkloadIdentityOptions) RequestOption {
 	credentials := &workloadCredentials{options: options, client: &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
 		return errors.New("workload token exchange must not redirect")
 	}}}
-	return WithMiddleware(func(req *http.Request, next MiddlewareNext) (*http.Response, error) {
+	middleware := func(req *http.Request, next MiddlewareNext) (*http.Response, error) {
 		if req.Header.Get("Authorization") != "" {
 			return next(req)
 		}
@@ -39,6 +41,11 @@ func WithWorkloadIdentityFile(options WorkloadIdentityOptions) RequestOption {
 		clone := req.Clone(req.Context())
 		clone.Header.Set("Authorization", "Bearer "+token)
 		return next(clone)
+	}
+	return requestconfig.RequestOptionFunc(func(r *requestconfig.RequestConfig) error {
+		// Later identity options run first, so explicit configuration overrides environment defaults.
+		r.Middlewares = append([]Middleware{middleware}, r.Middlewares...)
+		return nil
 	})
 }
 
@@ -48,44 +55,49 @@ type workloadCredentials struct {
 	mu        sync.Mutex
 	token     string
 	refreshAt time.Time
-	pending   chan struct{}
+	pending   *workloadExchange
+}
+
+type workloadExchange struct {
+	done  chan struct{}
+	token string
+	err   error
 }
 
 func (c *workloadCredentials) get(ctx context.Context) (string, error) {
-	for {
-		c.mu.Lock()
-		if time.Now().Before(c.refreshAt) {
-			token := c.token
-			c.mu.Unlock()
-			return token, nil
-		}
-		if c.pending != nil {
-			pending := c.pending
-			c.mu.Unlock()
-			select {
-			case <-ctx.Done():
-				return "", ctx.Err()
-			case <-pending:
-				continue
-			}
-		}
-		c.pending = make(chan struct{})
+	c.mu.Lock()
+	if time.Now().Before(c.refreshAt) {
+		token := c.token
 		c.mu.Unlock()
-		token, expires, err := c.exchange(ctx)
-		c.mu.Lock()
-		if err == nil {
-			c.token = token
-			lead := time.Until(expires) / 5
-			if lead > time.Minute {
-				lead = time.Minute
-			}
-			c.refreshAt = expires.Add(-lead)
-		}
-		close(c.pending)
-		c.pending = nil
-		c.mu.Unlock()
-		return token, err
+		return token, nil
 	}
+	if pending := c.pending; pending != nil {
+		c.mu.Unlock()
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-pending.done:
+			return pending.token, pending.err
+		}
+	}
+	pending := &workloadExchange{done: make(chan struct{})}
+	c.pending = pending
+	c.mu.Unlock()
+	token, expires, err := c.exchange(ctx)
+	c.mu.Lock()
+	if err == nil {
+		c.token = token
+		lead := time.Until(expires) / 5
+		if lead > time.Minute {
+			lead = time.Minute
+		}
+		c.refreshAt = expires.Add(-lead)
+	}
+	pending.token, pending.err = token, err
+	close(pending.done)
+	c.pending = nil
+	c.mu.Unlock()
+	return token, err
 }
 func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, error) {
 	if c.options.TokenFile == "" || c.options.BindingID == "" {
