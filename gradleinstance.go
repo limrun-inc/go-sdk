@@ -152,6 +152,8 @@ type GradleInstanceSpec struct {
 	InactivityTimeout string `json:"inactivityTimeout" api:"required" format:"duration"`
 	Region            string `json:"region" api:"required"`
 	HardTimeout       string `json:"hardTimeout" format:"duration"`
+	// Disk snapshot configuration, absent for an instance created without one.
+	Snapshot GradleSnapshotConfigState `json:"snapshot"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Role respjson.Field
@@ -159,6 +161,7 @@ type GradleInstanceSpec struct {
 		InactivityTimeout respjson.Field
 		Region            respjson.Field
 		HardTimeout       respjson.Field
+		Snapshot          respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -189,6 +192,8 @@ type GradleInstanceStatus struct {
 	//     instances that failed to get ready during creation. See errorMessage for
 	//     details when available.
 	TerminationReason string `json:"terminationReason"`
+	// What happened to the instance's disk snapshot. GetSnapshot has the full status.
+	Snapshot GradleInstanceStatusSnapshot `json:"snapshot"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Token             respjson.Field
@@ -196,6 +201,7 @@ type GradleInstanceStatus struct {
 		APIURL            respjson.Field
 		ErrorMessage      respjson.Field
 		TerminationReason respjson.Field
+		Snapshot          respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -251,6 +257,9 @@ func (r *GradleInstanceNewParamsMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type GradleInstanceNewParamsSpec struct {
+	// Disk snapshot to restore after assignment and save at termination. Omitted means an
+	// ordinary instance that restores and saves nothing.
+	Snapshot *GradleSnapshotConfig `json:"snapshot,omitzero"`
 	// Inline instance role. Omit for the organization's compatibility default.
 	Role GradleInstanceNewParamsSpecRole `json:"role,omitzero"`
 
@@ -445,4 +454,18 @@ func (r GradleInstanceNewParamsSpecClueClientLocation) MarshalJSON() ([]byte, er
 func (r *GradleInstanceService) Update(ctx context.Context, id string, params GradleInstanceUpdateParams, opts ...option.RequestOption) error {
 	opts = slices.Concat(r.Options, opts, []option.RequestOption{option.WithHeader("If-Match", params.IfMatch), option.WithHeader("Accept", "*/*")})
 	return requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, "v1/gradle_instances/"+url.PathEscape(id), params, nil, opts...)
+}
+
+// GradleInstanceStatusSnapshot summarizes an instance's disk snapshot on its own record.
+type GradleInstanceStatusSnapshot struct {
+	// The snapshot key the instance restores from. Absent when it starts cold.
+	RestoreKey string `json:"restoreKey,omitempty"`
+	// The save requested at termination. Absent until the instance is deleted.
+	Save *GradleInstanceStatusSnapshotSave `json:"save,omitempty"`
+}
+
+type GradleInstanceStatusSnapshotSave struct {
+	Phase   string `json:"phase"`
+	Reason  string `json:"reason,omitempty"`
+	Message string `json:"message,omitempty"`
 }

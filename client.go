@@ -26,6 +26,7 @@ type Client struct {
 	GradleInstances  GradleInstanceService
 	XcodeSnapshots   XcodeSnapshotService
 	IosSnapshots     IosSnapshotService
+	GradleSnapshots  GradleSnapshotService
 	Analytics        AnalyticsService
 }
 
@@ -66,6 +67,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.GradleInstances = NewGradleInstanceService(opts...)
 	r.XcodeSnapshots = NewXcodeSnapshotService(opts...)
 	r.IosSnapshots = NewIosSnapshotService(opts...)
+	r.GradleSnapshots = NewGradleSnapshotService(opts...)
 	r.Analytics = NewAnalyticsService(opts...)
 
 	return
