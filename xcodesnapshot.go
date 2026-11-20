@@ -2,7 +2,6 @@ package limrun
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
-	"github.com/limrun-inc/go-sdk/internal/stream"
 	"github.com/limrun-inc/go-sdk/option"
 	"github.com/limrun-inc/go-sdk/packages/param"
 )
@@ -161,8 +159,6 @@ func (e *XcodeCacheTimeoutError) Error() string {
 	return fmt.Sprintf("timed out after %.0fs waiting for the cache %s to finish", e.Timeout.Seconds(), e.Side)
 }
 
-var errCacheTerminal = errors.New("cache terminal state")
-
 func (r *XcodeInstanceService) FollowCache(ctx context.Context, id string, options XcodeCacheFollowOptions, opts ...option.RequestOption) (*XcodeCacheFollowResult, error) {
 	side := options.Side
 	if side == "" {
@@ -175,84 +171,31 @@ func (r *XcodeInstanceService) FollowCache(ctx context.Context, id string, optio
 			timeout = 12 * time.Minute
 		}
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	var last *XcodeInstanceCache
-	lastKey := ""
-	delay := time.Second
-	gone := false
-	endpoint := "v1/xcode_instances/" + url.PathEscape(id) + "/cache"
-	for {
-		var res *http.Response
-		requestOpts := slices.Concat(r.Options, opts, []option.RequestOption{option.WithHeader("Accept", "text/event-stream"), option.WithMaxRetries(0)})
-		err := requestconfig.ExecuteNewRequest(ctx, http.MethodGet, endpoint, nil, &res, requestOpts...)
-		var apiErr *Error
-		if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
-			gone = true
-		} else if err == nil {
-			if options.OnOpen != nil {
-				options.OnOpen()
-			}
-			err = stream.Read(res.Body, func(e stream.Event) error {
-				if e.Type != "cache" && e.Type != "gone" {
-					return nil
-				}
-				var state XcodeInstanceCache
-				if err := json.Unmarshal([]byte(e.Data), &state); err != nil {
-					return fmt.Errorf("cache stream sent unreadable data: %w", err)
-				}
-				last = &state
-				if e.Type == "gone" {
-					_, confirmErr := r.GetCache(ctx, id, opts...)
-					var httpErr *Error
-					if errors.As(confirmErr, &httpErr) && httpErr.StatusCode == 404 {
-						gone = true
-						return errCacheTerminal
-					}
-					return nil
-				}
-				key := state.Restore.Phase + "/" + state.Restore.Reason + "|" + state.Save.Phase + "/" + state.Save.Reason
-				if key != lastKey {
-					lastKey = key
-					if options.OnUpdate != nil {
-						options.OnUpdate(state)
-					}
-				}
-				if IsCacheTerminal(state, side) {
-					return errCacheTerminal
-				}
-				return nil
-			}, func() {}, func(d time.Duration) { delay = d })
-			res.Body.Close()
-			if errors.Is(err, errCacheTerminal) && !gone {
-				return &XcodeCacheFollowResult{Cache: *last}, nil
-			}
-			if err != nil && !errors.Is(err, errCacheTerminal) && ctx.Err() == nil {
-				var syntax *json.SyntaxError
-				if errors.As(err, &syntax) {
-					return nil, err
-				}
-			}
-		}
-		if gone {
-			if last == nil {
-				return nil, &XcodeCacheGoneError{id}
-			}
-			return &XcodeCacheFollowResult{Cache: *last, Gone: true}, nil
-		}
-		if ctx.Err() != nil {
-			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				return nil, &XcodeCacheTimeoutError{side, timeout, last}
-			}
-			return nil, ctx.Err()
-		}
-		timer := time.NewTimer(delay)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-		case <-timer.C:
-		}
+	p := phaseStream[XcodeInstanceCache]{
+		endpoint:  "v1/xcode_instances/" + url.PathEscape(id) + "/cache",
+		eventName: "cache",
+		confirmGone: func(ctx context.Context) error {
+			_, err := r.GetCache(ctx, id, opts...)
+			return err
+		},
+		transitionKey: func(c XcodeInstanceCache) string {
+			return c.Restore.Phase + "/" + c.Restore.Reason + "|" + c.Save.Phase + "/" + c.Save.Reason
+		},
+		isTerminal: func(c XcodeInstanceCache) bool { return IsCacheTerminal(c, side) },
+		onUpdate:   options.OnUpdate,
+		onOpen:     options.OnOpen,
 	}
+	last, gone, err := p.follow(ctx, timeout, slices.Concat(r.Options, opts))
+	var timedOut *errPhaseTimeout[XcodeInstanceCache]
+	switch {
+	case errors.As(err, &timedOut):
+		return nil, &XcodeCacheTimeoutError{side, timeout, timedOut.last}
+	case err != nil:
+		return nil, err
+	case gone && last == nil:
+		return nil, &XcodeCacheGoneError{id}
+	}
+	return &XcodeCacheFollowResult{Cache: *last, Gone: gone}, nil
 }
 
 type XcodeSnapshotFollowOptions struct {
