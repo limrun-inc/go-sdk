@@ -20,6 +20,7 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | `AccessTokens` | `New`, `Revoke` |
 | `XcodeSnapshots`, `IosSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
 | `Analytics` | `Get`, `GetInstances` |
+| `SupportTickets` | `Create(ctx, organizationID, params)` |
 
 Instance updates accept an `IfMatch` ETag and support labels and delegated roles.
 Empty maps and permission lists remain explicit updates. Instance list cursors
