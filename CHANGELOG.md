@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0 (2026-11-23)
+
+Full Changelog: [v0.11.1...v0.12.0](https://github.com/limrun-inc/go-sdk/compare/v0.11.1...v0.12.0)
+
+### Features
+
+* Add Gradle disk snapshots. `GradleInstanceNewParamsSpec.Snapshot` restores a saved build state after assignment and saves it at termination. `GradleInstances` gains `GetSnapshot`, `BindSnapshotKey` and `FollowSnapshot`, `FollowGradleSnapshot` follows a restore or save on its own, and the `GradleSnapshots` service lists, reads and deletes saved snapshots ([#32](https://github.com/limrun-inc/go-sdk/pull/32)).
+
 ## 0.11.1 (2026-11-15)
 
 Full Changelog: [v0.11.0...v0.11.1](https://github.com/limrun-inc/go-sdk/compare/v0.11.0...v0.11.1)
