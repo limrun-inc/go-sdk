@@ -345,10 +345,98 @@ func TestArgentElementsMapsFramesAndTraits(t *testing.T) {
 		t.Fatalf("elements=%v", elements)
 	}
 	general := elements[1]
-	if general.Label != "General" || general.Identifier != "general-cell" || general.Frame != (ElementBounds{X: 0.25, Y: 0.25, Width: 0.5, Height: 0.1}) || strings.Join(general.Traits, ",") != "button" {
+	if general.Label != "General" || general.Identifier != "general-cell" || general.Frame == nil || *general.Frame != (ElementBounds{X: 0.25, Y: 0.25, Width: 0.5, Height: 0.1}) || strings.Join(general.Traits, ",") != "button" {
 		t.Fatalf("general=%+v", general)
 	}
 	if search := elements[2]; search.Value != "wifi" || strings.Join(search.Traits, ",") != "textEntry,notEnabled" {
 		t.Fatalf("search=%+v", search)
+	}
+}
+
+func TestArgentTreeKeepsZeroSizeNodeWithoutFrame(t *testing.T) {
+	tree := []ElementTreeNode{{
+		Type: "Other", AXLabel: strPtr("Wrapper"), Enabled: true, RoleDescription: "group",
+		Children: []ElementTreeNode{{Type: "Button", AXLabel: strPtr("Inside"), Enabled: true,
+			Frame: ElementTreeFrame{Width: 400, Height: 80}}},
+	}}
+	nodes := argentTreeNodes(tree, ArgentScreen{Width: 400, Height: 800}, "com.example.app")
+	wrapper := nodes[0]
+	if _, hasFrame := wrapper["frame"]; hasFrame || wrapper["label"] != "Wrapper" || wrapper["bundleId"] != "com.example.app" {
+		t.Fatalf("wrapper=%v", wrapper)
+	}
+	inside := nodes[1]
+	if inside["parentIndex"] != 0 || inside["label"] != "Inside" || inside["frame"] == nil {
+		t.Fatalf("inside=%v", inside)
+	}
+}
+
+func TestArgentBridgeServesOnlyKeptScreenshots(t *testing.T) {
+	_, _, apiURL := startTestBridge(t)
+	for _, path := range []string{"/media/screenshot-gone.png", "/media/..", "/media/%2e%2e"} {
+		resp, err := http.Get(apiURL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("%s status=%d", path, resp.StatusCode)
+		}
+	}
+	resp, err := http.Post(apiURL+"/api/screenshot", "application/json", strings.NewReader(`{"scale":0.25}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var shot map[string]string
+	_ = json.NewDecoder(resp.Body).Decode(&shot)
+	resp.Body.Close()
+	served, err := http.Get(shot["url"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer served.Body.Close()
+	if served.StatusCode != http.StatusOK {
+		t.Fatalf("kept screenshot status=%d", served.StatusCode)
+	}
+}
+
+func TestArgentUnknownCommandSkipsTreeRead(t *testing.T) {
+	var treeReads int
+	var mu sync.Mutex
+	fake := &argentFake{}
+	client := fixtureClient(t, func(ws *websocket.Conn, req map[string]json.RawMessage) {
+		if field(req, "type") == "elementTree" {
+			mu.Lock()
+			treeReads++
+			mu.Unlock()
+		}
+		fake.handle(ws, req)
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	bridge, err := StartArgentBridge(ctx, client, ArgentBridgeOptions{ProvidersDir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bridge.Close()
+	var descriptor struct {
+		Devices []struct {
+			SimulatorServer struct {
+				APIURL string `json:"apiUrl"`
+			} `json:"simulatorServer"`
+		} `json:"devices"`
+	}
+	data, _ := os.ReadFile(bridge.DescriptorPath)
+	_ = json.Unmarshal(data, &descriptor)
+	resp, err := http.Post(descriptor.Devices[0].SimulatorServer.APIURL+"/ax", "application/json", strings.NewReader(`{"command":"teleport"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var reply map[string]any
+	_ = json.NewDecoder(resp.Body).Decode(&reply)
+	resp.Body.Close()
+	mu.Lock()
+	defer mu.Unlock()
+	if reply["error"] != "unknown_command" || treeReads != 0 {
+		t.Fatalf("reply=%v treeReads=%d", reply, treeReads)
 	}
 }

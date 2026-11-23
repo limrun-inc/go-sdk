@@ -450,7 +450,14 @@ func (s *argentSession) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		go s.serveCommands(conn)
 		return
 	case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/media/"):
-		http.ServeFile(w, r, filepath.Join(s.mediaDir, filepath.Base(r.URL.Path)))
+		// Serve only screenshots this bridge wrote and still keeps; anything
+		// else, a deleted screenshot included, is not found.
+		file, ok := s.mediaFile(strings.TrimPrefix(r.URL.Path, "/media/"))
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+			return
+		}
+		http.ServeFile(w, r, file)
 		return
 	case r.Method == http.MethodGet && r.URL.Path == "/":
 		// Argent probes apiUrl to check that the provider is alive.
@@ -545,6 +552,18 @@ func (s *argentSession) screenshot(ctx context.Context, scaled bool) (map[string
 		return nil, err
 	}
 	return map[string]string{"url": s.baseURL + "/media/" + name, "path": file}, nil
+}
+
+// mediaFile is the kept screenshot with this file name, if there is one.
+func (s *argentSession) mediaFile(name string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, file := range s.mediaFiles {
+		if filepath.Base(file) == name {
+			return file, true
+		}
+	}
+	return "", false
 }
 
 func (s *argentSession) clipboard(ctx context.Context, text string) (map[string]string, error) {
@@ -676,6 +695,11 @@ func (s *argentSession) accessibility(ctx context.Context, command string, param
 		}
 	}
 
+	if !treeCommands[command] {
+		// Argent treats this code as "the daemon predates the command" and
+		// probes with it, so answer before reading the tree.
+		return nil, errors.New("unknown_command")
+	}
 	tree, err := s.client.ElementTreeNodes(ctx, nil, ElementTreeOptions{VisibleOnly: true})
 	if err != nil {
 		return nil, err
@@ -718,9 +742,11 @@ func (s *argentSession) accessibility(ctx context.Context, command string, param
 		}
 		return base, nil
 	}
-	// Argent treats this code as "the daemon predates the command".
 	return nil, errors.New("unknown_command")
 }
+
+// treeCommands are the accessibility commands answered from the element tree.
+var treeCommands = map[string]bool{"alert_check": true, "fill": true, "foreground_app": true, "describe": true, "tree": true}
 
 func (s *argentSession) foregroundApp(ctx context.Context, tree []ElementTreeNode) (map[string]any, error) {
 	out := map[string]any{}
@@ -756,12 +782,14 @@ type ArgentScreen struct{ Width, Height float64 }
 
 // ArgentElement is one element of Argent's `describe` list.
 type ArgentElement struct {
-	Label      string        `json:"label,omitempty"`
-	Hint       string        `json:"hint,omitempty"`
-	Frame      ElementBounds `json:"frame"`
-	Traits     []string      `json:"traits"`
-	Value      string        `json:"value,omitempty"`
-	Identifier string        `json:"identifier,omitempty"`
+	Label string `json:"label,omitempty"`
+	Hint  string `json:"hint,omitempty"`
+	// Frame is nil for a zero-size node. Argent treats a node without a frame
+	// as unframed, but hides a 0x0 frame together with its subtree.
+	Frame      *ElementBounds `json:"frame,omitempty"`
+	Traits     []string       `json:"traits"`
+	Value      string         `json:"value,omitempty"`
+	Identifier string         `json:"identifier,omitempty"`
 }
 
 // ElementBounds is a frame as fractions of the screen.
@@ -801,11 +829,9 @@ func deref(s *string) string {
 	return *s
 }
 
-func toArgentElement(node ElementTreeNode, screen ArgentScreen) (ArgentElement, bool) {
+// toArgentFields is the node in Argent's shape, with no frame when it is empty.
+func toArgentFields(node ElementTreeNode, screen ArgentScreen) ArgentElement {
 	f := node.Frame
-	if f.Width <= 0 || f.Height <= 0 {
-		return ArgentElement{}, false
-	}
 	var traits []string
 	seen := map[string]bool{}
 	add := func(t string) {
@@ -832,15 +858,25 @@ func toArgentElement(node ElementTreeNode, screen ArgentScreen) (ArgentElement, 
 	if label == "" {
 		label = deref(node.Title)
 	}
-	return ArgentElement{
-		Label: label,
-		Hint:  deref(node.Help),
-		// Argent expects frames as fractions of the screen.
-		Frame:      ElementBounds{X: f.X / screen.Width, Y: f.Y / screen.Height, Width: f.Width / screen.Width, Height: f.Height / screen.Height},
+	element := ArgentElement{
+		Label:      label,
+		Hint:       deref(node.Help),
 		Traits:     traits,
 		Value:      deref(node.AXValue),
 		Identifier: deref(node.AXUniqueID),
-	}, true
+	}
+	if f.Width > 0 && f.Height > 0 {
+		// Argent expects frames as fractions of the screen.
+		element.Frame = &ElementBounds{X: f.X / screen.Width, Y: f.Y / screen.Height, Width: f.Width / screen.Width, Height: f.Height / screen.Height}
+	}
+	return element
+}
+
+// toArgentElement is one `describe` element; describe has no use for an
+// element without a frame.
+func toArgentElement(node ElementTreeNode, screen ArgentScreen) (ArgentElement, bool) {
+	element := toArgentFields(node, screen)
+	return element, element.Frame != nil
 }
 
 // ArgentElements is the flat element list behind Argent's `describe`: every
@@ -879,10 +915,8 @@ func argentTreeNodes(tree []ElementTreeNode, screen ArgentScreen, rootBundleID s
 			} else {
 				entry["parentIndex"] = parent
 			}
-			if el, ok := toArgentElement(node, screen); ok {
-				raw, _ := json.Marshal(el)
-				_ = json.Unmarshal(raw, &entry)
-			}
+			raw, _ := json.Marshal(toArgentFields(node, screen))
+			_ = json.Unmarshal(raw, &entry)
 			nodes = append(nodes, entry)
 			visit(node.Children, index)
 		}
