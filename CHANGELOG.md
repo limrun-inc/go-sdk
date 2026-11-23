@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/limrun-inc/go-sdk/compare/v0.12.0...v0.13.0) (2026-11-23)
+
+
+### Features
+
+* **ios:** drive a remote simulator with Argent through StartArgentBridge ([#37](https://github.com/limrun-inc/go-sdk/issues/37)) ([5e276ab](https://github.com/limrun-inc/go-sdk/commit/5e276ab42c04f6f518d03090a839960dae2807e3))
+
 ## 0.12.0 (2026-11-23)
 
 Full Changelog: [v0.11.1...v0.12.0](https://github.com/limrun-inc/go-sdk/compare/v0.11.1...v0.12.0)
