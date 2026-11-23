@@ -7,7 +7,8 @@
 <!-- x-release-please-end -->
 
 The Limrun Go library provides access to the [Limrun API](https://lim.run),
-iOS simulators, Android emulators, and Xcode and Gradle build sandboxes.
+iOS simulators, Android emulators, macOS virtual machines, and Xcode and Gradle
+build sandboxes.
 It includes app monitoring, log streams, file sync, and network tunnels.
 
 The REST client is generated with [Stainless](https://www.stainless.com/).

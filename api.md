@@ -16,6 +16,7 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | `IosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
 | `XcodeInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `ListBuildLogs`, `ListBazelBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
 | `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
+| `MacosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete` |
 | `Assets` | `List`, `Get`, `GetOrNew`, `GetOrUpload`, `Update`, `CreateUploadURL`, `Delete` |
 | `AccessTokens` | `New`, `Revoke` |
 | `XcodeSnapshots`, `IosSnapshots`, `GradleSnapshots` | `List`, `Get`, `Delete`, scoped by organization |

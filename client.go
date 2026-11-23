@@ -24,6 +24,7 @@ type Client struct {
 	IosInstances     IosInstanceService
 	XcodeInstances   XcodeInstanceService
 	GradleInstances  GradleInstanceService
+	MacosInstances   MacosInstanceService
 	XcodeSnapshots   XcodeSnapshotService
 	IosSnapshots     IosSnapshotService
 	GradleSnapshots  GradleSnapshotService
@@ -65,6 +66,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.IosInstances = NewIosInstanceService(opts...)
 	r.XcodeInstances = NewXcodeInstanceService(opts...)
 	r.GradleInstances = NewGradleInstanceService(opts...)
+	r.MacosInstances = NewMacosInstanceService(opts...)
 	r.XcodeSnapshots = NewXcodeSnapshotService(opts...)
 	r.IosSnapshots = NewIosSnapshotService(opts...)
 	r.GradleSnapshots = NewGradleSnapshotService(opts...)
