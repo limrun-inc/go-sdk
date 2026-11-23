@@ -166,6 +166,8 @@ type MacosInstanceSpec struct {
 	Region            string `json:"region" api:"required"`
 	// Maximum runtime regardless of activity.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
+	// The private tunnel the instance named at create.
+	Tunnel string `json:"tunnel"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Role respjson.Field
@@ -173,6 +175,7 @@ type MacosInstanceSpec struct {
 		InactivityTimeout respjson.Field
 		Region            respjson.Field
 		HardTimeout       respjson.Field
+		Tunnel            respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -325,6 +328,10 @@ type MacosInstanceNewParamsSpec struct {
 	// Maximum runtime regardless of activity. Omit to use the organization default
 	// for this platform. Set to "0" to disable the hard timeout.
 	HardTimeout param.Opt[string] `json:"hardTimeout,omitzero" format:"duration"`
+	// Names a private tunnel, created in the console (Network) or the API, that
+	// serves this instance. Creation fails while no connector (`lim tunnel run`)
+	// holds it, and the instance becomes ready only after the tunnel attaches.
+	Tunnel param.Opt[string] `json:"tunnel,omitzero"`
 	// After how many minutes of inactivity should the instance be terminated. The
 	// timer starts once the instance becomes ready. Example values 1m, 10m, 3h.
 	// Omitting this value or passing a non-positive duration uses the organization's

@@ -268,6 +268,39 @@ func (c *Client) StartPortForward(ctx context.Context, localPort, remotePort int
 	return tunnel.StartTCP(ctx, remote, c.http.Token, o.Host, localPort, o.TCPOptions)
 }
 
+// TunnelOptions configures StartTunnel. The guest relays tunnel traffic as it
+// is, so leave Inspection unset.
+type TunnelOptions = tunnel.DestinationOptions
+
+// TunnelStatus is the instance's tunnel as GetTunnelStatus reports it.
+type TunnelStatus = tunnel.DestinationStatus
+
+// StartTunnel lets code in the guest reach destinations on this machine
+// through a destination tunnel, as on an iOS simulator. localhost:port and
+// IPv4:port selectors are reached at those addresses in the guest; domain
+// selectors resolve in the guest to addresses the tunnel serves and are dialed
+// from this machine. One tunnel serves an instance at a time.
+func (c *Client) StartTunnel(ctx context.Context, opts TunnelOptions) (*tunnel.Destination, error) {
+	remote, err := tunnel.DestinationURL(c.http.URL)
+	if err != nil {
+		return nil, err
+	}
+	if opts.WebSocketDialer == nil {
+		opts.WebSocketDialer = c.dialer
+	}
+	return tunnel.StartDestinationTCP(ctx, remote, c.http.Token, opts)
+}
+
+// GetTunnelStatus reports the instance's tunnel, if one is active.
+func (c *Client) GetTunnelStatus(ctx context.Context) (*TunnelStatus, error) {
+	return tunnel.GetDestinationStatus(ctx, c.http.URL, c.http.Token, c.http.HTTPClient)
+}
+
+// StopTunnel stops the tunnel with this ID; a tunnel that replaced it keeps running.
+func (c *Client) StopTunnel(ctx context.Context, id string) error {
+	return tunnel.StopDestination(ctx, c.http.URL, c.http.Token, id, c.http.HTTPClient)
+}
+
 // Screenshot returns a JPEG of the screen. Its pixels are the coordinates the
 // input methods take.
 func (c *Client) Screenshot(ctx context.Context) ([]byte, error) {
