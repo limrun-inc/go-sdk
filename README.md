@@ -95,7 +95,9 @@ go run ./examples/ios-monitor -instance ios_example -bundle com.example.app
 For direct connections, use `ios.NewClient(apiURL, token)` or
 `android.NewClient(apiURL, token)` from `websocket/ios` or `websocket/android`.
 Xcode and Gradle instance services also provide `CreateClient`, with build
-operations defined in the `build` package.
+operations defined in the `build` package. `MacosInstances.CreateClient` returns
+a client from the `macos` package that runs shell commands, enables SSH, forwards
+ports into the guest, and drives its screen.
 
 ### Request fields
 

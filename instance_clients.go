@@ -9,6 +9,7 @@ import (
 
 	"github.com/limrun-inc/go-sdk/build"
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
+	"github.com/limrun-inc/go-sdk/macos"
 	"github.com/limrun-inc/go-sdk/option"
 	"github.com/limrun-inc/go-sdk/websocket/android"
 	"github.com/limrun-inc/go-sdk/websocket/ios"
@@ -53,6 +54,24 @@ func (r *GradleInstanceService) CreateClient(instance GradleInstance, opts ...bu
 		return nil, err
 	}
 	return build.NewGradleClient(instance.Status.APIURL, instance.Status.Token, opts...), nil
+}
+
+// MacosClient runs commands, forwards ports and drives the screen inside a
+// running macOS instance.
+type MacosClient = macos.Client
+
+// CreateClient connects to a running macOS instance. Options such as
+// build.WithExecutionOptions set where Run writes its output.
+func (r *MacosInstanceService) CreateClient(instance MacosInstance, opts ...build.Option) (*MacosClient, error) {
+	return r.CreateClientWithCredentials(instance.Status.APIURL, instance.Status.Token, opts...)
+}
+
+// CreateClientWithCredentials connects to a macOS instance using an API URL and instance token.
+func (r *MacosInstanceService) CreateClientWithCredentials(apiURL, token string, opts ...build.Option) (*MacosClient, error) {
+	if err := instanceCredentials(apiURL, token); err != nil {
+		return nil, err
+	}
+	return macos.NewClient(apiURL, token, opts...), nil
 }
 
 type AttachedSimulator struct {
