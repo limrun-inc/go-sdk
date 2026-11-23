@@ -52,6 +52,9 @@ func guest(t *testing.T) (*httptest.Server, func() []recorded) {
 		case r.URL.Path == "/ssh":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"user":"limrun","port":22}`))
+		case r.URL.Path == "/snapshot/restore":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"restore":{"phase":"downloading"},"save":{"phase":"idle"}}`))
 		case r.URL.Path == "/screenshot.jpg":
 			w.Header().Set("Content-Type", "image/jpeg")
 			_, _ = w.Write([]byte{0xff, 0xd8, 0xff})
@@ -103,6 +106,13 @@ func TestClientSendsEachRequest(t *testing.T) {
 	if !bytes.Equal(jpeg, []byte{0xff, 0xd8, 0xff}) {
 		t.Errorf("screenshot = %x", jpeg)
 	}
+	status, err := mac.StartSnapshotRestore(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.Restore.Phase != "downloading" || status.Save.Phase != "idle" {
+		t.Errorf("snapshot status = %+v", status)
+	}
 	duration := 100
 	for _, err := range []error{
 		mac.Tap(ctx, macos.Point{X: 10, Y: 20}, &macos.TapOptions{Button: macos.ButtonRight}),
@@ -143,6 +153,7 @@ func TestClientSendsEachRequest(t *testing.T) {
 		{"GET", "/exec/run-1/events?follow=true", nil},
 		{"POST", "/ssh", obj(`{"publicKey":"ssh-ed25519 AAAA test"}`)},
 		{"GET", "/screenshot.jpg", nil},
+		{"POST", "/snapshot/restore", obj(`{}`)},
 		{"POST", "/tap", obj(`{"x":10,"y":20,"button":"right"}`)},
 		{"POST", "/tap", obj(`{"x":7,"y":8}`)},
 		{"POST", "/type", obj(`{"text":"hi"}`)},

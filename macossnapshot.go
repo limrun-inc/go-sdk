@@ -2,9 +2,11 @@ package limrun
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"slices"
+	"sync"
 
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 	"github.com/limrun-inc/go-sdk/option"
@@ -55,6 +57,47 @@ func (r *MacosInstanceService) BindSnapshotKey(ctx context.Context, id, key stri
 // [*GradleSnapshotTimeoutError], the errors every disk snapshot follower shares.
 func (r *MacosInstanceService) FollowSnapshot(ctx context.Context, id string, options MacosSnapshotFollowOptions, opts ...option.RequestOption) (*MacosSnapshotFollowResult, error) {
 	return followInstanceSnapshot(ctx, "macos_instances", id, options, slices.Concat(r.Options, opts))
+}
+
+// RestoreSnapshot restores the disk snapshot a ready instance was created with
+// and waits until the restore ends. The platform finds the snapshot, but only a
+// client starts the restore; one no client starts in time is skipped and the
+// instance runs without it.
+func (r *MacosInstanceService) RestoreSnapshot(ctx context.Context, instance MacosInstance, options MacosSnapshotFollowOptions, opts ...option.RequestOption) (*MacosSnapshotFollowResult, error) {
+	client, err := r.CreateClient(instance)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	// Started once the stream is open, so a restore that is over in seconds is
+	// still seen. A start that fails ends the follow, since nothing will change.
+	var once sync.Once
+	var startErr error
+	var startDone sync.WaitGroup
+	onOpen := options.OnOpen
+	options.Side = "restore"
+	options.OnOpen = func() {
+		once.Do(func() {
+			startDone.Add(1)
+			go func() {
+				defer startDone.Done()
+				if _, err := client.StartSnapshotRestore(ctx); err != nil {
+					startErr = err
+					cancel()
+				}
+			}()
+		})
+		if onOpen != nil {
+			onOpen()
+		}
+	}
+	result, err := r.FollowSnapshot(ctx, instance.Metadata.ID, options, opts...)
+	startDone.Wait()
+	if startErr != nil {
+		return result, fmt.Errorf("starting the snapshot restore: %w", startErr)
+	}
+	return result, err
 }
 
 // FollowMacosSnapshot follows a macOS instance's disk snapshot without a client.

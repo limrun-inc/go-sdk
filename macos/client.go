@@ -130,6 +130,33 @@ func (c *Client) EnableSSH(ctx context.Context, publicKey string) (*SSHAccess, e
 	return &access, nil
 }
 
+// SnapshotStatus is the disk snapshot status a macOS instance reports itself.
+type SnapshotStatus struct {
+	Restore struct {
+		Phase   string `json:"phase"`
+		Reason  string `json:"reason,omitempty"`
+		Message string `json:"message,omitempty"`
+		Key     string `json:"key,omitempty"`
+	} `json:"restore"`
+	Save struct {
+		Phase   string `json:"phase"`
+		Reason  string `json:"reason,omitempty"`
+		Message string `json:"message,omitempty"`
+	} `json:"save"`
+}
+
+// StartSnapshotRestore starts restoring the disk snapshot the instance was
+// created with. The instance restores only when a client asks, so call it once
+// the instance is ready and before using the guest; asking again changes
+// nothing. MacosInstances.RestoreSnapshot also waits for the restore to end.
+func (c *Client) StartSnapshotRestore(ctx context.Context) (*SnapshotStatus, error) {
+	var status SnapshotStatus
+	if err := c.request(ctx, http.MethodPost, "snapshot/restore", map[string]string{}, &status); err != nil {
+		return nil, err
+	}
+	return &status, nil
+}
+
 // DerivePortForwardURL returns the WebSocket URL that carries TCP connections
 // to remotePort inside the guest.
 func DerivePortForwardURL(apiURL string, remotePort int) (string, error) {
