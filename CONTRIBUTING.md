@@ -64,3 +64,14 @@ This library uses the standard gofmt code formatter:
 ```sh
 $ ./scripts/format
 ```
+
+## Publishing and releases
+
+Go modules are published by tag. Merging a commit to `main` with a releasable [Conventional Commits](https://www.conventionalcommits.org)
+title (`feat:`, `fix:` and so on) makes [the `Release Please` workflow](https://www.github.com/limrun-inc/go-sdk/actions/workflows/release-please.yml)
+open or update a `release: x.y.z` pull request. It bumps the version in `internal/version.go`, `README.md` and the changelog.
+Merging that pull request creates the `vX.Y.Z` tag and its GitHub release.
+
+The release then runs [the `Publish Go` workflow](https://www.github.com/limrun-inc/go-sdk/actions/workflows/publish-go.yml). It checks
+that the tagged files report the tag's version, attaches a source SBOM to the release, and fetches the version through
+`proxy.golang.org` so it appears on pkg.go.dev. If it fails, run it again from the Actions tab with the release tag.

@@ -1,0 +1,74 @@
+# Runs when release-please publishes a GitHub release. A Go module has no
+# registry upload: the pushed tag is the release. This workflow checks that the
+# tagged code reports the tag's version, attaches a source SBOM to the release,
+# and fetches the new version through the Go module proxy so pkg.go.dev lists
+# it without waiting for a user to request it.
+# Run it manually with a tag to repeat a failed publish:
+# https://www.github.com/limrun-inc/go-sdk/actions/workflows/publish-go.yml
+name: Publish Go
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish, for example v0.11.1'
+        required: true
+
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.event.release.tag_name }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: refs/tags/${{ env.TAG }}
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: ./go.mod
+
+      - name: Check release versions
+        run: |
+          bash ./bin/check-release-environment "$TAG"
+
+      - name: Build
+        run: |
+          go build ./...
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: go-sdk-source.spdx.json
+          output-file: go-sdk-source.spdx.json
+          upload-artifact: true
+          upload-release-assets: false
+
+      # The SBOM action only attaches assets on a release event, so upload it
+      # here to cover manual runs too.
+      - name: Attach SBOM to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" go-sdk-source.spdx.json --clobber
+
+      # Run outside the repository so the go command resolves the published
+      # module instead of the checked-out main module.
+      - name: Publish to the Go module proxy
+        working-directory: ${{ runner.temp }}
+        env:
+          GOPROXY: https://proxy.golang.org
+          GOFLAGS: -mod=mod
+        run: |
+          go list -m "github.com/limrun-inc/go-sdk@$TAG"

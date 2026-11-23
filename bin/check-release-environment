@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Go modules publish by tag alone, so nothing else catches version drift.
+# Check that the files release-please versions agree, so the tag, the version
+# the client reports and the documented install command match. With a tag
+# argument, also check that the tag names the same version.
+
+cd "$(dirname "$0")/.."
+
+errors=()
+
+manifest=$(sed -n 's/^ *"\.": *"\([^"]*\)".*/\1/p' .release-please-manifest.json)
+code=$(sed -n 's/^const PackageVersion = "\([^"]*\)".*/\1/p' internal/version.go)
+readme=$(sed -n "s/.*github\.com\/limrun-inc\/go-sdk@v\([^'\"]*\).*/\1/p" README.md | sort -u)
+
+if [[ -z "$manifest" ]]; then
+  errors+=("No version found in .release-please-manifest.json.")
+fi
+
+if [[ "$code" != "$manifest" ]]; then
+  errors+=("internal/version.go has '$code' but .release-please-manifest.json has '$manifest'.")
+fi
+
+if [[ "$readme" != "$manifest" ]]; then
+  errors+=("README.md installs '$readme' but .release-please-manifest.json has '$manifest'.")
+fi
+
+if [[ $# -gt 0 && "$1" != "v$manifest" ]]; then
+  errors+=("Tag '$1' does not match .release-please-manifest.json version 'v$manifest'.")
+fi
+
+lenErrors=${#errors[@]}
+
+if [[ lenErrors -gt 0 ]]; then
+  echo -e "Found the following errors in the release environment:\n"
+
+  for error in "${errors[@]}"; do
+    echo -e "- $error\n"
+  done
+
+  exit 1
+fi
+
+echo "The environment is ready to push releases!"
