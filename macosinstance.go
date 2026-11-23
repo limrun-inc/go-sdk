@@ -19,6 +19,7 @@ import (
 	"github.com/limrun-inc/go-sdk/packages/pagination"
 	"github.com/limrun-inc/go-sdk/packages/param"
 	"github.com/limrun-inc/go-sdk/packages/respjson"
+	"github.com/limrun-inc/go-sdk/session"
 )
 
 // MacosInstanceService contains methods and other services that help with
@@ -510,4 +511,34 @@ type MacosInstanceUpdateParamsSpecRole struct {
 func (r MacosInstanceUpdateParamsSpecRole) MarshalJSON() ([]byte, error) {
 	type shadow MacosInstanceUpdateParamsSpecRole
 	return param.MarshalObject(r, (*shadow)(&r))
+}
+
+// ListSessionArtifacts lists the instance's persisted session captures,
+// narrowed to one kind unless kind is empty.
+func (r *MacosInstanceService) ListSessionArtifacts(ctx context.Context, id string, kind session.ArtifactKind, opts ...option.RequestOption) (res []session.Artifact, err error) {
+	if kind != "" {
+		opts = append(opts, option.WithQuery("kind", string(kind)))
+	}
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, "v1/macos_instances/"+url.PathEscape(id)+"/session_artifacts", nil, &res, slices.Concat(r.Options, opts)...)
+	return
+}
+
+// ListRecordings lists the instance's persisted screen recordings.
+func (r *MacosInstanceService) ListRecordings(ctx context.Context, id string, opts ...option.RequestOption) ([]session.Artifact, error) {
+	return r.ListSessionArtifacts(ctx, id, session.Recording, opts...)
+}
+
+// ListAppLogs lists the instance's persisted app log captures.
+func (r *MacosInstanceService) ListAppLogs(ctx context.Context, id string, opts ...option.RequestOption) ([]session.Artifact, error) {
+	return r.ListSessionArtifacts(ctx, id, session.AppLog, opts...)
+}
+
+// ListEvents lists the instance's persisted event log captures.
+func (r *MacosInstanceService) ListEvents(ctx context.Context, id string, opts ...option.RequestOption) ([]session.Artifact, error) {
+	return r.ListSessionArtifacts(ctx, id, session.EventLog, opts...)
+}
+
+// ListPerformanceCaptures lists the instance's persisted performance captures.
+func (r *MacosInstanceService) ListPerformanceCaptures(ctx context.Context, id string, opts ...option.RequestOption) ([]session.Artifact, error) {
+	return r.ListSessionArtifacts(ctx, id, session.Performance, opts...)
 }

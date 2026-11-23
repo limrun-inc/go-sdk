@@ -18,6 +18,8 @@ import (
 	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/build"
 	"github.com/limrun-inc/go-sdk/macos"
+	"github.com/limrun-inc/go-sdk/option"
+	"github.com/limrun-inc/go-sdk/session"
 )
 
 type recorded struct {
@@ -330,5 +332,120 @@ func TestRestoreSnapshotFailsWhenTheStreamEndsEarly(t *testing.T) {
 				t.Errorf("last = %+v", last)
 			}
 		})
+	}
+}
+
+func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
+	var mu sync.Mutex
+	var seen []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		seen = append(seen, strings.TrimSpace(r.Method+" "+r.URL.RequestURI()+" "+string(raw)))
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/recordings":
+			_, _ = w.Write([]byte(`{"recordingId":"rec-1","captureId":"rec-123"}`))
+		case "/recordings/stop", "/recordings/rec-1/stop":
+			_, _ = w.Write([]byte(`{"recordingId":"rec-1"}`))
+		case "/files":
+			_, _ = w.Write([]byte("mp4"))
+		case "/app-logs":
+			_, _ = w.Write([]byte(`{"bundleId":"com.apple.TextEdit","logs":"one\ntwo"}`))
+		case "/trusted-cas":
+			_, _ = w.Write([]byte(`{"sha256":"abc"}`))
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	ctx := context.Background()
+	mac := macos.NewClient(srv.URL, "control")
+
+	quality, ttl := 7, int64(600)
+	id, err := mac.StartRecording(ctx, &macos.RecordingOptions{Quality: &quality, Persist: &macos.PersistOption{TTLSeconds: &ttl}})
+	if err != nil || id != "rec-1" {
+		t.Fatalf("StartRecording = %q, %v", id, err)
+	}
+	local := t.TempDir() + "/out.mp4"
+	downloadURL, err := mac.StopRecording(ctx, "", &macos.SaveRecordingTo{LocalPath: local})
+	if err != nil || downloadURL != srv.URL+"/files?name=recording_rec-1.mp4" {
+		t.Fatalf("StopRecording = %q, %v", downloadURL, err)
+	}
+	if _, err := mac.StopRecording(ctx, "rec-1", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mac.StopRecording(ctx, "Not Valid", nil); err == nil {
+		t.Error("an invalid recording ID was sent")
+	}
+	logs, err := mac.AppLogTail(ctx, "com.apple.TextEdit", 50)
+	if err != nil || logs != "one\ntwo" {
+		t.Fatalf("AppLogTail = %q, %v", logs, err)
+	}
+	for _, call := range []func() error{
+		func() error { return mac.StartAppLogCapture(ctx, "com.apple.TextEdit", &macos.PersistOption{}) },
+		func() error { return mac.StopAppLogCapture(ctx) },
+		func() error { return mac.StartEventCapture(ctx, nil) },
+		func() error { return mac.StopEventCapture(ctx) },
+		func() error { hour := int64(3600); return mac.StartPerformanceCapture(ctx, &hour) },
+		func() error { return mac.StopPerformanceCapture(ctx) },
+	} {
+		if err := call(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	trusted, err := mac.AddCACertificate(ctx, "-----BEGIN CERTIFICATE-----")
+	if err != nil || trusted.SHA256 != "abc" {
+		t.Fatalf("AddCACertificate = %+v, %v", trusted, err)
+	}
+
+	want := []string{
+		`POST /recordings {"persist":true,"quality":7,"ttlSeconds":600}`,
+		`POST /recordings/stop {}`,
+		`GET /files?name=recording_rec-1.mp4`,
+		`POST /recordings/rec-1/stop {}`,
+		`GET /app-logs?bundleId=com.apple.TextEdit&lines=50`,
+		`POST /session/applogs/start {"bundleId":"com.apple.TextEdit","persist":true}`,
+		`POST /session/applogs/stop {}`,
+		`POST /session/events/start {}`,
+		`POST /session/events/stop {}`,
+		`POST /session/performance/start {"ttlSeconds":3600}`,
+		`POST /session/performance/stop {}`,
+		`POST /trusted-cas -----BEGIN CERTIFICATE-----`,
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if !reflect.DeepEqual(seen, want) {
+		t.Errorf("requests =\n%s\nwant\n%s", strings.Join(seen, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+func TestListSessionArtifactsByKind(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.RequestURI())
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	t.Cleanup(srv.Close)
+	client := limrun.NewClient(option.WithBaseURL(srv.URL), option.WithAPIKey("key"))
+	ctx := context.Background()
+	for _, list := range []func(context.Context, string, ...option.RequestOption) ([]session.Artifact, error){
+		client.MacosInstances.ListRecordings, client.MacosInstances.ListAppLogs,
+		client.MacosInstances.ListEvents, client.MacosInstances.ListPerformanceCaptures,
+	} {
+		if _, err := list(ctx, "macos_eu_01h"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []string{
+		"/v1/macos_instances/macos_eu_01h/session_artifacts?kind=recording",
+		"/v1/macos_instances/macos_eu_01h/session_artifacts?kind=appLog",
+		"/v1/macos_instances/macos_eu_01h/session_artifacts?kind=eventLog",
+		"/v1/macos_instances/macos_eu_01h/session_artifacts?kind=performance",
+	}
+	if !reflect.DeepEqual(paths, want) {
+		t.Errorf("paths = %v", paths)
 	}
 }

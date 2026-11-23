@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/limrun-inc/go-sdk/build"
 	"github.com/limrun-inc/go-sdk/internal/direct"
 	"github.com/limrun-inc/go-sdk/internal/stream"
+	"github.com/limrun-inc/go-sdk/session"
 	"github.com/limrun-inc/go-sdk/tunnel"
 )
 
@@ -268,8 +270,8 @@ func (c *Client) StartPortForward(ctx context.Context, localPort, remotePort int
 	return tunnel.StartTCP(ctx, remote, c.http.Token, o.Host, localPort, o.TCPOptions)
 }
 
-// TunnelOptions configures StartTunnel. The guest relays tunnel traffic as it
-// is, so leave Inspection unset.
+// TunnelOptions configures StartTunnel. As on iOS and Android, HTTP and HTTPS
+// through the tunnel are inspected when Inspection is nil.
 type TunnelOptions = tunnel.DestinationOptions
 
 // TunnelStatus is the instance's tunnel as GetTunnelStatus reports it.
@@ -284,6 +286,9 @@ func (c *Client) StartTunnel(ctx context.Context, opts TunnelOptions) (*tunnel.D
 	remote, err := tunnel.DestinationURL(c.http.URL)
 	if err != nil {
 		return nil, err
+	}
+	if opts.Inspection == nil {
+		opts.Inspection = &tunnel.InspectionConfig{Enabled: true}
 	}
 	if opts.WebSocketDialer == nil {
 		opts.WebSocketDialer = c.dialer
@@ -354,6 +359,208 @@ func (c *Client) Drag(ctx context.Context, from, to Point, opts *DragOptions) er
 		body["durationMs"] = *opts.DurationMs
 	}
 	return c.request(ctx, http.MethodPost, "drag", body, nil)
+}
+
+// TrustedCACertificate is a CA certificate the guest now trusts.
+type TrustedCACertificate = direct.TrustedCACertificate
+
+// AddCACertificate trusts a PEM-encoded CA certificate system-wide in the
+// guest, for example the CA of an intercepting proxy you record traffic with.
+// macOS asks an administrator to confirm a new trusted root, so the instance
+// answers that dialog itself, and it shows on the screen for a few seconds.
+// Adding a certificate the guest already trusts changes nothing.
+func (c *Client) AddCACertificate(ctx context.Context, pem string) (*TrustedCACertificate, error) {
+	trusted, err := c.http.AddCACertificate(ctx, pem)
+	return trusted, withReason(err)
+}
+
+// PersistOption persists a capture to Limrun's bucket after it stops; a nil
+// TTLSeconds keeps it for the server default, 72 hours.
+type PersistOption = session.PersistOption
+
+// RecordingOptions configures StartRecording.
+type RecordingOptions struct {
+	// RecordingID matches [a-z0-9][a-z0-9_-]{0,63}. Generated when empty; never reused.
+	RecordingID string
+	// Quality is the encoder quality from 5 to 10; the server default is 5.
+	Quality *int
+	// Persist uploads the recording when it stops; list it with ListRecordings.
+	Persist *PersistOption
+}
+
+// SaveRecordingTo says where a stopped recording goes besides the instance's
+// own download URL.
+type SaveRecordingTo struct {
+	// PresignedURL is an HTTPS PUT URL the instance uploads the MP4 to before the stop returns.
+	PresignedURL string
+	// LocalPath is a file this client downloads the MP4 to.
+	LocalPath string
+}
+
+// StartRecording starts recording the screen and returns the recording's ID.
+// Up to eight recordings may be active or uploading at once.
+func (c *Client) StartRecording(ctx context.Context, opts *RecordingOptions) (string, error) {
+	body := map[string]any{}
+	if opts != nil {
+		if opts.RecordingID != "" {
+			if err := validateRecordingID(opts.RecordingID); err != nil {
+				return "", err
+			}
+			body["recordingId"] = opts.RecordingID
+		}
+		if opts.Quality != nil {
+			body["quality"] = *opts.Quality
+		}
+		fields, err := opts.Persist.Fields()
+		if err != nil {
+			return "", err
+		}
+		for k, v := range fields {
+			body[k] = v
+		}
+	}
+	var out struct {
+		RecordingID string `json:"recordingId"`
+	}
+	if err := c.request(ctx, http.MethodPost, "recordings", body, &out); err != nil {
+		return "", err
+	}
+	return out.RecordingID, nil
+}
+
+// StopRecording stops the recording with this ID, or the latest active one
+// when id is empty, and returns its download URL, which takes the instance
+// token and lasts while the instance runs.
+func (c *Client) StopRecording(ctx context.Context, id string, saveTo *SaveRecordingTo) (string, error) {
+	path := "recordings/stop"
+	if id != "" {
+		if err := validateRecordingID(id); err != nil {
+			return "", err
+		}
+		path = "recordings/" + id + "/stop"
+	}
+	body := map[string]any{}
+	if saveTo != nil && saveTo.PresignedURL != "" {
+		body["presignedUrl"] = saveTo.PresignedURL
+	}
+	var out struct {
+		RecordingID string `json:"recordingId"`
+	}
+	if err := c.request(ctx, http.MethodPost, path, body, &out); err != nil {
+		return "", err
+	}
+	if out.RecordingID == "" {
+		out.RecordingID = id
+	}
+	if out.RecordingID == "" {
+		return "", errors.New("the instance did not say which recording stopped")
+	}
+	downloadURL := c.http.URL + "/files?" + url.Values{"name": {"recording_" + out.RecordingID + ".mp4"}}.Encode()
+	if saveTo != nil && saveTo.LocalPath != "" {
+		if err := c.http.Download(ctx, downloadURL, saveTo.LocalPath); err != nil {
+			return "", withReason(err)
+		}
+	}
+	return downloadURL, nil
+}
+
+func validateRecordingID(id string) error {
+	if !recordingIDPattern.MatchString(id) {
+		return errors.New("recordingId must match ^[a-z0-9][a-z0-9_-]{0,63}$")
+	}
+	return nil
+}
+
+var recordingIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
+
+// AppLogTail returns the last lines an app logged to the unified log in the past hour.
+func (c *Client) AppLogTail(ctx context.Context, bundleID string, lines int) (string, error) {
+	var out struct {
+		Logs string `json:"logs"`
+	}
+	path := "app-logs?" + url.Values{"bundleId": {bundleID}, "lines": {strconv.Itoa(lines)}}.Encode()
+	if err := c.request(ctx, http.MethodGet, path, nil, &out); err != nil {
+		return "", err
+	}
+	return out.Logs, nil
+}
+
+// StreamAppLog follows an app's unified log as it is written, one message per entry.
+func (c *Client) StreamAppLog(ctx context.Context, bundleID string) *session.Stream[string] {
+	return session.StartTextStream(ctx, c.http.HTTPClient,
+		c.http.URL+"/app-logs/stream?"+url.Values{"bundleId": {bundleID}}.Encode(), c.http.Token)
+}
+
+// StartAppLogCapture starts capturing an app's logs. One app log capture runs
+// at a time. With persist, the capture is uploaded when it stops or the
+// instance terminates; list it with ListAppLogs.
+func (c *Client) StartAppLogCapture(ctx context.Context, bundleID string, persist *PersistOption) error {
+	if bundleID == "" {
+		return errors.New("bundleId must be a non-empty string")
+	}
+	params, err := persist.Fields()
+	if err != nil {
+		return err
+	}
+	params["bundleId"] = bundleID
+	return c.request(ctx, http.MethodPost, "session/applogs/start", params, nil)
+}
+
+// StopAppLogCapture stops the active app log capture.
+func (c *Client) StopAppLogCapture(ctx context.Context) error {
+	return c.request(ctx, http.MethodPost, "session/applogs/stop", map[string]any{}, nil)
+}
+
+// StartEventCapture starts capturing the coalesced event log of clicks,
+// scrolls and keys sent to the screen. Typing is logged as a count of
+// characters, never their content.
+func (c *Client) StartEventCapture(ctx context.Context, persist *PersistOption) error {
+	params, err := persist.Fields()
+	if err != nil {
+		return err
+	}
+	return c.request(ctx, http.MethodPost, "session/events/start", params, nil)
+}
+
+// StopEventCapture stops the active event capture.
+func (c *Client) StopEventCapture(ctx context.Context) error {
+	return c.request(ctx, http.MethodPost, "session/events/stop", map[string]any{}, nil)
+}
+
+// StartPerformanceCapture starts saving the running apps' performance samples.
+// The capture always persists, kept for ttlSeconds or the server default of
+// 72 hours when nil; list it with ListPerformanceCaptures.
+func (c *Client) StartPerformanceCapture(ctx context.Context, ttlSeconds *int64) error {
+	params := map[string]any{}
+	if ttlSeconds != nil {
+		if *ttlSeconds <= 0 {
+			return errors.New("ttlSeconds must be a positive integer")
+		}
+		params["ttlSeconds"] = *ttlSeconds
+	}
+	return c.request(ctx, http.MethodPost, "session/performance/start", params, nil)
+}
+
+// StopPerformanceCapture stops the active performance capture and uploads it.
+func (c *Client) StopPerformanceCapture(ctx context.Context) error {
+	return c.request(ctx, http.MethodPost, "session/performance/stop", map[string]any{}, nil)
+}
+
+// StreamAppLogCapture tails the live app log capture. On connect the instance
+// replays its recent lines, and a dropped connection resumes where it left off.
+func (c *Client) StreamAppLogCapture(ctx context.Context) *session.Stream[session.LogLine] {
+	return session.StartStream[session.LogLine](ctx, c.http.HTTPClient, c.http.URL+"/session/applogs/events", c.http.Token)
+}
+
+// StreamEventCapture tails the live event capture.
+func (c *Client) StreamEventCapture(ctx context.Context) *session.Stream[session.Event] {
+	return session.StartStream[session.Event](ctx, c.http.HTTPClient, c.http.URL+"/session/events/events", c.http.Token)
+}
+
+// StreamPerformance tails the running apps' samples, about once a second; no
+// capture is needed. On connect the instance replays its recent samples.
+func (c *Client) StreamPerformance(ctx context.Context) *session.Stream[session.PerformanceSample] {
+	return session.StartStream[session.PerformanceSample](ctx, c.http.HTTPClient, c.http.URL+"/session/performance/events", c.http.Token)
 }
 
 func (c *Client) request(ctx context.Context, method, path string, params, out any) error {

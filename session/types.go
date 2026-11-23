@@ -1,4 +1,4 @@
-// Package session contains persisted capture metadata shared by iOS and Android.
+// Package session contains persisted capture metadata shared by iOS, Android and macOS.
 package session
 
 import "errors"
@@ -27,6 +27,8 @@ const (
 	AppLog     ArtifactKind = "appLog"
 	EventLog   ArtifactKind = "eventLog"
 	NetworkLog ArtifactKind = "networkLog"
+	// Performance holds a macOS instance's app performance samples, one PerformanceSample per line.
+	Performance ArtifactKind = "performance"
 )
 
 type Artifact struct {
@@ -56,6 +58,37 @@ type Event struct {
 	Count      *int64   `json:"count,omitempty"`
 	Summary    string   `json:"summary,omitempty"`
 }
+
+// PerformanceThread is one thread's share of an app's CPU in a PerformanceSample.
+type PerformanceThread struct {
+	// Name is the thread's name, "main" for the main thread, or empty.
+	Name string `json:"name"`
+	// CPUPercent is the share of one core; 100 is one fully busy core.
+	CPUPercent float64 `json:"cpuPercent"`
+}
+
+// PerformanceSample is one running app's resource use at one moment. Rates cover the second
+// since the previous sample of the same process, so a process's first sample has none.
+type PerformanceSample struct {
+	// TS is epoch milliseconds, the same clock as LogLine.
+	TS       float64 `json:"ts"`
+	BundleID string  `json:"bundleId"`
+	// PID changes when the app relaunches.
+	PID int64 `json:"pid"`
+	// StartedAt is the process start in epoch milliseconds.
+	StartedAt float64 `json:"startedAt"`
+	// TestRunner is set for XCTest runners.
+	TestRunner bool `json:"testRunner,omitempty"`
+	// CPUPercent counts one fully busy core as 100.
+	CPUPercent              *float64            `json:"cpuPercent,omitempty"`
+	FootprintBytes          int64               `json:"footprintBytes"`
+	PeakFootprintBytes      int64               `json:"peakFootprintBytes"`
+	ThreadCount             int64               `json:"threadCount"`
+	DiskReadBytesPerSecond  *float64            `json:"diskReadBytesPerSecond,omitempty"`
+	DiskWriteBytesPerSecond *float64            `json:"diskWriteBytesPerSecond,omitempty"`
+	TopThreads              []PerformanceThread `json:"topThreads,omitempty"`
+}
+
 type StreamLostError struct{ Cause error }
 
 func (e *StreamLostError) Error() string {
