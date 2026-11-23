@@ -174,7 +174,8 @@ type SnapshotProgress struct {
 // restored. Call it once the instance is ready and before using the guest;
 // asking again joins the restore already running. It returns the final
 // progress event, and OnProgress sees every event, with byte counts while
-// downloading.
+// downloading. A stream that ends before a terminal phase (restored, skipped
+// or failed) is an error, returned with the last event seen.
 func (c *Client) RestoreSnapshot(ctx context.Context, opts RestoreSnapshotOptions) (*SnapshotProgress, error) {
 	body, err := json.Marshal(struct {
 		Key         string   `json:"key,omitempty"`
@@ -206,10 +207,19 @@ func (c *Client) RestoreSnapshot(ctx context.Context, opts RestoreSnapshotOption
 	if err != nil && !errors.Is(err, io.EOF) {
 		return last, err
 	}
-	if last == nil {
-		return nil, errors.New("the instance ended the snapshot stream without reporting progress")
+	switch phase := lastPhase(last); phase {
+	case "restored", "skipped", "failed":
+		return last, nil
+	default:
+		return last, fmt.Errorf("the snapshot stream ended before the restore did (last phase: %s)", phase)
 	}
-	return last, nil
+}
+
+func lastPhase(p *SnapshotProgress) string {
+	if p == nil {
+		return "none"
+	}
+	return p.Phase
 }
 
 // DerivePortForwardURL returns the WebSocket URL that carries TCP connections

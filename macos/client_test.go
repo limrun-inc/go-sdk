@@ -308,3 +308,27 @@ func TestCreateClientNeedsToken(t *testing.T) {
 		t.Errorf("CreateClientWithCredentials = %v, %v", mac, err)
 	}
 }
+
+func TestRestoreSnapshotFailsWhenTheStreamEndsEarly(t *testing.T) {
+	for name, stream := range map[string]string{
+		"downloading": "event: snapshot\ndata: {\"phase\":\"resolving\"}\n\n" +
+			"event: snapshot\ndata: {\"phase\":\"downloading\",\"totalBytes\":10,\"doneBytes\":4}\n\n",
+		"none": ": keepalive\n\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				_, _ = w.Write([]byte(stream))
+			}))
+			defer srv.Close()
+			last, err := macos.NewClient(srv.URL, "control").RestoreSnapshot(context.Background(), macos.RestoreSnapshotOptions{Key: "my-mac"})
+			want := "the snapshot stream ended before the restore did (last phase: " + name + ")"
+			if err == nil || err.Error() != want {
+				t.Fatalf("err = %v, want %q", err, want)
+			}
+			if (name == "none") != (last == nil) || (last != nil && last.Phase != "downloading") {
+				t.Errorf("last = %+v", last)
+			}
+		})
+	}
+}
