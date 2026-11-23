@@ -16,10 +16,10 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | `IosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
 | `XcodeInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `ListBuildLogs`, `ListBazelBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
 | `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
-| `MacosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials` |
+| `MacosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
 | `Assets` | `List`, `Get`, `GetOrNew`, `GetOrUpload`, `Update`, `CreateUploadURL`, `Delete` |
 | `AccessTokens` | `New`, `Revoke` |
-| `XcodeSnapshots`, `IosSnapshots`, `GradleSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
+| `XcodeSnapshots`, `IosSnapshots`, `GradleSnapshots`, `MacosSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
 | `Analytics` | `Get`, `GetInstances` |
 
 Instance updates accept an `IfMatch` ETag and support labels and delegated roles.
@@ -34,6 +34,11 @@ instance-gone errors.
 Gradle instances take `Spec.Snapshot` at creation, with a key and restore keys
 like Xcode's. `FollowSnapshot` and the standalone `FollowGradleSnapshot` follow
 the restore after creation or the save at deletion the same way.
+
+macOS instances take `Spec.Snapshot` too, with the same key, restore keys and
+phases as Gradle's. A macOS snapshot keeps the files the guest changed and
+restores only onto the macOS build that saved it. `FollowSnapshot` and the
+standalone `FollowMacosSnapshot` share the Gradle follower and its errors.
 
 ## Instance clients
 

@@ -159,6 +159,12 @@ func (e *GradleSnapshotTimeoutError) Error() string {
 // FollowSnapshot follows the disk snapshot restore or save until it reaches a terminal phase,
 // the instance disappears, or the wait times out.
 func (r *GradleInstanceService) FollowSnapshot(ctx context.Context, id string, options GradleSnapshotFollowOptions, opts ...option.RequestOption) (*GradleSnapshotFollowResult, error) {
+	return followInstanceSnapshot(ctx, "gradle_instances", id, options, slices.Concat(r.Options, opts))
+}
+
+// followInstanceSnapshot follows the disk snapshot of an instance of any product with snapshots:
+// they share one state shape and stream it from v1/<collection>/<id>/snapshot.
+func followInstanceSnapshot(ctx context.Context, collection, id string, options GradleSnapshotFollowOptions, opts []option.RequestOption) (*GradleSnapshotFollowResult, error) {
 	side := options.Side
 	if side == "" {
 		side = "restore"
@@ -171,12 +177,13 @@ func (r *GradleInstanceService) FollowSnapshot(ctx context.Context, id string, o
 			timeout = 12 * time.Minute
 		}
 	}
+	endpoint := "v1/" + collection + "/" + url.PathEscape(id) + "/snapshot"
 	p := phaseStream[GradleInstanceSnapshot]{
-		endpoint:  "v1/gradle_instances/" + url.PathEscape(id) + "/snapshot",
+		endpoint:  endpoint,
 		eventName: "snapshot",
 		confirmGone: func(ctx context.Context) error {
-			_, err := r.GetSnapshot(ctx, id, opts...)
-			return err
+			var res *GradleInstanceSnapshot
+			return requestconfig.ExecuteNewRequest(ctx, http.MethodGet, endpoint, nil, &res, opts...)
 		},
 		transitionKey: func(s GradleInstanceSnapshot) string {
 			return s.Restore.Phase + "/" + s.Restore.Reason + "|" + s.Save.Phase + "/" + s.Save.Reason
@@ -185,7 +192,7 @@ func (r *GradleInstanceService) FollowSnapshot(ctx context.Context, id string, o
 		onUpdate:   options.OnUpdate,
 		onOpen:     options.OnOpen,
 	}
-	last, gone, err := p.follow(ctx, timeout, slices.Concat(r.Options, opts))
+	last, gone, err := p.follow(ctx, timeout, opts)
 	var timedOut *errPhaseTimeout[GradleInstanceSnapshot]
 	switch {
 	case errors.As(err, &timedOut):

@@ -166,6 +166,8 @@ type MacosInstanceSpec struct {
 	Region            string `json:"region" api:"required"`
 	// Maximum runtime regardless of activity.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
+	// Disk snapshot configuration, absent for an instance created without one.
+	Snapshot MacosSnapshotConfigState `json:"snapshot"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Role respjson.Field
@@ -173,6 +175,7 @@ type MacosInstanceSpec struct {
 		InactivityTimeout respjson.Field
 		Region            respjson.Field
 		HardTimeout       respjson.Field
+		Snapshot          respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -227,6 +230,8 @@ type MacosInstanceStatus struct {
 	//     instances that failed to get ready during creation. See errorMessage for
 	//     details when available.
 	TerminationReason string `json:"terminationReason"`
+	// What happened to the instance's disk snapshot. GetSnapshot has the full status.
+	Snapshot MacosInstanceStatusSnapshot `json:"snapshot"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		StreamToken respjson.Field
@@ -237,6 +242,7 @@ type MacosInstanceStatus struct {
 		EndpointWebSocketURL respjson.Field
 		ErrorMessage         respjson.Field
 		TerminationReason    respjson.Field
+		Snapshot             respjson.Field
 		ExtraFields          map[string]respjson.Field
 		raw                  string
 	} `json:"-"`
@@ -299,6 +305,9 @@ func (r *MacosInstanceNewParamsMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type MacosInstanceNewParamsSpec struct {
+	// Disk snapshot to restore after assignment and save at termination. Omitted means an
+	// ordinary instance that restores and saves nothing.
+	Snapshot *MacosSnapshotConfig `json:"snapshot,omitzero"`
 	// Inline instance role. Omit for the organization's compatibility default.
 	Role MacosInstanceNewParamsSpecRole `json:"role,omitzero"`
 

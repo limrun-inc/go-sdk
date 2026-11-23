@@ -50,6 +50,10 @@ func TestMacosInstanceNewWithOptionalParams(t *testing.T) {
 			Role: limrun.MacosInstanceNewParamsSpecRole{
 				Permissions: []string{"string"},
 			},
+			Snapshot: &limrun.MacosSnapshotConfig{
+				Key:         limrun.String("github.com/acme/app"),
+				RestoreKeys: []string{"github.com/acme/app/pr-51", "github.com/acme/app"},
+			},
 		},
 	})
 	if err != nil {
@@ -154,6 +158,83 @@ func TestMacosInstanceUpdate(t *testing.T) {
 			Role: limrun.MacosInstanceUpdateParamsSpecRole{Permissions: []string{"string"}},
 		},
 	})
+	if err != nil {
+		var apierr *limrun.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestMacosInstanceGetSnapshot(t *testing.T) {
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := limrun.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+	)
+	_, err := client.MacosInstances.GetSnapshot(context.TODO(), "id")
+	if err != nil {
+		var apierr *limrun.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestMacosInstanceBindSnapshotKey(t *testing.T) {
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := limrun.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+	)
+	_, err := client.MacosInstances.BindSnapshotKey(context.TODO(), "id", "github.com/acme/app")
+	if err != nil {
+		var apierr *limrun.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestMacosSnapshotListGetDelete(t *testing.T) {
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := limrun.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+	)
+	ctx := context.TODO()
+	_, err := client.MacosSnapshots.List(ctx, "organizationId", limrun.SnapshotListParams{
+		Prefix: limrun.String("github.com/acme/"),
+		Limit:  limrun.Int(100),
+		Offset: limrun.Int(0),
+	})
+	if err == nil {
+		_, err = client.MacosSnapshots.Get(ctx, "organizationId", "github.com/acme/app")
+	}
+	if err == nil {
+		err = client.MacosSnapshots.Delete(ctx, "organizationId", "github.com/acme/app")
+	}
 	if err != nil {
 		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
