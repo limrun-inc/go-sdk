@@ -4,6 +4,7 @@
 package macos
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,10 +14,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/build"
 	"github.com/limrun-inc/go-sdk/internal/direct"
+	"github.com/limrun-inc/go-sdk/internal/stream"
 	"github.com/limrun-inc/go-sdk/tunnel"
 )
 
@@ -130,31 +133,83 @@ func (c *Client) EnableSSH(ctx context.Context, publicKey string) (*SSHAccess, e
 	return &access, nil
 }
 
-// SnapshotStatus is the disk snapshot status a macOS instance reports itself.
-type SnapshotStatus struct {
-	Restore struct {
-		Phase   string `json:"phase"`
-		Reason  string `json:"reason,omitempty"`
-		Message string `json:"message,omitempty"`
-		Key     string `json:"key,omitempty"`
-	} `json:"restore"`
-	Save struct {
-		Phase   string `json:"phase"`
-		Reason  string `json:"reason,omitempty"`
-		Message string `json:"message,omitempty"`
-	} `json:"save"`
+// RestoreSnapshotOptions configures RestoreSnapshot.
+type RestoreSnapshotOptions struct {
+	// Key is the asset name the instance saves its changes under when it
+	// terminates. It is set once.
+	Key string
+	// RestoreKeys are asset names, or name prefixes, to restore from, in order.
+	// They default to Key.
+	RestoreKeys []string
+	// OnProgress is called for every progress event the instance reports.
+	OnProgress func(SnapshotProgress)
 }
 
-// StartSnapshotRestore starts restoring the disk snapshot the instance was
-// created with. The instance restores only when a client asks, so call it once
-// the instance is ready and before using the guest; asking again changes
-// nothing. MacosInstances.RestoreSnapshot also waits for the restore to end.
-func (c *Client) StartSnapshotRestore(ctx context.Context) (*SnapshotStatus, error) {
-	var status SnapshotStatus
-	if err := c.request(ctx, http.MethodPost, "snapshot/restore", map[string]string{}, &status); err != nil {
+// SnapshotProgress is a restore's progress, as the instance reports it.
+type SnapshotProgress struct {
+	// Phase is one of "resolving", "downloading", "extracting", "restored",
+	// "skipped" or "failed". New values may be added over time.
+	Phase string `json:"phase"`
+	// Key is the asset name the restore matched.
+	Key string `json:"key,omitempty"`
+	// MatchKind is "exact_hit" or "prefix_hit".
+	MatchKind string `json:"matchKind,omitempty"`
+	// Source tells whether the bytes came through the regional accelerator
+	// ("tag") or straight from storage ("direct").
+	Source     string `json:"source,omitempty"`
+	TotalBytes int64  `json:"totalBytes,omitempty"`
+	DoneBytes  int64  `json:"doneBytes,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+	Message    string `json:"message,omitempty"`
+}
+
+// RestoreSnapshot restores a disk snapshot into the guest and sets the key the
+// instance saves under when it terminates. A snapshot is an asset of kind
+// MacOSSnapshot, so the instance's role needs read on the restore keys' asset
+// names, and create, upload and update on Key's.
+//
+// Each restore key is tried in order: its exact name first, then the newest
+// asset whose name starts with it, skipping snapshots saved on another macOS
+// build. Without RestoreKeys, Key is restored. Without either, nothing is
+// restored. Call it once the instance is ready and before using the guest;
+// asking again joins the restore already running. It returns the final
+// progress event, and OnProgress sees every event, with byte counts while
+// downloading.
+func (c *Client) RestoreSnapshot(ctx context.Context, opts RestoreSnapshotOptions) (*SnapshotProgress, error) {
+	body, err := json.Marshal(struct {
+		Key         string   `json:"key,omitempty"`
+		RestoreKeys []string `json:"restoreKeys,omitempty"`
+	}{opts.Key, opts.RestoreKeys})
+	if err != nil {
 		return nil, err
 	}
-	return &status, nil
+	res, err := c.http.Do(ctx, http.MethodPost, c.http.URL+"/snapshot", bytes.NewReader(body), "application/json", -1)
+	if err != nil {
+		return nil, withReason(err)
+	}
+	defer res.Body.Close()
+	var last *SnapshotProgress
+	err = stream.Read(res.Body, func(e stream.Event) error {
+		if e.Type != "snapshot" {
+			return nil
+		}
+		var progress SnapshotProgress
+		if err := json.Unmarshal([]byte(e.Data), &progress); err != nil {
+			return fmt.Errorf("decoding snapshot progress %q: %w", e.Data, err)
+		}
+		last = &progress
+		if opts.OnProgress != nil {
+			opts.OnProgress(progress)
+		}
+		return nil
+	}, func() {}, func(time.Duration) {})
+	if err != nil && !errors.Is(err, io.EOF) {
+		return last, err
+	}
+	if last == nil {
+		return nil, errors.New("the instance ended the snapshot stream without reporting progress")
+	}
+	return last, nil
 }
 
 // DerivePortForwardURL returns the WebSocket URL that carries TCP connections

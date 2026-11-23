@@ -985,57 +985,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIError'
-  /v1/macos_instances/{id}/snapshot:
-    get:
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: Accept
-          required: false
-          in: header
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MacOSInstanceSnapshot'
-            text/event-stream:
-              schema:
-                type: string
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
-    put:
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MacOSInstanceSnapshotBind'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MacOSInstanceSnapshot'
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIError'
   /v1/gradle_instances/{id}/build_logs:
     get:
       parameters:
@@ -1520,131 +1469,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/BackendAPIError'
         '503':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-  /v1/organizations/{organizationId}/macos_snapshots:
-    get:
-      parameters:
-        - name: organizationId
-          required: true
-          in: path
-          schema:
-            type: string
-        - name: prefix
-          in: query
-          schema:
-            type: string
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 100
-            minimum: 1
-            maximum: 500
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendMacOSSnapshotList'
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '404':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '500':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-  /v1/organizations/{organizationId}/macos_snapshots/{key}:
-    get:
-      parameters:
-        - name: organizationId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: key
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendMacOSSnapshot'
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '404':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '500':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-    delete:
-      parameters:
-        - name: organizationId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: key
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '404':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackendAPIError'
-        '500':
           content:
             application/json:
               schema:
@@ -2495,8 +2319,6 @@ components:
               type: string
             hardTimeout:
               type: string
-            snapshot:
-              $ref: '#/components/schemas/MacOSSnapshotConfig'
           required:
             - region
             - inactivityTimeout
@@ -2571,140 +2393,22 @@ components:
               type: string
             hardTimeout:
               type: string
-            snapshot:
-              $ref: '#/components/schemas/MacOSSnapshotConfig'
-    MacOSSnapshotConfig:
-      type: object
-      properties:
-        key:
-          type: string
-        restoreKeys:
-          type: array
-          items:
-            type: string
-    MacOSInstanceSnapshotBind:
-      type: object
-      properties:
-        key:
-          type: string
-      required:
-        - key
-    MacOSInstanceSnapshot:
-      type: object
-      properties:
-        config:
-          $ref: '#/components/schemas/MacOSSnapshotConfig'
-        restore:
-          $ref: '#/components/schemas/MacOSSnapshotRestoreStatus'
-        save:
-          $ref: '#/components/schemas/MacOSSnapshotSaveStatus'
-      required:
-        - restore
-        - save
-    MacOSSnapshotRestoreStatus:
-      type: object
-      properties:
-        phase:
-          type: string
-          enum:
-            - disabled
-            - pending
-            - downloading
-            - extracting
-            - restored
-            - skipped
-            - failed
-        reason:
-          type: string
-        message:
-          type: string
-        matchedKey:
-          type: string
-        matchKind:
-          type: string
-          enum:
-            - exact_hit
-            - prefix_hit
-        skippedKeys:
-          type: array
-          items:
-            type: object
-            properties:
-              key:
-                type: string
-              reason:
-                type: string
-            required:
-              - key
-              - reason
-        source:
-          type: string
-          enum:
-            - tag
-            - direct
-        bytes:
-          type: integer
-          format: int64
-        uncompressedBytes:
-          type: integer
-          format: int64
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-      required:
-        - phase
-    MacOSSnapshotSaveStatus:
-      type: object
-      properties:
-        phase:
-          type: string
-          enum:
-            - disabled
-            - idle
-            - requested
-            - quiescing
-            - archiving
-            - uploading
-            - published
-            - skipped
-            - failed
-            - timed_out
-        reason:
-          type: string
-        message:
-          type: string
-        key:
-          type: string
-        bytes:
-          type: integer
-          format: int64
-        uncompressedBytes:
-          type: integer
-          format: int64
-        requestedAt:
-          type: string
-          format: date-time
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-      required:
-        - phase
     MacOSSnapshotStatus:
       type: object
       properties:
-        restoreKey:
-          type: string
         save:
           type: object
           properties:
             phase:
               type: string
+              enum:
+                - requested
+                - archiving
+                - uploading
+                - published
+                - skipped
+                - failed
+                - timed_out
             reason:
               type: string
             message:
@@ -2870,15 +2574,42 @@ components:
           type: string
         signedIconUrl:
           type: string
+        metadata:
+          $ref: '#/components/schemas/AssetSnapshotMetadata'
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        publishedAt:
+          type: string
+          format: date-time
       required:
         - id
         - name
         - kind
+    AssetSnapshotMetadata:
+      type: object
+      properties:
+        compatKey:
+          type: string
+        format:
+          type: string
+        uncompressedSizeBytes:
+          type: integer
+          format: int64
+        sourceInstanceId:
+          type: string
+      required:
+        - compatKey
+        - format
+        - uncompressedSizeBytes
     AssetKind:
       type: string
       enum:
         - App
         - Keychain
+        - MacOSSnapshot
       default: App
     AssetPut:
       type: object
@@ -3500,48 +3231,6 @@ components:
         archiveFormat:
           type: string
         archiveSizeBytes:
-          type: integer
-          format: int64
-        sha256:
-          type: string
-        publishedAt:
-          type: string
-          format: date-time
-        sourceInstanceId:
-          type: string
-    BackendMacOSSnapshotList:
-      type: object
-      required:
-        - snapshots
-      properties:
-        snapshots:
-          type: array
-          items:
-            $ref: '#/components/schemas/BackendMacOSSnapshot'
-        nextOffset:
-          type: integer
-    BackendMacOSSnapshot:
-      type: object
-      required:
-        - key
-        - compatKey
-        - archiveFormat
-        - archiveSizeBytes
-        - uncompressedSizeBytes
-        - sha256
-        - publishedAt
-        - sourceInstanceId
-      properties:
-        key:
-          type: string
-        compatKey:
-          type: string
-        archiveFormat:
-          type: string
-        archiveSizeBytes:
-          type: integer
-          format: int64
-        uncompressedSizeBytes:
           type: integer
           format: int64
         sha256:

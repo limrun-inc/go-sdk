@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	limrun "github.com/limrun-inc/go-sdk"
 	"github.com/limrun-inc/go-sdk/internal/testutil"
@@ -49,10 +50,6 @@ func TestMacosInstanceNewWithOptionalParams(t *testing.T) {
 			Jurisdiction:      "us",
 			Role: limrun.MacosInstanceNewParamsSpecRole{
 				Permissions: []string{"string"},
-			},
-			Snapshot: &limrun.MacosSnapshotConfig{
-				Key:         limrun.String("github.com/acme/app"),
-				RestoreKeys: []string{"github.com/acme/app/pr-51", "github.com/acme/app"},
 			},
 		},
 	})
@@ -158,83 +155,6 @@ func TestMacosInstanceUpdate(t *testing.T) {
 			Role: limrun.MacosInstanceUpdateParamsSpecRole{Permissions: []string{"string"}},
 		},
 	})
-	if err != nil {
-		var apierr *limrun.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestMacosInstanceGetSnapshot(t *testing.T) {
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := limrun.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-	)
-	_, err := client.MacosInstances.GetSnapshot(context.TODO(), "id")
-	if err != nil {
-		var apierr *limrun.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestMacosInstanceBindSnapshotKey(t *testing.T) {
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := limrun.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-	)
-	_, err := client.MacosInstances.BindSnapshotKey(context.TODO(), "id", "github.com/acme/app")
-	if err != nil {
-		var apierr *limrun.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestMacosSnapshotListGetDelete(t *testing.T) {
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := limrun.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-	)
-	ctx := context.TODO()
-	_, err := client.MacosSnapshots.List(ctx, "organizationId", limrun.SnapshotListParams{
-		Prefix: limrun.String("github.com/acme/"),
-		Limit:  limrun.Int(100),
-		Offset: limrun.Int(0),
-	})
-	if err == nil {
-		_, err = client.MacosSnapshots.Get(ctx, "organizationId", "github.com/acme/app")
-	}
-	if err == nil {
-		err = client.MacosSnapshots.Delete(ctx, "organizationId", "github.com/acme/app")
-	}
 	if err != nil {
 		var apierr *limrun.Error
 		if errors.As(err, &apierr) {
@@ -352,5 +272,42 @@ func TestMacosInstanceRoutes(t *testing.T) {
 		if calls[i] != want[i] {
 			t.Errorf("call %d=%s, want %s", i, calls[i], want[i])
 		}
+	}
+}
+
+// TestMacosSnapshotsAreAssets lists macOS snapshots as assets of their kind,
+// with the macOS build they restore onto, like the TypeScript SDK's test.
+func TestMacosSnapshotsAreAssets(t *testing.T) {
+	var query string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/v1/assets" {
+			t.Errorf("request = %s %s", r.Method, r.URL.Path)
+		}
+		query = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"id":"asset_1","kind":"MacOSSnapshot","name":"my-mac","sha256":"ab","sizeBytes":10,` +
+			`"publishedAt":"2026-11-23T00:00:00Z","metadata":{"compatKey":"macos-27.2.1","format":"aar","uncompressedSizeBytes":20,"sourceInstanceId":"macos_eu_01h"}}]`))
+	}))
+	defer srv.Close()
+	client := limrun.NewClient(option.WithBaseURL(srv.URL), option.WithAPIKey("key"))
+	listed, err := client.Assets.List(context.Background(), limrun.AssetListParams{
+		KindFilter:       limrun.AssetListParamsKindFilterMacOSSnapshot,
+		NamePrefixFilter: limrun.String("my-"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if query != "kindFilter=MacOSSnapshot&namePrefixFilter=my-" {
+		t.Errorf("query = %q", query)
+	}
+	if len(*listed) != 1 {
+		t.Fatalf("listed = %+v", listed)
+	}
+	asset := (*listed)[0]
+	m := asset.Metadata
+	if asset.Kind != limrun.AssetKindMacOSSnapshot || asset.Sha256 != "ab" || asset.SizeBytes != 10 ||
+		!asset.PublishedAt.Equal(time.Date(2026, 11, 23, 0, 0, 0, 0, time.UTC)) ||
+		m.CompatKey != "macos-27.2.1" || m.Format != "aar" || m.UncompressedSizeBytes != 20 || m.SourceInstanceID != "macos_eu_01h" {
+		t.Errorf("asset = %+v", asset)
 	}
 }

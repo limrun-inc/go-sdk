@@ -16,7 +16,7 @@ import (
 
 // phaseStream describes one instance's phase stream: an endpoint that answers JSON, or an event
 // per phase change when asked for text/event-stream, and a "gone" event when the instance leaves.
-// The Xcode cache and the Gradle and macOS snapshots all serve this shape.
+// The Xcode cache and the Gradle snapshot both serve this shape.
 type phaseStream[T any] struct {
 	endpoint  string
 	eventName string

@@ -52,9 +52,12 @@ func guest(t *testing.T) (*httptest.Server, func() []recorded) {
 		case r.URL.Path == "/ssh":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"user":"limrun","port":22}`))
-		case r.URL.Path == "/snapshot/restore":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"restore":{"phase":"downloading"},"save":{"phase":"idle"}}`))
+		case r.URL.Path == "/snapshot":
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = w.Write([]byte("event: snapshot\ndata: {\"phase\":\"resolving\"}\n\n" +
+				": keepalive\n\n" +
+				"event: snapshot\ndata: {\"phase\":\"downloading\",\"totalBytes\":10,\"doneBytes\":4}\n\n" +
+				"event: snapshot\ndata: {\"phase\":\"restored\",\"key\":\"my-mac\",\"matchKind\":\"exact_hit\"}\n\n"))
 		case r.URL.Path == "/screenshot.jpg":
 			w.Header().Set("Content-Type", "image/jpeg")
 			_, _ = w.Write([]byte{0xff, 0xd8, 0xff})
@@ -106,12 +109,29 @@ func TestClientSendsEachRequest(t *testing.T) {
 	if !bytes.Equal(jpeg, []byte{0xff, 0xd8, 0xff}) {
 		t.Errorf("screenshot = %x", jpeg)
 	}
-	status, err := mac.StartSnapshotRestore(ctx)
+	var progress []macos.SnapshotProgress
+	restored, err := mac.RestoreSnapshot(ctx, macos.RestoreSnapshotOptions{
+		Key:         "my-mac",
+		RestoreKeys: []string{"my-mac", "base-"},
+		OnProgress:  func(p macos.SnapshotProgress) { progress = append(progress, p) },
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.Restore.Phase != "downloading" || status.Save.Phase != "idle" {
-		t.Errorf("snapshot status = %+v", status)
+	if *restored != (macos.SnapshotProgress{Phase: "restored", Key: "my-mac", MatchKind: "exact_hit"}) {
+		t.Errorf("restored = %+v", restored)
+	}
+	wantProgress := []macos.SnapshotProgress{
+		{Phase: "resolving"},
+		{Phase: "downloading", TotalBytes: 10, DoneBytes: 4},
+		{Phase: "restored", Key: "my-mac", MatchKind: "exact_hit"},
+	}
+	if !reflect.DeepEqual(progress, wantProgress) {
+		t.Errorf("progress = %+v, want %+v", progress, wantProgress)
+	}
+	// Empty fields stay out of the body.
+	if _, err := mac.RestoreSnapshot(ctx, macos.RestoreSnapshotOptions{}); err != nil {
+		t.Fatal(err)
 	}
 	duration := 100
 	for _, err := range []error{
@@ -153,7 +173,8 @@ func TestClientSendsEachRequest(t *testing.T) {
 		{"GET", "/exec/run-1/events?follow=true", nil},
 		{"POST", "/ssh", obj(`{"publicKey":"ssh-ed25519 AAAA test"}`)},
 		{"GET", "/screenshot.jpg", nil},
-		{"POST", "/snapshot/restore", obj(`{}`)},
+		{"POST", "/snapshot", obj(`{"key":"my-mac","restoreKeys":["my-mac","base-"]}`)},
+		{"POST", "/snapshot", obj(`{}`)},
 		{"POST", "/tap", obj(`{"x":10,"y":20,"button":"right"}`)},
 		{"POST", "/tap", obj(`{"x":7,"y":8}`)},
 		{"POST", "/type", obj(`{"text":"hi"}`)},

@@ -166,8 +166,6 @@ type MacosInstanceSpec struct {
 	Region            string `json:"region" api:"required"`
 	// Maximum runtime regardless of activity.
 	HardTimeout string `json:"hardTimeout" format:"duration"`
-	// Disk snapshot configuration, absent for an instance created without one.
-	Snapshot MacosSnapshotConfigState `json:"snapshot"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Role respjson.Field
@@ -175,7 +173,6 @@ type MacosInstanceSpec struct {
 		InactivityTimeout respjson.Field
 		Region            respjson.Field
 		HardTimeout       respjson.Field
-		Snapshot          respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -230,7 +227,9 @@ type MacosInstanceStatus struct {
 	//     instances that failed to get ready during creation. See errorMessage for
 	//     details when available.
 	TerminationReason string `json:"terminationReason"`
-	// What happened to the instance's disk snapshot. GetSnapshot has the full status.
+	// The disk snapshot save the instance runs when it terminates, under the key a
+	// client gave the guest client's RestoreSnapshot. Absent until the instance is
+	// deleted.
 	Snapshot MacosInstanceStatusSnapshot `json:"snapshot"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -252,6 +251,21 @@ type MacosInstanceStatus struct {
 func (r MacosInstanceStatus) RawJSON() string { return r.JSON.raw }
 func (r *MacosInstanceStatus) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+// MacosInstanceStatusSnapshot is the disk snapshot save a macOS instance runs
+// when it terminates.
+type MacosInstanceStatusSnapshot struct {
+	// The save requested at termination. Absent until the instance is deleted.
+	Save *MacosInstanceStatusSnapshotSave `json:"save,omitempty"`
+}
+
+type MacosInstanceStatusSnapshotSave struct {
+	// Known values: "requested", "archiving", "uploading", "published", "skipped",
+	// "failed", "timed_out". New values may be added over time.
+	Phase   string `json:"phase"`
+	Reason  string `json:"reason,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 type MacosInstanceNewParams struct {
@@ -305,9 +319,6 @@ func (r *MacosInstanceNewParamsMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type MacosInstanceNewParamsSpec struct {
-	// Disk snapshot to restore after assignment and save at termination. Omitted means an
-	// ordinary instance that restores and saves nothing.
-	Snapshot *MacosSnapshotConfig `json:"snapshot,omitzero"`
 	// Inline instance role. Omit for the organization's compatibility default.
 	Role MacosInstanceNewParamsSpecRole `json:"role,omitzero"`
 

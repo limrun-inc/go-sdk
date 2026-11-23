@@ -52,20 +52,6 @@ type GradleSnapshot struct {
 	PublishedAt           string `json:"publishedAt"`
 	SourceInstanceID      string `json:"sourceInstanceId"`
 }
-
-// MacosSnapshot is the snapshot currently published under one macOS snapshot key.
-type MacosSnapshot struct {
-	Key string `json:"key"`
-	// Guest image of the instance that saved it, such as macos-27.2.1. An instance that runs
-	// another image skips this key and tries its next restore key.
-	CompatKey             string `json:"compatKey"`
-	ArchiveFormat         string `json:"archiveFormat"`
-	ArchiveSizeBytes      int64  `json:"archiveSizeBytes"`
-	UncompressedSizeBytes int64  `json:"uncompressedSizeBytes"`
-	SHA256                string `json:"sha256"`
-	PublishedAt           string `json:"publishedAt"`
-	SourceInstanceID      string `json:"sourceInstanceId"`
-}
 type IosSnapshot struct {
 	Key              string `json:"key"`
 	Saved            bool   `json:"saved"`
@@ -82,7 +68,6 @@ type SnapshotService[T any] struct {
 type XcodeSnapshotService = SnapshotService[XcodeSnapshot]
 type IosSnapshotService = SnapshotService[IosSnapshot]
 type GradleSnapshotService = SnapshotService[GradleSnapshot]
-type MacosSnapshotService = SnapshotService[MacosSnapshot]
 
 func NewXcodeSnapshotService(opts ...option.RequestOption) XcodeSnapshotService {
 	return XcodeSnapshotService{Options: opts, resource: "xcode_snapshots"}
@@ -92,9 +77,6 @@ func NewIosSnapshotService(opts ...option.RequestOption) IosSnapshotService {
 }
 func NewGradleSnapshotService(opts ...option.RequestOption) GradleSnapshotService {
 	return GradleSnapshotService{Options: opts, resource: "gradle_snapshots"}
-}
-func NewMacosSnapshotService(opts ...option.RequestOption) MacosSnapshotService {
-	return MacosSnapshotService{Options: opts, resource: "macos_snapshots"}
 }
 func (r *SnapshotService[T]) path(org string) string {
 	return "v1/organizations/" + url.PathEscape(org) + "/" + r.resource
