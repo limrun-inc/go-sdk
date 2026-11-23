@@ -14,9 +14,9 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | --- | --- |
 | `AndroidInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
 | `IosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
-| `XcodeInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `ListBuildLogs`, `ListBazelBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
-| `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
-| `MacosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
+| `XcodeInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `ListBuildLogs`, `ListBazelBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot`, `RestoreSnapshot` |
+| `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot`, `RestoreSnapshot` |
+| `MacosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot`, `RestoreSnapshot` |
 | `Assets` | `List`, `Get`, `GetOrNew`, `GetOrUpload`, `Update`, `CreateUploadURL`, `Delete` |
 | `AccessTokens` | `New`, `Revoke` |
 | `XcodeSnapshots`, `IosSnapshots`, `GradleSnapshots`, `MacosSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
@@ -37,8 +37,11 @@ the restore after creation or the save at deletion the same way.
 
 macOS instances take `Spec.Snapshot` too, with the same key, restore keys and
 phases as Gradle's. A macOS snapshot keeps the files the guest changed and
-restores only onto the macOS build that saved it. `FollowSnapshot` and the
-standalone `FollowMacosSnapshot` share the Gradle follower and its errors.
+restores only onto the macOS build that saved it. Unlike Gradle's, a macOS
+instance restores only when a client asks: `RestoreSnapshot` starts the restore
+on a ready instance and waits for it, and the guest client's
+`StartSnapshotRestore` only starts it. `FollowSnapshot` and the standalone
+`FollowMacosSnapshot` share the Gradle follower and its errors.
 
 ## Instance clients
 
