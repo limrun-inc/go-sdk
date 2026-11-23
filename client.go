@@ -28,6 +28,7 @@ type Client struct {
 	IosSnapshots     IosSnapshotService
 	GradleSnapshots  GradleSnapshotService
 	Analytics        AnalyticsService
+	SupportTickets   SupportTicketService
 }
 
 // DefaultClientOptions read from the environment (LIM_API_KEY, LIMRUN_BASE_URL).
@@ -69,6 +70,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.IosSnapshots = NewIosSnapshotService(opts...)
 	r.GradleSnapshots = NewGradleSnapshotService(opts...)
 	r.Analytics = NewAnalyticsService(opts...)
+	r.SupportTickets = NewSupportTicketService(opts...)
 
 	return
 }
