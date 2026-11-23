@@ -44,6 +44,8 @@ type PerformAction struct {
 	DurationMs   int                    `json:"durationMs,omitempty"`
 	KeyCode      int                    `json:"keyCode,omitempty"`
 	Button       string                 `json:"button,omitempty"`
+	UsagePage    int                    `json:"usagePage,omitempty"`
+	Usage        int                    `json:"usage,omitempty"`
 }
 
 // PerformActionResult is the per-action result in a PerformActions batch. Type
@@ -227,6 +229,19 @@ type PerformActionsOptions struct {
 	Display DuoDisplay
 }
 
+// ActionUsageDown presses any HID usage by page and usage, such as page 0x0C
+// usage 0x6F for Brightness Increment. Page 7 usages are keyboard keys.
+// Simulators on Xcode before 27 accept only keyboard usages and the Consumer
+// usages of the buttons ActionButtonDown names.
+func ActionUsageDown(usagePage, usage int) PerformAction {
+	return PerformAction{Type: "usageDown", UsagePage: usagePage, Usage: usage}
+}
+
+// ActionUsageUp releases a HID usage pressed with ActionUsageDown.
+func ActionUsageUp(usagePage, usage int) PerformAction {
+	return PerformAction{Type: "usageUp", UsagePage: usagePage, Usage: usage}
+}
+
 func (a PerformAction) MarshalJSON() ([]byte, error) {
 	type plain PerformAction
 	b, err := json.Marshal(plain(a))
@@ -249,6 +264,9 @@ func (a PerformAction) MarshalJSON() ([]byte, error) {
 		m["durationMs"] = a.DurationMs
 	case "keyDown", "keyUp":
 		m["keyCode"] = a.KeyCode
+	case "usageDown", "usageUp":
+		m["usagePage"] = a.UsagePage
+		m["usage"] = a.Usage
 	}
 	return json.Marshal(m)
 }

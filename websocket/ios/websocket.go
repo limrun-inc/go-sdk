@@ -99,9 +99,11 @@ type ElementResult struct {
 
 // InstalledApp represents an installed application on the simulator.
 type InstalledApp struct {
-	BundleID    string   `json:"bundleId"`
-	Name        string   `json:"name"`
-	InstallType string   `json:"installType"`
+	BundleID    string `json:"bundleId"`
+	Name        string `json:"name"`
+	InstallType string `json:"installType"`
+	// PID is the app's process ID at query time; nil when the app is not running.
+	PID         *int     `json:"pid,omitempty"`
 	Icon        string   `json:"icon,omitempty"`
 	InstalledAt *float64 `json:"installedAt,omitempty"`
 }
@@ -281,6 +283,14 @@ type DeviceInfo struct {
 	// Model is the device model name.
 	Model     string
 	OSVersion string
+	// Orientation is the current interface orientation (portrait,
+	// portraitUpsideDown, landscapeLeft or landscapeRight), when the simulator
+	// can report it.
+	Orientation string
+	// DisplayWidth and DisplayHeight are the current display size in points,
+	// accounting for orientation. Zero when the simulator does not report them.
+	DisplayWidth  float64
+	DisplayHeight float64
 }
 
 // RecordingOptions configures StartRecording.
@@ -319,6 +329,7 @@ type request struct {
 	ScreenWidth  float64                `json:"screenWidth,omitempty"`
 	ScreenHeight float64                `json:"screenHeight,omitempty"`
 	Point        *AccessibilityPoint    `json:"point,omitempty"`
+	VisibleOnly  bool                   `json:"visibleOnly,omitempty"`
 	Selector     *AccessibilitySelector `json:"selector,omitempty"`
 	Text         string                 `json:"text,omitempty"`
 	PressEnter   bool                   `json:"pressEnter,omitempty"`
@@ -363,12 +374,15 @@ type response struct {
 	Logs         string                `json:"logs,omitempty"`
 	Results      []PerformActionResult `json:"results,omitempty"`
 	// deviceInfo fields
-	UDID         string  `json:"udid,omitempty"`
-	ScreenWidth  float64 `json:"screenWidth,omitempty"`
-	ScreenHeight float64 `json:"screenHeight,omitempty"`
-	Model        string  `json:"model,omitempty"`
-	OSVersion    string  `json:"osVersion,omitempty"`
-	Method       string  `json:"method,omitempty"`
+	UDID          string  `json:"udid,omitempty"`
+	ScreenWidth   float64 `json:"screenWidth,omitempty"`
+	ScreenHeight  float64 `json:"screenHeight,omitempty"`
+	Model         string  `json:"model,omitempty"`
+	OSVersion     string  `json:"osVersion,omitempty"`
+	Orientation   string  `json:"orientation,omitempty"`
+	DisplayWidth  float64 `json:"displayWidth,omitempty"`
+	DisplayHeight float64 `json:"displayHeight,omitempty"`
+	Method        string  `json:"method,omitempty"`
 	// simctlStream / command (xcrun, xcodebuild) fields
 	Stdout   string `json:"stdout,omitempty"`
 	Stderr   string `json:"stderr,omitempty"`
@@ -530,10 +544,21 @@ func (c *Client) Screenshot(ctx context.Context, opts ...ScreenshotOptions) (*Sc
 	}, nil
 }
 
+// ElementTreeOptions configures ElementTree and ElementTreeNodes.
+type ElementTreeOptions struct {
+	// VisibleOnly skips branches whose nonempty frames fall outside the
+	// display. Full-tree reads only.
+	VisibleOnly bool
+}
+
 // ElementTree returns the raw accessibility hierarchy JSON of the current
 // screen. Pass a non-nil point to query the element at that specific location.
-func (c *Client) ElementTree(ctx context.Context, point *AccessibilityPoint) (string, error) {
-	resp, err := c.sendRequest(ctx, &request{Type: "elementTree", Point: point})
+func (c *Client) ElementTree(ctx context.Context, point *AccessibilityPoint, opts ...ElementTreeOptions) (string, error) {
+	req := &request{Type: "elementTree", Point: point}
+	if len(opts) > 0 {
+		req.VisibleOnly = opts[0].VisibleOnly
+	}
+	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
 		return "", err
 	}
@@ -542,8 +567,8 @@ func (c *Client) ElementTree(ctx context.Context, point *AccessibilityPoint) (st
 
 // ElementTreeNodes returns the parsed accessibility hierarchy of the current
 // screen. Pass a non-nil point to query the element at that specific location.
-func (c *Client) ElementTreeNodes(ctx context.Context, point *AccessibilityPoint) ([]ElementTreeNode, error) {
-	raw, err := c.ElementTree(ctx, point)
+func (c *Client) ElementTreeNodes(ctx context.Context, point *AccessibilityPoint, opts ...ElementTreeOptions) ([]ElementTreeNode, error) {
+	raw, err := c.ElementTree(ctx, point, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -859,11 +884,14 @@ func (c *Client) DeviceInfo(ctx context.Context) (*DeviceInfo, error) {
 		return nil, err
 	}
 	return &DeviceInfo{
-		UDID:         resp.UDID,
-		ScreenWidth:  resp.ScreenWidth,
-		ScreenHeight: resp.ScreenHeight,
-		Model:        resp.Model,
-		OSVersion:    resp.OSVersion,
+		UDID:          resp.UDID,
+		ScreenWidth:   resp.ScreenWidth,
+		ScreenHeight:  resp.ScreenHeight,
+		Model:         resp.Model,
+		OSVersion:     resp.OSVersion,
+		Orientation:   resp.Orientation,
+		DisplayWidth:  resp.DisplayWidth,
+		DisplayHeight: resp.DisplayHeight,
 	}, nil
 }
 
