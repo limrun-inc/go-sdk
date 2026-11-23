@@ -15,10 +15,10 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | `AndroidInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
 | `IosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
 | `XcodeInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `ListBuildLogs`, `ListBazelBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
-| `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs` |
+| `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
 | `Assets` | `List`, `Get`, `GetOrNew`, `GetOrUpload`, `Update`, `CreateUploadURL`, `Delete` |
 | `AccessTokens` | `New`, `Revoke` |
-| `XcodeSnapshots`, `IosSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
+| `XcodeSnapshots`, `IosSnapshots`, `GradleSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
 | `Analytics` | `Get`, `GetInstances` |
 
 Instance updates accept an `IfMatch` ETag and support labels and delegated roles.
@@ -29,6 +29,10 @@ Xcode snapshot operations retain the legacy `GetCache`, `BindCacheKey`, and
 `FollowCache` names. Standalone `FollowXcodeSnapshot` and `FollowXcodeCache`
 helpers report progress, deduplicate events, and return typed timeout or
 instance-gone errors.
+
+Gradle instances take `Spec.Snapshot` at creation, with a key and restore keys
+like Xcode's. `FollowSnapshot` and the standalone `FollowGradleSnapshot` follow
+the restore after creation or the save at deletion the same way.
 
 ## Instance clients
 
