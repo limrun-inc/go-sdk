@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "webdriverio": "^9.21.0"
+    "webdriverio": "^10.2.0"
   }
 }
