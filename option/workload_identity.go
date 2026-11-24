@@ -16,6 +16,9 @@ import (
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
 )
 
+// workloadExchangeTimeout bounds a shared exchange, which no caller's context can cancel.
+const workloadExchangeTimeout = 30 * time.Second
+
 // WorkloadIdentityOptions exchanges a customer-issued JWT for a short-lived Limrun token.
 // Set one identity source. When several are set, TokenSource wins over Token, and Token over TokenFile.
 type WorkloadIdentityOptions struct {
@@ -37,7 +40,7 @@ type WorkloadIdentityOptions struct {
 
 // WithWorkloadIdentity authenticates requests without storing a Limrun API key.
 func WithWorkloadIdentity(options WorkloadIdentityOptions) RequestOption {
-	credentials := &workloadCredentials{options: options, client: &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
+	credentials := &workloadCredentials{options: options, client: &http.Client{Timeout: workloadExchangeTimeout, CheckRedirect: func(*http.Request, []*http.Request) error {
 		return errors.New("workload token exchange must not redirect")
 	}}}
 	middleware := func(req *http.Request, next MiddlewareNext) (*http.Response, error) {
@@ -81,18 +84,26 @@ func (c *workloadCredentials) get(ctx context.Context) (string, error) {
 		c.mu.Unlock()
 		return token, nil
 	}
-	if pending := c.pending; pending != nil {
-		c.mu.Unlock()
-		select {
-		case <-ctx.Done():
-			return "", ctx.Err()
-		case <-pending.done:
-			return pending.token, pending.err
-		}
+	pending := c.pending
+	if pending == nil {
+		pending = &workloadExchange{done: make(chan struct{})}
+		c.pending = pending
+		// The exchange serves every waiter, so one caller's cancellation must not abort it.
+		go c.refresh(context.WithoutCancel(ctx), pending)
 	}
-	pending := &workloadExchange{done: make(chan struct{})}
-	c.pending = pending
 	c.mu.Unlock()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-pending.done:
+		return pending.token, pending.err
+	}
+}
+
+// refresh runs one shared exchange and hands its result to every waiter.
+func (c *workloadCredentials) refresh(ctx context.Context, pending *workloadExchange) {
+	ctx, cancel := context.WithTimeout(ctx, workloadExchangeTimeout)
+	defer cancel()
 	token, expires, err := c.exchange(ctx)
 	c.mu.Lock()
 	if err == nil {
@@ -107,7 +118,6 @@ func (c *workloadCredentials) get(ctx context.Context) (string, error) {
 	close(pending.done)
 	c.pending = nil
 	c.mu.Unlock()
-	return token, err
 }
 
 // identity returns the JWT to exchange from the configured source.

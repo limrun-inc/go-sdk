@@ -252,3 +252,45 @@ func TestInjectedWorkloadTokenRefusesAnotherSource(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+func TestCanceledCallerDoesNotFailSharedExchange(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		release := make(chan struct{})
+		c := &workloadCredentials{
+			options: WorkloadIdentityOptions{Token: "jwt", BindingID: "binding"},
+			client: &http.Client{Transport: exchangeTransport(func(r *http.Request) (*http.Response, error) {
+				select {
+				case <-release:
+				case <-r.Context().Done():
+					return nil, r.Context().Err()
+				}
+				body := `{"access_token":"limrun-session","token_type":"Bearer","expires_in":900}`
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			})},
+		}
+		leader, cancel := context.WithCancel(context.Background())
+		leaderErr := make(chan error, 1)
+		go func() {
+			_, err := c.get(leader)
+			leaderErr <- err
+		}()
+		synctest.Wait()
+		waiter := make(chan string, 1)
+		go func() {
+			token, err := c.get(context.Background())
+			if err != nil {
+				t.Errorf("waiter: %v", err)
+			}
+			waiter <- token
+		}()
+		synctest.Wait()
+		cancel()
+		if err := <-leaderErr; err != context.Canceled {
+			t.Fatalf("leader got %v, want its own cancellation", err)
+		}
+		close(release)
+		if token := <-waiter; token != "limrun-session" {
+			t.Fatalf("waiter got %q after the leader canceled", token)
+		}
+	})
+}
