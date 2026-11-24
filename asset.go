@@ -86,7 +86,7 @@ func (r *AssetService) GetOrNew(ctx context.Context, body AssetGetOrNewParams, o
 
 type Asset struct {
 	ID string `json:"id" api:"required"`
-	// Any of "App", "Keychain".
+	// Any of "App", "Keychain", "MacOSSnapshot".
 	Kind AssetKind `json:"kind" api:"required"`
 	Name string    `json:"name" api:"required"`
 	// Human-readable display name for the asset. If not set, the name should be used.
@@ -108,6 +108,14 @@ type Asset struct {
 	Platform          AssetPlatform `json:"platform"`
 	SignedDownloadURL string        `json:"signedDownloadUrl"`
 	SignedUploadURL   string        `json:"signedUploadUrl"`
+	// What a kind records about its file. A MacOSSnapshot records the macOS build
+	// it restores onto.
+	Metadata AssetMetadata `json:"metadata"`
+	// SHA-256 of the uploaded file, for assets uploaded in parts.
+	Sha256    string `json:"sha256"`
+	SizeBytes int64  `json:"sizeBytes"`
+	// When the last complete upload finished.
+	PublishedAt time.Time `json:"publishedAt" format:"date-time"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID                respjson.Field
@@ -120,6 +128,10 @@ type Asset struct {
 		Platform          respjson.Field
 		SignedDownloadURL respjson.Field
 		SignedUploadURL   respjson.Field
+		Metadata          respjson.Field
+		Sha256            respjson.Field
+		SizeBytes         respjson.Field
+		PublishedAt       respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -131,11 +143,37 @@ func (r *Asset) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// AssetMetadata is what an asset's kind records about its file. A MacOSSnapshot
+// asset, a macOS instance's saved changes, sets every field.
+type AssetMetadata struct {
+	// The guest's macOS build. A snapshot restores only onto the same one.
+	CompatKey             string `json:"compatKey"`
+	Format                string `json:"format"`
+	UncompressedSizeBytes int64  `json:"uncompressedSizeBytes"`
+	SourceInstanceID      string `json:"sourceInstanceId"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CompatKey             respjson.Field
+		Format                respjson.Field
+		UncompressedSizeBytes respjson.Field
+		SourceInstanceID      respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r AssetMetadata) RawJSON() string { return r.JSON.raw }
+func (r *AssetMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type AssetKind string
 
 const (
-	AssetKindApp      AssetKind = "App"
-	AssetKindKeychain AssetKind = "Keychain"
+	AssetKindApp           AssetKind = "App"
+	AssetKindKeychain      AssetKind = "Keychain"
+	AssetKindMacOSSnapshot AssetKind = "MacOSSnapshot"
 )
 
 // Deprecated: alias of platform, always mirrors it. Use platform instead.
@@ -159,7 +197,7 @@ const (
 
 type AssetGetOrNewResponse struct {
 	ID string `json:"id" api:"required"`
-	// Any of "App", "Keychain".
+	// Any of "App", "Keychain", "MacOSSnapshot".
 	Kind              AssetGetOrNewResponseKind `json:"kind" api:"required"`
 	Name              string                    `json:"name" api:"required"`
 	SignedDownloadURL string                    `json:"signedDownloadUrl" api:"required"`
@@ -194,8 +232,9 @@ func (r *AssetGetOrNewResponse) UnmarshalJSON(data []byte) error {
 type AssetGetOrNewResponseKind string
 
 const (
-	AssetGetOrNewResponseKindApp      AssetGetOrNewResponseKind = "App"
-	AssetGetOrNewResponseKindKeychain AssetGetOrNewResponseKind = "Keychain"
+	AssetGetOrNewResponseKindApp           AssetGetOrNewResponseKind = "App"
+	AssetGetOrNewResponseKindKeychain      AssetGetOrNewResponseKind = "Keychain"
+	AssetGetOrNewResponseKindMacOSSnapshot AssetGetOrNewResponseKind = "MacOSSnapshot"
 )
 
 type AssetGetOrNewResponsePlatform string
@@ -231,7 +270,7 @@ type AssetListParams struct {
 	NamePrefixFilter param.Opt[string] `query:"namePrefixFilter,omitzero" json:"-"`
 	// Filters assets by kind.
 	//
-	// Any of "App", "Keychain".
+	// Any of "App", "Keychain", "MacOSSnapshot".
 	KindFilter AssetListParamsKindFilter `query:"kindFilter,omitzero" json:"-"`
 	paramObj
 }
@@ -248,8 +287,9 @@ func (r AssetListParams) URLQuery() (v url.Values, err error) {
 type AssetListParamsKindFilter string
 
 const (
-	AssetListParamsKindFilterApp      AssetListParamsKindFilter = "App"
-	AssetListParamsKindFilterKeychain AssetListParamsKindFilter = "Keychain"
+	AssetListParamsKindFilterApp           AssetListParamsKindFilter = "App"
+	AssetListParamsKindFilterKeychain      AssetListParamsKindFilter = "Keychain"
+	AssetListParamsKindFilterMacOSSnapshot AssetListParamsKindFilter = "MacOSSnapshot"
 )
 
 type AssetGetParams struct {

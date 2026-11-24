@@ -56,3 +56,30 @@ func StartStream[T any](ctx context.Context, client *http.Client, url, token str
 	}()
 	return s
 }
+
+// StartTextStream follows a server-sent event stream whose events are plain text, such as a
+// macOS app's log, and delivers each event's data as it arrives.
+func StartTextStream(ctx context.Context, client *http.Client, url, token string) *Stream[string] {
+	ctx, cancel := context.WithCancel(ctx)
+	s := &Stream[string]{make(chan string, 32), make(chan error, 1), cancel, make(chan struct{})}
+	go func() {
+		defer close(s.entries)
+		defer close(s.errors)
+		defer close(s.done)
+		err := stream.Run(ctx, stream.Options{HTTPClient: client, URL: url, Token: token, OnEvent: func(e stream.Event) error {
+			select {
+			case s.entries <- e.Data:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			if errors.Is(err, stream.ErrLost) {
+				err = &StreamLostError{err}
+			}
+			s.errors <- err
+		}
+	}()
+	return s
+}

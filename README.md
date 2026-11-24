@@ -7,7 +7,8 @@
 <!-- x-release-please-end -->
 
 The Limrun Go library provides access to the [Limrun API](https://lim.run),
-iOS simulators, Android emulators, and Xcode and Gradle build sandboxes.
+iOS simulators, Android emulators, macOS virtual machines, and Xcode and Gradle
+build sandboxes.
 It includes app monitoring, log streams, file sync, and network tunnels.
 
 The REST client is generated with [Stainless](https://www.stainless.com/).
@@ -148,7 +149,47 @@ go run ./examples/ios-monitor -instance ios_example -bundle com.example.app
 For direct connections, use `ios.NewClient(apiURL, token)` or
 `android.NewClient(apiURL, token)` from `websocket/ios` or `websocket/android`.
 Xcode and Gradle instance services also provide `CreateClient`, with build
-operations defined in the `build` package.
+operations defined in the `build` package. `MacosInstances.CreateClient` returns
+a client from the `macos` package that runs shell commands, enables SSH, forwards
+ports into the guest, and drives its screen.
+
+### Keep a macOS guest's changes between instances
+
+A disk snapshot keeps the files a macOS guest changed. It is an asset of kind
+`MacOSSnapshot`, so the instance's role grants it like any asset: read on the
+names it restores from, and create, upload and update on the name it saves
+under. Restore once the instance is ready; the instance saves under `Key` when
+it terminates:
+
+```go
+mac, err := client.MacosInstances.New(ctx, limrun.MacosInstanceNewParams{
+	Wait: limrun.Bool(true),
+	Spec: limrun.MacosInstanceNewParamsSpec{
+		Role: limrun.MacosInstanceNewParamsSpecRole{Permissions: []string{
+			"asset:name/my-mac*:read",
+			"asset:name/my-mac:create",
+			"asset:name/my-mac:upload",
+			"asset:name/my-mac:update",
+		}},
+	},
+})
+if err != nil {
+	panic(err)
+}
+guest, err := client.MacosInstances.CreateClient(*mac)
+if err != nil {
+	panic(err)
+}
+progress, err := guest.RestoreSnapshot(ctx, macos.RestoreSnapshotOptions{
+	Key: "my-mac",
+	OnProgress: func(p macos.SnapshotProgress) {
+		fmt.Println(p.Phase, p.DoneBytes, p.TotalBytes)
+	},
+})
+```
+
+`progress.Phase` ends as `restored`, `skipped` or `failed`. Delete the instance
+with `client.MacosInstances.Delete` when you are done.
 
 ### Request fields
 

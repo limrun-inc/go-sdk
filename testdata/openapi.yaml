@@ -847,6 +847,144 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIError'
+  /v1/macos_instances:
+    get:
+      parameters:
+        - name: state
+          required: false
+          in: query
+          schema:
+            type: string
+            example: assigned,ready
+        - name: labelSelector
+          required: false
+          in: query
+          schema:
+            type: string
+            example: env=prod,version=1.2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: startingAfter
+          in: query
+          schema:
+            type: string
+        - name: endingBefore
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MacOSInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    post:
+      parameters:
+        - name: wait
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: reuseIfExists
+          required: false
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MacOSInstanceCreate'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MacOSInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+  /v1/macos_instances/{id}:
+    get:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MacOSInstance'
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    patch:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: If-Match
+          required: true
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceUpdate'
+      responses:
+        '204': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200': {}
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
   /v1/gradle_instances/{id}/build_logs:
     get:
       parameters:
@@ -2139,6 +2277,153 @@ components:
             hardTimeout:
               type: string
               default: '0'
+    MacOSInstance:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            name:
+              type: string
+            organizationId:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            terminatedAt:
+              type: string
+              format: date-time
+            terminatingAt:
+              type: string
+              format: date-time
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+          required:
+            - id
+            - organizationId
+            - createdAt
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            region:
+              type: string
+            inactivityTimeout:
+              type: string
+            hardTimeout:
+              type: string
+          required:
+            - region
+            - inactivityTimeout
+        status:
+          type: object
+          properties:
+            state:
+              $ref: '#/components/schemas/MacOSInstanceState'
+            snapshot:
+              $ref: '#/components/schemas/MacOSSnapshotStatus'
+            apiUrl:
+              type: string
+            endpointWebSocketUrl:
+              type: string
+            token:
+              type: string
+            streamToken:
+              type: string
+            errorMessage:
+              type: string
+            terminationReason:
+              $ref: '#/components/schemas/TerminationReason'
+          required:
+            - state
+      required:
+        - metadata
+        - spec
+        - status
+    MacOSInstanceCreate:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            displayName:
+              type: string
+            name:
+              type: string
+              maxLength: 256
+              pattern: '^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$'
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+        spec:
+          type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/InstanceRole'
+            clues:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - ClientIP
+                      - ClientLocation
+                  clientIp:
+                    type: string
+                  clientLocation:
+                    $ref: '#/components/schemas/ClientLocation'
+                required:
+                  - kind
+            region:
+              type: string
+              deprecated: true
+            jurisdiction:
+              $ref: '#/components/schemas/Jurisdiction'
+            inactivityTimeout:
+              type: string
+            hardTimeout:
+              type: string
+    MacOSSnapshotStatus:
+      type: object
+      properties:
+        save:
+          type: object
+          properties:
+            phase:
+              type: string
+              enum:
+                - requested
+                - archiving
+                - uploading
+                - published
+                - skipped
+                - failed
+                - timed_out
+            reason:
+              type: string
+            message:
+              type: string
+          required:
+            - phase
+    MacOSInstanceState:
+      type: string
+      enum:
+        - unknown
+        - creating
+        - assigned
+        - ready
+        - terminating
+        - terminated
     GradleBuildLog:
       type: object
       properties:
@@ -2289,15 +2574,42 @@ components:
           type: string
         signedIconUrl:
           type: string
+        metadata:
+          $ref: '#/components/schemas/AssetSnapshotMetadata'
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        publishedAt:
+          type: string
+          format: date-time
       required:
         - id
         - name
         - kind
+    AssetSnapshotMetadata:
+      type: object
+      properties:
+        compatKey:
+          type: string
+        format:
+          type: string
+        uncompressedSizeBytes:
+          type: integer
+          format: int64
+        sourceInstanceId:
+          type: string
+      required:
+        - compatKey
+        - format
+        - uncompressedSizeBytes
     AssetKind:
       type: string
       enum:
         - App
         - Keychain
+        - MacOSSnapshot
       default: App
     AssetPut:
       type: object

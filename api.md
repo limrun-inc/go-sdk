@@ -16,6 +16,7 @@ Create a client with `limrun.NewClient()`. It reads `LIM_API_KEY` and
 | `IosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListSessionArtifacts` |
 | `XcodeInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials`, `ListBuildLogs`, `ListBazelBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
 | `GradleInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `ListBuildLogs`, `GetSnapshot`, `BindSnapshotKey`, `FollowSnapshot` |
+| `MacosInstances` | `New`, `Get`, `List`, `ListAutoPaging`, `Update`, `Delete`, `CreateClient`, `CreateClientWithCredentials` |
 | `Assets` | `List`, `Get`, `GetOrNew`, `GetOrUpload`, `Update`, `CreateUploadURL`, `Delete` |
 | `AccessTokens` | `New`, `Revoke` |
 | `XcodeSnapshots`, `IosSnapshots`, `GradleSnapshots` | `List`, `Get`, `Delete`, scoped by organization |
@@ -35,17 +36,30 @@ Gradle instances take `Spec.Snapshot` at creation, with a key and restore keys
 like Xcode's. `FollowSnapshot` and the standalone `FollowGradleSnapshot` follow
 the restore after creation or the save at deletion the same way.
 
+A macOS disk snapshot keeps the files the guest changed between instances and
+restores only onto the macOS build that saved it. It is an asset of kind
+`MacOSSnapshot`: list snapshots with `Assets.List` and
+`AssetListParamsKindFilterMacOSSnapshot`, and read the build from
+`Metadata.CompatKey`. The instance's role grants snapshots like any asset: read
+on the names it restores from, wildcarded for prefixes such as
+`asset:name/my-mac*:read`, and create, upload and update on the name it saves
+under. Once the instance is ready, the guest client's `RestoreSnapshot` restores
+the first match of its restore keys, streams progress to `OnProgress`, and sets
+the key the instance saves under when it terminates. The instance reports that
+save in `Status.Snapshot.Save`.
+
 ## Instance clients
 
 Pass a ready instance to its service's `CreateClient` method. For an API URL and
 token, construct a client directly with `ios.NewClient`, `android.NewClient`,
-`build.NewXcodeClient`, or `build.NewGradleClient`.
+`build.NewXcodeClient`, `build.NewGradleClient`, or `macos.NewClient`.
 
 | Package | Operations |
 | --- | --- |
 | `websocket/ios` | Screenshots, accessibility actions and batches, keyboard and touch input, Duo displays and folding, app installation and launch, `WatchApp`, persistent `MonitorApp`, crash and hang callbacks, app logs and syslog, simctl processes, files and keychain, camera and microphone input, recordings, StoreKit, session captures, tunnels, xcrun shim, and Maestro preparation |
 | `websocket/android` | Screenshots, UIAutomator selectors and actions, app installation and launch, `WatchApp`, crash and ANR callbacks, ADB shell and tunnels, logcat, files, app sync, camera and microphone input, Wi-Fi bandwidth, recordings, session captures, and destination tunnels |
 | `build` | Xcode and Gradle execution, shell commands, process output and cancellation, resumable build logs, XCTest and store-upload events, file sync and download, simulator attachment, Xcode selection, and Bazel remote execution |
+| `macos` | Shell commands as the guest user (`Run`), SSH access (`EnableSSH`), TCP port forwarding into the guest (`StartPortForward`), disk snapshot restores (`RestoreSnapshot`), screenshots, and mouse and keyboard input (`Tap`, `TypeText`, `PressKey`, `Scroll`, `Drag`) |
 
 Close iOS and Android clients with `Close`. Control connections reconnect with
 bounded backoff. Requests in flight fail when their connection drops; callers
@@ -83,6 +97,7 @@ go doc github.com/limrun-inc/go-sdk/websocket/ios.Client
 go doc github.com/limrun-inc/go-sdk/websocket/android.Client
 go doc github.com/limrun-inc/go-sdk/build.XcodeClient
 go doc github.com/limrun-inc/go-sdk/build.GradleClient
+go doc github.com/limrun-inc/go-sdk/macos.Client
 go doc github.com/limrun-inc/go-sdk/tunnel
 ```
 

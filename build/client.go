@@ -59,6 +59,12 @@ func NewGradleClient(apiURL, token string, opts ...Option) *GradleClient {
 	return &GradleClient{newDaemon(apiURL, token, "gradle", opts)}
 }
 
+// NewDaemonClient connects to an instance daemon that runs shell commands
+// through the shared exec API, such as a macOS instance's guest.
+func NewDaemonClient(apiURL, token string, opts ...Option) *DaemonClient {
+	return newDaemon(apiURL, token, "", opts)
+}
+
 type SyncOptions struct {
 	Watch, Install  *bool
 	BasisCacheDir   string
