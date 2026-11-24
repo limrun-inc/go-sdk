@@ -67,6 +67,10 @@ func guest(t *testing.T) (*httptest.Server, func() []recorded) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte(`{"error":true,"reason":"no session"}`))
+		case r.URL.Path == "/type" && body.(map[string]any)["text"] == "busy":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"message":"the keyboard is busy","reason":"conflict"}`))
 		default:
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -216,6 +220,11 @@ func TestErrorsCarryTheServerReason(t *testing.T) {
 	}
 	if err.Error() != "POST /type failed: 400 no session" {
 		t.Errorf("err = %q", err.Error())
+	}
+	// A message, where a server sends one, is the more useful text.
+	err = macos.NewClient(srv.URL, "control").TypeText(context.Background(), "busy")
+	if err == nil || err.Error() != "POST /type failed: 409 the keyboard is busy" {
+		t.Errorf("err = %v", err)
 	}
 }
 

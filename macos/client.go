@@ -627,18 +627,23 @@ func (c *Client) request(ctx context.Context, method, path string, params, out a
 	return withReason(c.http.JSON(ctx, method, path, params, out))
 }
 
-// withReason replaces a JSON error body with the reason it carries, so the
-// error reads as the server's message rather than raw JSON.
+// withReason replaces a JSON error body with the message or reason it carries,
+// so the error reads as the server's text rather than raw JSON.
 func withReason(err error) error {
 	var he *direct.HTTPError
 	if !errors.As(err, &he) {
 		return err
 	}
 	var body struct {
-		Reason string `json:"reason"`
+		Message string `json:"message"`
+		Reason  string `json:"reason"`
 	}
-	if json.Unmarshal([]byte(he.Body), &body) == nil && body.Reason != "" {
-		he.Body = body.Reason
+	if json.Unmarshal([]byte(he.Body), &body) == nil {
+		if body.Message != "" {
+			he.Body = body.Message
+		} else if body.Reason != "" {
+			he.Body = body.Reason
+		}
 	}
 	return err
 }
