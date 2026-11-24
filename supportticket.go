@@ -57,5 +57,6 @@ func (r *SupportTicketService) SetCC(ctx context.Context, organizationID, ticket
 	if ccEmails == nil {
 		ccEmails = []string{}
 	}
-	return requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, map[string][]string{"ccEmails": ccEmails}, nil, slices.Concat(r.Options, opts)...)
+	options := slices.Concat(r.Options, []option.RequestOption{option.WithHeader("Accept", "*/*")}, opts)
+	return requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, map[string][]string{"ccEmails": ccEmails}, nil, options...)
 }

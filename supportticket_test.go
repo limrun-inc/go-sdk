@@ -42,6 +42,9 @@ func TestSupportTicketRetry(t *testing.T) {
 
 func TestSupportTicketSetCC(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Accept"); got != "*/*" {
+			t.Errorf("Accept = %q, want */*", got)
+		}
 		if r.Method != "PATCH" || r.URL.Path != "/v1/organizations/org_test/support_tickets/ticket_test" {
 			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
 		}
