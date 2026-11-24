@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/limrun-inc/go-sdk/internal/requestconfig"
@@ -38,8 +39,12 @@ func DefaultClientOptions() []option.RequestOption {
 	if o, ok := os.LookupEnv("LIMRUN_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
-	if o, ok := os.LookupEnv("LIM_API_KEY"); ok {
+	if o, ok := os.LookupEnv("LIM_API_KEY"); ok && o != "" {
 		defaults = append(defaults, option.WithAPIKey(o))
+	} else if binding := os.Getenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID"); binding != "" {
+		// The token wins over the file when both are set.
+		injected, _ := strconv.ParseBool(os.Getenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_INJECTED"))
+		defaults = append(defaults, option.WithWorkloadIdentity(option.WorkloadIdentityOptions{Token: os.Getenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN"), TokenFile: os.Getenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE"), TokenInjected: injected, BindingID: binding, STSBaseURL: os.Getenv("LIMRUN_STS_BASE_URL")}))
 	}
 	if o, ok := os.LookupEnv("LIMRUN_CUSTOM_HEADERS"); ok {
 		for _, line := range strings.Split(o, "\n") {
