@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -201,7 +202,7 @@ func TestWorkloadIdentitySourceErrors(t *testing.T) {
 		options WorkloadIdentityOptions
 		want    string
 	}{
-		{"no source", WorkloadIdentityOptions{}, "requires a token, token source, or token file"},
+		{"no source", WorkloadIdentityOptions{}, "requires a token, token source, token file, or injected token"},
 		{"source failure", WorkloadIdentityOptions{TokenSource: func(context.Context) (string, error) {
 			return "", io.ErrUnexpectedEOF
 		}}, "get workload identity token: unexpected EOF"},
@@ -217,5 +218,37 @@ func TestWorkloadIdentitySourceErrors(t *testing.T) {
 				t.Fatalf("got %v, want %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestInjectedWorkloadTokenSendsNoSubject(t *testing.T) {
+	var form url.Values
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "" || r.Header.Get("X-Limrun-Subject-Token") != "" {
+			t.Error("the client must not send an identity of its own")
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		form = r.PostForm
+		json.NewEncoder(w).Encode(map[string]any{"access_token": "limrun-session", "token_type": "Bearer", "expires_in": 900})
+	}))
+	defer server.Close()
+	c := &workloadCredentials{options: WorkloadIdentityOptions{TokenInjected: true, BindingID: "binding_customer", STSBaseURL: server.URL}, client: server.Client()}
+	if token, err := c.get(context.Background()); err != nil || token != "limrun-session" {
+		t.Fatalf("get: %q %v", token, err)
+	}
+	if form.Has("subject_token") || form.Get("audience") != "binding_customer" || form.Get("subject_token_type") != "urn:ietf:params:oauth:token-type:jwt" {
+		t.Fatalf("unexpected exchange form: %v", form)
+	}
+}
+
+func TestInjectedWorkloadTokenRefusesAnotherSource(t *testing.T) {
+	c := &workloadCredentials{options: WorkloadIdentityOptions{TokenInjected: true, Token: "jwt", BindingID: "binding_customer"}, client: &http.Client{Transport: exchangeTransport(func(*http.Request) (*http.Response, error) {
+		t.Error("exchange must not run")
+		return nil, io.EOF
+	})}}
+	if _, err := c.get(context.Background()); err == nil || !strings.Contains(err.Error(), "cannot be combined") {
+		t.Fatalf("got %v", err)
 	}
 }

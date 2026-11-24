@@ -62,9 +62,24 @@ client := limrun.NewClient(option.WithWorkloadIdentity(option.WorkloadIdentityOp
 ```
 
 When several sources are set, `TokenSource` wins over `Token`, and `Token` over `TokenFile`.
-Alternatively, set `LIMRUN_WORKLOAD_IDENTITY_BINDING_ID` and either
-`LIMRUN_WORKLOAD_IDENTITY_TOKEN` (the JWT) or `LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE`, and use
-the default client constructor. An API key takes precedence over workload identity when
+
+Some platforms never show the JWT to the workload. Their egress proxy adds it to outbound
+requests instead. Configure the proxy to send the JWT to `sts.limrun.com` in the
+`X-Limrun-Subject-Token` header, and set `TokenInjected` so the client sends none:
+
+```go
+client := limrun.NewClient(option.WithWorkloadIdentity(option.WorkloadIdentityOptions{
+    TokenInjected: true,
+    BindingID:     "binding_REPLACE_WITH_BINDING_ID",
+}))
+```
+
+`TokenInjected` cannot be combined with another source. If the proxy terminates TLS with its
+own certificate authority, add it to the system trust store.
+
+Alternatively, set `LIMRUN_WORKLOAD_IDENTITY_BINDING_ID` and one of
+`LIMRUN_WORKLOAD_IDENTITY_TOKEN` (the JWT), `LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE`, or
+`LIMRUN_WORKLOAD_IDENTITY_TOKEN_INJECTED=true`, and use the default client constructor. An API key takes precedence over workload identity when
 configured. The SDK caches a short-lived Limrun access token and reads the identity again on
 renewal. The access token never outlives the JWT it was exchanged for. `LIMRUN_STS_BASE_URL`
 overrides the default token service at `https://sts.limrun.com`.

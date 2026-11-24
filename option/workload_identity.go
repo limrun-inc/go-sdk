@@ -26,7 +26,11 @@ type WorkloadIdentityOptions struct {
 	Token string
 	// TokenFile is read again on renewal, so the identity provider can rotate it atomically.
 	TokenFile string
-	BindingID string
+	// TokenInjected sends the exchange without a JWT, for platforms whose egress proxy adds it to
+	// requests for the token service in the X-Limrun-Subject-Token header, so the workload never
+	// handles it. It cannot be combined with another identity source.
+	TokenInjected bool
+	BindingID     string
 	// STSBaseURL defaults to https://sts.limrun.com. Use only a trusted token service.
 	STSBaseURL string
 }
@@ -130,7 +134,7 @@ func (c *workloadCredentials) identity(ctx context.Context) (string, error) {
 		}
 		raw = string(data)
 	default:
-		return "", errors.New("workload identity requires a token, token source, or token file")
+		return "", errors.New("workload identity requires a token, token source, token file, or injected token")
 	}
 	jwt := strings.TrimSpace(raw)
 	if jwt == "" || len(raw) > 32768 {
@@ -143,15 +147,23 @@ func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, 
 	if c.options.BindingID == "" {
 		return "", time.Time{}, errors.New("workload identity requires a federation binding ID")
 	}
-	jwt, err := c.identity(ctx)
-	if err != nil {
-		return "", time.Time{}, err
+	form := url.Values{"grant_type": {"urn:ietf:params:oauth:grant-type:token-exchange"}, "subject_token_type": {"urn:ietf:params:oauth:token-type:jwt"}, "audience": {c.options.BindingID}}
+	if c.options.TokenInjected {
+		// The proxy decides which JWT the exchange carries, so a second source would be ignored.
+		if c.options.TokenSource != nil || c.options.Token != "" || c.options.TokenFile != "" {
+			return "", time.Time{}, errors.New("an injected workload token cannot be combined with a token, token source, or token file")
+		}
+	} else {
+		jwt, err := c.identity(ctx)
+		if err != nil {
+			return "", time.Time{}, err
+		}
+		form.Set("subject_token", jwt)
 	}
 	endpoint := c.options.STSBaseURL
 	if endpoint == "" {
 		endpoint = "https://sts.limrun.com"
 	}
-	form := url.Values{"grant_type": {"urn:ietf:params:oauth:grant-type:token-exchange"}, "subject_token_type": {"urn:ietf:params:oauth:token-type:jwt"}, "subject_token": {jwt}, "audience": {c.options.BindingID}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(endpoint, "/")+"/v1/access_tokens", strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", time.Time{}, errors.New("invalid token service URL")
