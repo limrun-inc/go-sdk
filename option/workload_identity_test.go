@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -122,4 +123,99 @@ func TestWorkloadIdentitySharesFailedRefresh(t *testing.T) {
 			t.Fatalf("later request did not recover: %q, %v", token, err)
 		}
 	})
+}
+
+// subjectServer records each exchanged subject token and answers with a short session.
+func subjectServer(t *testing.T, subjects *[]string) *httptest.Server {
+	t.Helper()
+	var mu sync.Mutex
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		mu.Lock()
+		*subjects = append(*subjects, r.Form.Get("subject_token"))
+		mu.Unlock()
+		json.NewEncoder(w).Encode(map[string]any{"access_token": "limrun-session", "token_type": "Bearer", "expires_in": 900})
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func TestWorkloadIdentitySources(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "identity")
+	if err := os.WriteFile(path, []byte("from-file\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	source := func(context.Context) (string, error) { return " from-source ", nil }
+	for _, tc := range []struct {
+		name    string
+		options WorkloadIdentityOptions
+		want    string
+	}{
+		{"token", WorkloadIdentityOptions{Token: "from-token"}, "from-token"},
+		{"token source", WorkloadIdentityOptions{TokenSource: source}, "from-source"},
+		{"token beats file", WorkloadIdentityOptions{Token: "from-token", TokenFile: path}, "from-token"},
+		{"token source beats token", WorkloadIdentityOptions{TokenSource: source, Token: "from-token"}, "from-source"},
+		{"file", WorkloadIdentityOptions{TokenFile: path}, "from-file"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var subjects []string
+			server := subjectServer(t, &subjects)
+			tc.options.BindingID, tc.options.STSBaseURL = "binding_customer", server.URL
+			c := &workloadCredentials{options: tc.options, client: server.Client()}
+			if _, err := c.get(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			if len(subjects) != 1 || subjects[0] != tc.want {
+				t.Fatalf("exchanged %q, want %q", subjects, tc.want)
+			}
+		})
+	}
+}
+
+func TestWorkloadTokenSourceRunsForEveryExchange(t *testing.T) {
+	var subjects []string
+	server := subjectServer(t, &subjects)
+	issued := 0
+	c := &workloadCredentials{options: WorkloadIdentityOptions{
+		TokenSource: func(context.Context) (string, error) { issued++; return "jwt-" + strconv.Itoa(issued), nil },
+		BindingID:   "binding_customer", STSBaseURL: server.URL,
+	}, client: server.Client()}
+	for range 2 {
+		if _, err := c.get(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		c.mu.Lock()
+		c.refreshAt = time.Time{}
+		c.mu.Unlock()
+	}
+	if len(subjects) != 2 || subjects[0] != "jwt-1" || subjects[1] != "jwt-2" {
+		t.Fatalf("exchanged %q, want a fresh JWT each time", subjects)
+	}
+}
+
+func TestWorkloadIdentitySourceErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		options WorkloadIdentityOptions
+		want    string
+	}{
+		{"no source", WorkloadIdentityOptions{}, "requires a token, token source, or token file"},
+		{"source failure", WorkloadIdentityOptions{TokenSource: func(context.Context) (string, error) {
+			return "", io.ErrUnexpectedEOF
+		}}, "get workload identity token: unexpected EOF"},
+		{"blank token", WorkloadIdentityOptions{TokenSource: func(context.Context) (string, error) { return "  ", nil }}, "must be a JWT"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.options.BindingID = "binding_customer"
+			c := &workloadCredentials{options: tc.options, client: &http.Client{Transport: exchangeTransport(func(*http.Request) (*http.Response, error) {
+				t.Error("exchange must not run")
+				return nil, io.EOF
+			})}}
+			if _, err := c.get(context.Background()); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("got %v, want %q", err, tc.want)
+			}
+		})
+	}
 }

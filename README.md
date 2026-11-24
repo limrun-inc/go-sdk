@@ -39,22 +39,35 @@ go get -u 'github.com/limrun-inc/go-sdk@v0.13.0'
 
 ## Workload identity federation
 
-Authenticate with a JWT file from your identity provider after an organization admin
+Authenticate with a JWT from your identity provider after an organization admin
 creates a [federation binding](https://docs.limrun.com/docs/platform/workload-identity-federation).
+Point the client at a file your runtime keeps current, such as a Kubernetes projected token:
 
 ```go
-client := limrun.NewClient(option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{
-    TokenFile:           "/var/run/identity/token",
+client := limrun.NewClient(option.WithWorkloadIdentity(option.WorkloadIdentityOptions{
+    TokenFile: "/var/run/identity/token",
     BindingID: "binding_REPLACE_WITH_BINDING_ID",
 }))
 ```
 
-Alternatively, set `LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE` and
-`LIMRUN_WORKLOAD_IDENTITY_BINDING_ID` and use the default client constructor.
-An API key takes precedence when configured. The SDK caches a short-lived Limrun
-access token and re-reads the identity file on renewal. Your runtime must rotate
-the external JWT. `LIMRUN_STS_BASE_URL` overrides the default token service at
-`https://sts.limrun.com`.
+Or pass the JWT itself in `Token`. A token is exchanged as is on every renewal, so it stops
+working once that JWT expires. Set `TokenSource` instead when the client outlives the JWT;
+the SDK calls it for every exchange:
+
+```go
+client := limrun.NewClient(option.WithWorkloadIdentity(option.WorkloadIdentityOptions{
+    TokenSource: func(ctx context.Context) (string, error) { return getIDTokenFromYourProvider(ctx) },
+    BindingID:   "binding_REPLACE_WITH_BINDING_ID",
+}))
+```
+
+When several sources are set, `TokenSource` wins over `Token`, and `Token` over `TokenFile`.
+Alternatively, set `LIMRUN_WORKLOAD_IDENTITY_BINDING_ID` and either
+`LIMRUN_WORKLOAD_IDENTITY_TOKEN` (the JWT) or `LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE`, and use
+the default client constructor. An API key takes precedence over workload identity when
+configured. The SDK caches a short-lived Limrun access token and reads the identity again on
+renewal. The access token never outlives the JWT it was exchanged for. `LIMRUN_STS_BASE_URL`
+overrides the default token service at `https://sts.limrun.com`.
 
 The instance's `status.token` grants `control` on that instance. It permits runtime
 operations and reading the instance record, but cannot create, update, or delete

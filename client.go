@@ -41,7 +41,8 @@ func DefaultClientOptions() []option.RequestOption {
 	if o, ok := os.LookupEnv("LIM_API_KEY"); ok && o != "" {
 		defaults = append(defaults, option.WithAPIKey(o))
 	} else if binding := os.Getenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID"); binding != "" {
-		defaults = append(defaults, option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{TokenFile: os.Getenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE"), BindingID: binding, STSBaseURL: os.Getenv("LIMRUN_STS_BASE_URL")}))
+		// The token wins over the file when both are set.
+		defaults = append(defaults, option.WithWorkloadIdentity(option.WorkloadIdentityOptions{Token: os.Getenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN"), TokenFile: os.Getenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE"), BindingID: binding, STSBaseURL: os.Getenv("LIMRUN_STS_BASE_URL")}))
 	}
 	if o, ok := os.LookupEnv("LIMRUN_CUSTOM_HEADERS"); ok {
 		for _, line := range strings.Split(o, "\n") {

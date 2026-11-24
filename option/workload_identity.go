@@ -17,16 +17,22 @@ import (
 )
 
 // WorkloadIdentityOptions exchanges a customer-issued JWT for a short-lived Limrun token.
-// TokenFile is read again on renewal, so the identity provider can rotate it atomically.
+// Set one identity source. When several are set, TokenSource wins over Token, and Token over TokenFile.
 type WorkloadIdentityOptions struct {
+	// TokenSource returns the current JWT and runs for every exchange, so a client that outlives one
+	// JWT renews with a fresh one.
+	TokenSource func(context.Context) (string, error)
+	// Token is the JWT itself. It is exchanged as is on every renewal, so it stops working once it expires.
+	Token string
+	// TokenFile is read again on renewal, so the identity provider can rotate it atomically.
 	TokenFile string
 	BindingID string
 	// STSBaseURL defaults to https://sts.limrun.com. Use only a trusted token service.
 	STSBaseURL string
 }
 
-// WithWorkloadIdentityFile authenticates requests without storing a Limrun API key.
-func WithWorkloadIdentityFile(options WorkloadIdentityOptions) RequestOption {
+// WithWorkloadIdentity authenticates requests without storing a Limrun API key.
+func WithWorkloadIdentity(options WorkloadIdentityOptions) RequestOption {
 	credentials := &workloadCredentials{options: options, client: &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
 		return errors.New("workload token exchange must not redirect")
 	}}}
@@ -99,22 +105,47 @@ func (c *workloadCredentials) get(ctx context.Context) (string, error) {
 	c.mu.Unlock()
 	return token, err
 }
-func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, error) {
-	if c.options.TokenFile == "" || c.options.BindingID == "" {
-		return "", time.Time{}, errors.New("workload identity requires a token file and federation binding ID")
+
+// identity returns the JWT to exchange from the configured source.
+func (c *workloadCredentials) identity(ctx context.Context) (string, error) {
+	var raw string
+	switch {
+	case c.options.TokenSource != nil:
+		token, err := c.options.TokenSource(ctx)
+		if err != nil {
+			return "", fmt.Errorf("get workload identity token: %w", err)
+		}
+		raw = token
+	case c.options.Token != "":
+		raw = c.options.Token
+	case c.options.TokenFile != "":
+		file, err := os.Open(c.options.TokenFile)
+		if err != nil {
+			return "", fmt.Errorf("read workload identity file: %w", err)
+		}
+		defer file.Close()
+		data, err := io.ReadAll(io.LimitReader(file, 32769))
+		if err != nil {
+			return "", errors.New("could not read workload identity file")
+		}
+		raw = string(data)
+	default:
+		return "", errors.New("workload identity requires a token, token source, or token file")
 	}
-	file, err := os.Open(c.options.TokenFile)
-	if err != nil {
-		return "", time.Time{}, fmt.Errorf("read workload identity file: %w", err)
-	}
-	defer file.Close()
-	raw, err := io.ReadAll(io.LimitReader(file, 32769))
-	if err != nil {
-		return "", time.Time{}, errors.New("could not read workload identity file")
-	}
-	jwt := strings.TrimSpace(string(raw))
+	jwt := strings.TrimSpace(raw)
 	if jwt == "" || len(raw) > 32768 {
-		return "", time.Time{}, errors.New("workload identity file must contain a JWT of at most 32768 bytes")
+		return "", errors.New("workload identity token must be a JWT of at most 32768 bytes")
+	}
+	return jwt, nil
+}
+
+func (c *workloadCredentials) exchange(ctx context.Context) (string, time.Time, error) {
+	if c.options.BindingID == "" {
+		return "", time.Time{}, errors.New("workload identity requires a federation binding ID")
+	}
+	jwt, err := c.identity(ctx)
+	if err != nil {
+		return "", time.Time{}, err
 	}
 	endpoint := c.options.STSBaseURL
 	if endpoint == "" {

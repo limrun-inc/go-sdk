@@ -41,7 +41,7 @@ func TestFederatedClient(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 	}))
 	defer server.Close()
-	client := limrun.NewClient(option.WithBaseURL(server.URL), option.WithWorkloadIdentityFile(option.WorkloadIdentityOptions{TokenFile: file, BindingID: "binding", STSBaseURL: server.URL}))
+	client := limrun.NewClient(option.WithBaseURL(server.URL), option.WithWorkloadIdentity(option.WorkloadIdentityOptions{TokenFile: file, BindingID: "binding", STSBaseURL: server.URL}))
 	if _, err := client.IosInstances.List(context.Background(), limrun.IosInstanceListParams{}); err != nil {
 		t.Fatal(err)
 	}
@@ -65,5 +65,37 @@ func TestExplicitKeyOverridesFederationDiscovery(t *testing.T) {
 	client := limrun.NewClient(option.WithAPIKey("explicit-key"), option.WithBaseURL(server.URL))
 	if _, err := client.AndroidInstances.List(context.Background(), limrun.AndroidInstanceListParams{}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFederatedClientFromTokenEnvironment(t *testing.T) {
+	t.Setenv("LIM_API_KEY", "")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN", "env-jwt")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_TOKEN_FILE", "/does/not/exist")
+	t.Setenv("LIMRUN_WORKLOAD_IDENTITY_BINDING_ID", "binding_env")
+	var subject string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/v1/access_tokens" {
+			if err := r.ParseForm(); err != nil {
+				t.Error(err)
+			}
+			subject = r.Form.Get("subject_token")
+			json.NewEncoder(w).Encode(map[string]any{"access_token": "session", "token_type": "Bearer", "expires_in": 900})
+			return
+		}
+		if r.Header.Get("Authorization") != "Bearer session" {
+			t.Errorf("incorrect API credential")
+		}
+		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+	}))
+	defer server.Close()
+	t.Setenv("LIMRUN_STS_BASE_URL", server.URL)
+	client := limrun.NewClient(option.WithBaseURL(server.URL))
+	if _, err := client.IosInstances.List(context.Background(), limrun.IosInstanceListParams{}); err != nil {
+		t.Fatal(err)
+	}
+	if subject != "env-jwt" {
+		t.Fatalf("exchanged %q, want the token variable over the file", subject)
 	}
 }
