@@ -473,7 +473,67 @@ func validateRecordingID(id string) error {
 
 var recordingIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
 
-// AppLogTail returns the last lines an app logged to the unified log in the past hour.
+// LaunchMode says what LaunchApp does with an app that already runs.
+type LaunchMode string
+
+const (
+	// ForegroundIfRunning brings a running app to the front. It is the default.
+	ForegroundIfRunning LaunchMode = "ForegroundIfRunning"
+	// RelaunchIfRunning stops a running app and starts it anew.
+	RelaunchIfRunning LaunchMode = "RelaunchIfRunning"
+)
+
+// LaunchAppOptions configures LaunchApp.
+type LaunchAppOptions struct {
+	Mode LaunchMode
+	// Arguments are the app's command-line arguments.
+	Arguments []string
+	// Env holds environment variables for the app.
+	Env map[string]string
+}
+
+// LaunchAppResult is the app LaunchApp launched or brought to the front.
+type LaunchAppResult struct {
+	BundleID string `json:"bundleId"`
+	PID      int    `json:"pid"`
+	// Launched is false when the app already ran and was brought to the front.
+	Launched bool `json:"launched"`
+}
+
+// LaunchApp launches an app by bundle ID (com.example.app), name (TextEdit)
+// or path (/Applications/Safari.app) and brings it to the front. An app
+// launched this way has its stdout and stderr in its app log; one started any
+// other way writes them nowhere. Arguments and Env apply only when the app
+// starts, not when it already runs.
+func (c *Client) LaunchApp(ctx context.Context, app string, opts *LaunchAppOptions) (*LaunchAppResult, error) {
+	body := map[string]any{"app": app}
+	if opts != nil {
+		if opts.Mode != "" {
+			body["mode"] = opts.Mode
+		}
+		if opts.Arguments != nil {
+			body["arguments"] = opts.Arguments
+		}
+		if opts.Env != nil {
+			body["env"] = opts.Env
+		}
+	}
+	var out LaunchAppResult
+	if err := c.request(ctx, http.MethodPost, "apps/launch", body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// TerminateApp stops every process of an app. It succeeds when the app is not running.
+func (c *Client) TerminateApp(ctx context.Context, bundleID string) error {
+	return c.request(ctx, http.MethodPost, "apps/terminate", map[string]string{"bundleId": bundleID}, nil)
+}
+
+// AppLogTail returns the last lines of an app's log: its stdout and stderr
+// when LaunchApp started it, and what it wrote to the unified log in the past
+// hour, in time order. For an app that is not Apple's, Apple's frameworks'
+// messages are left out.
 func (c *Client) AppLogTail(ctx context.Context, bundleID string, lines int) (string, error) {
 	var out struct {
 		Logs string `json:"logs"`
@@ -485,7 +545,7 @@ func (c *Client) AppLogTail(ctx context.Context, bundleID string, lines int) (st
 	return out.Logs, nil
 }
 
-// StreamAppLog follows an app's unified log as it is written, one message per entry.
+// StreamAppLog follows an app's log, as AppLogTail reads it, one line per entry.
 func (c *Client) StreamAppLog(ctx context.Context, bundleID string) *session.Stream[string] {
 	return session.StartTextStream(ctx, c.http.HTTPClient,
 		c.http.URL+"/app-logs/stream?"+url.Values{"bundleId": {bundleID}}.Encode(), c.http.Token)

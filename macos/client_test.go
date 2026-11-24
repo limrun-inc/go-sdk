@@ -353,6 +353,8 @@ func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
 			_, _ = w.Write([]byte("mp4"))
 		case "/app-logs":
 			_, _ = w.Write([]byte(`{"bundleId":"com.apple.TextEdit","logs":"one\ntwo"}`))
+		case "/apps/launch":
+			_, _ = w.Write([]byte(`{"bundleId":"com.example.app","pid":42,"launched":true}`))
 		case "/trusted-cas":
 			_, _ = w.Write([]byte(`{"sha256":"abc"}`))
 		default:
@@ -378,6 +380,15 @@ func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
 	}
 	if _, err := mac.StopRecording(ctx, "Not Valid", nil); err == nil {
 		t.Error("an invalid recording ID was sent")
+	}
+	launched, err := mac.LaunchApp(ctx, "Example", &macos.LaunchAppOptions{
+		Mode: macos.RelaunchIfRunning, Arguments: []string{"-v"}, Env: map[string]string{"A": "b"},
+	})
+	if err != nil || *launched != (macos.LaunchAppResult{BundleID: "com.example.app", PID: 42, Launched: true}) {
+		t.Fatalf("LaunchApp = %+v, %v", launched, err)
+	}
+	if err := mac.TerminateApp(ctx, "com.example.app"); err != nil {
+		t.Fatal(err)
 	}
 	logs, err := mac.AppLogTail(ctx, "com.apple.TextEdit", 50)
 	if err != nil || logs != "one\ntwo" {
@@ -405,6 +416,8 @@ func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
 		`POST /recordings/stop {}`,
 		`GET /files?name=recording_rec-1.mp4`,
 		`POST /recordings/rec-1/stop {}`,
+		`POST /apps/launch {"app":"Example","arguments":["-v"],"env":{"A":"b"},"mode":"RelaunchIfRunning"}`,
+		`POST /apps/terminate {"bundleId":"com.example.app"}`,
 		`GET /app-logs?bundleId=com.apple.TextEdit&lines=50`,
 		`POST /session/applogs/start {"bundleId":"com.apple.TextEdit","persist":true}`,
 		`POST /session/applogs/stop {}`,
