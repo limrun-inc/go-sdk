@@ -320,50 +320,57 @@ type recordingUpload struct {
 
 // request is an internal type for WebSocket requests.
 type request struct {
-	Extra        map[string]any         `json:"-"`
-	Timeout      time.Duration          `json:"-"`
-	Type         string                 `json:"type"`
-	ID           string                 `json:"id"`
-	X            float64                `json:"x,omitempty"`
-	Y            float64                `json:"y,omitempty"`
-	ScreenWidth  float64                `json:"screenWidth,omitempty"`
-	ScreenHeight float64                `json:"screenHeight,omitempty"`
-	Point        *AccessibilityPoint    `json:"point,omitempty"`
-	VisibleOnly  bool                   `json:"visibleOnly,omitempty"`
-	Selector     *AccessibilitySelector `json:"selector,omitempty"`
-	Text         string                 `json:"text,omitempty"`
-	PressEnter   bool                   `json:"pressEnter,omitempty"`
-	Key          string                 `json:"key,omitempty"`
-	Modifiers    []string               `json:"modifiers,omitempty"`
-	BundleID     string                 `json:"bundleId,omitempty"`
-	URL          string                 `json:"url,omitempty"`
-	AssetName    string                 `json:"assetName,omitempty"`
-	Kind         string                 `json:"kind,omitempty"`
-	Args         []string               `json:"args,omitempty"`
-	MD5          string                 `json:"md5,omitempty"`
-	LaunchMode   LaunchMode             `json:"launchMode,omitempty"`
-	Mode         LaunchMode             `json:"mode,omitempty"`
-	Runtime      *LaunchAppRuntime      `json:"runtime,omitempty"`
-	Orientation  Orientation            `json:"orientation,omitempty"`
-	Lines        int                    `json:"lines,omitempty"`
-	Direction    ScrollDirection        `json:"direction,omitempty"`
-	Pixels       float64                `json:"pixels,omitempty"`
-	Coordinate   []float64              `json:"coordinate,omitempty"`
-	Momentum     float64                `json:"momentum,omitempty"`
-	Actions      []PerformAction        `json:"actions,omitempty"`
-	Quality      int                    `json:"quality,omitempty"`
-	Upload       *recordingUpload       `json:"upload,omitempty"`
+	Extra        map[string]any      `json:"-"`
+	Timeout      time.Duration       `json:"-"`
+	Type         string              `json:"type"`
+	ID           string              `json:"id"`
+	X            float64             `json:"x,omitempty"`
+	Y            float64             `json:"y,omitempty"`
+	ScreenWidth  float64             `json:"screenWidth,omitempty"`
+	ScreenHeight float64             `json:"screenHeight,omitempty"`
+	Point        *AccessibilityPoint `json:"point,omitempty"`
+	VisibleOnly  bool                `json:"visibleOnly,omitempty"`
+	Source       ElementTreeSource   `json:"source,omitempty"`
+	// WaitForIdleTimeoutMs is the idle wait elementTree asks the server for.
+	WaitForIdleTimeoutMs int64                  `json:"waitForIdleTimeoutMs,omitempty"`
+	Selector             *AccessibilitySelector `json:"selector,omitempty"`
+	Text                 string                 `json:"text,omitempty"`
+	PressEnter           bool                   `json:"pressEnter,omitempty"`
+	Key                  string                 `json:"key,omitempty"`
+	Modifiers            []string               `json:"modifiers,omitempty"`
+	BundleID             string                 `json:"bundleId,omitempty"`
+	URL                  string                 `json:"url,omitempty"`
+	AssetName            string                 `json:"assetName,omitempty"`
+	Kind                 string                 `json:"kind,omitempty"`
+	Args                 []string               `json:"args,omitempty"`
+	MD5                  string                 `json:"md5,omitempty"`
+	LaunchMode           LaunchMode             `json:"launchMode,omitempty"`
+	Mode                 LaunchMode             `json:"mode,omitempty"`
+	Runtime              *LaunchAppRuntime      `json:"runtime,omitempty"`
+	Orientation          Orientation            `json:"orientation,omitempty"`
+	Lines                int                    `json:"lines,omitempty"`
+	Direction            ScrollDirection        `json:"direction,omitempty"`
+	Pixels               float64                `json:"pixels,omitempty"`
+	Coordinate           []float64              `json:"coordinate,omitempty"`
+	Momentum             float64                `json:"momentum,omitempty"`
+	Actions              []PerformAction        `json:"actions,omitempty"`
+	Quality              int                    `json:"quality,omitempty"`
+	Upload               *recordingUpload       `json:"upload,omitempty"`
 }
 
 // response is an internal type for handling WebSocket responses.
 type response struct {
-	Type         string                `json:"type"`
-	ID           string                `json:"id"`
-	Error        string                `json:"error,omitempty"`
-	Base64       string                `json:"base64,omitempty"`
-	Width        float64               `json:"width,omitempty"`
-	Height       float64               `json:"height,omitempty"`
-	JSON         string                `json:"json,omitempty"`
+	Type   string  `json:"type"`
+	ID     string  `json:"id"`
+	Error  string  `json:"error,omitempty"`
+	Base64 string  `json:"base64,omitempty"`
+	Width  float64 `json:"width,omitempty"`
+	Height float64 `json:"height,omitempty"`
+	JSON   string  `json:"json,omitempty"`
+	// Keyboard and Modal stay raw so an explicit null ("none") is told from absence ("not reported").
+	Keyboard     json.RawMessage       `json:"keyboard,omitempty"`
+	Modal        json.RawMessage       `json:"modal,omitempty"`
+	Idle         *bool                 `json:"idle,omitempty"`
 	ElementLabel string                `json:"elementLabel,omitempty"`
 	ElementType  string                `json:"elementType,omitempty"`
 	Apps         string                `json:"apps,omitempty"`
@@ -505,6 +512,10 @@ func (c *Client) call(ctx context.Context, kind string, params any, out any, tim
 	}
 	data, err := c.transport.Call(ctx, kind, params, timeout)
 	if err != nil {
+		var rejected *control.CommandError
+		if errors.As(err, &rejected) {
+			return &CommandError{Message: rejected.Message, Code: rejected.Code, Written: rejected.Written}
+		}
 		return err
 	}
 	if out != nil {
@@ -544,25 +555,165 @@ func (c *Client) Screenshot(ctx context.Context, opts ...ScreenshotOptions) (*Sc
 	}, nil
 }
 
-// ElementTreeOptions configures ElementTree and ElementTreeNodes.
+// CommandError is a command the instance rejected. Message is the server's error text; servers
+// that predate error codes leave Code and Written empty. Match it with errors.As.
+type CommandError struct {
+	Message string
+	// Code is the reason, stable to branch on: no_focused_element, covered_by_keyboard,
+	// element_not_found, ambiguous_selector, ambiguous_focus, no_usable_frame, busy,
+	// invalid_request, unavailable, input_failed or internal. New codes may appear.
+	Code string
+	// Written is set by TypeText, SetElementValue and PressKey: WrittenNone when nothing reached
+	// the app, so a retry cannot double the text, and WrittenUnknown when input had started.
+	Written string
+}
+
+// Values of CommandError.Written.
+const (
+	WrittenNone    = "none"
+	WrittenUnknown = "unknown"
+)
+
+func (e *CommandError) Error() string { return e.Message }
+
+// ElementTreeSource picks which reader answers an element tree request.
+type ElementTreeSource string
+
+const (
+	// ElementTreeSourceAccessibility is the default: the tree assistive technologies see. It
+	// leaves out elements the software keyboard covers and has no container types for
+	// navigation bars or tab bars.
+	ElementTreeSourceAccessibility ElementTreeSource = "accessibility"
+	// ElementTreeSourceXCUITest is XCTest's own snapshot, the tree XCUITest queries. Navigation
+	// bars, tab bars, the keyboard and alerts arrive as typed containers with their children.
+	// Full-tree reads only: pass no point and no VisibleOnly. Takes about a second per read.
+	ElementTreeSourceXCUITest ElementTreeSource = "xcuitest"
+)
+
+// ElementTreeOptions configures ElementTree, ElementTreeNodes and ReadElementTree.
 type ElementTreeOptions struct {
 	// VisibleOnly skips branches whose nonempty frames fall outside the
 	// display. Full-tree reads only.
 	VisibleOnly bool
+	// Source picks the reader. Empty means ElementTreeSourceAccessibility.
+	Source ElementTreeSource
+	// WaitForIdleTimeout waits up to this long, at most 30 seconds, for the screen to settle
+	// before answering: until two reads in a row match and the screen stops animating. A
+	// blinking text caret does not count as activity. ElementTreeRead.Idle says whether it
+	// settled in time.
+	WaitForIdleTimeout time.Duration
+}
+
+// KeyboardState is the software keyboard on screen, in the element tree's coordinates.
+type KeyboardState struct {
+	Frame ElementTreeFrame `json:"frame"`
+}
+
+// ModalState is an alert covering the app. Kind is "system" for a system prompt, such as a
+// permission request, and "app" for the app's own alert or confirmation dialog. Sheets are not
+// reported.
+type ModalState struct {
+	Kind  string  `json:"kind"`
+	Label *string `json:"label"`
+}
+
+// ElementTreeRead is an element tree together with what the server reports about the screen.
+type ElementTreeRead struct {
+	Tree []ElementTreeNode
+	// Keyboard is the software keyboard, or nil when it is hidden. KeyboardReported is false on
+	// point reads and on xcuitest reads, whose tree has XCTest's own Keyboard element.
+	Keyboard         *KeyboardState
+	KeyboardReported bool
+	// Modal is the alert covering the app, or nil when there is none. ModalReported is true on
+	// xcuitest reads only.
+	Modal         *ModalState
+	ModalReported bool
+	// Idle says whether the screen settled in time; nil unless WaitForIdleTimeout was set.
+	Idle *bool
+}
+
+// FocusedElement is where typed text would go.
+type FocusedElement struct {
+	// Element is the element that reports focus, or nil when none does.
+	Element *ElementTreeNode
+	// Keyboard is the software keyboard, or nil when it is hidden. A keyboard with no element
+	// means the focused input is under the keyboard, which iOS leaves out of the tree: TypeText
+	// still reaches it, and SetElementValue fails with the covered_by_keyboard code.
+	Keyboard *KeyboardState
+}
+
+func elementTreeRequest(point *AccessibilityPoint, opts []ElementTreeOptions) *request {
+	req := &request{Type: "elementTree", Point: point}
+	if len(opts) > 0 {
+		req.VisibleOnly = opts[0].VisibleOnly
+		req.Source = opts[0].Source
+		req.WaitForIdleTimeoutMs = opts[0].WaitForIdleTimeout.Milliseconds()
+		// The idle wait runs on the server before it answers, so the request waits for it too.
+		req.Timeout = 30*time.Second + opts[0].WaitForIdleTimeout
+	}
+	return req
 }
 
 // ElementTree returns the raw accessibility hierarchy JSON of the current
 // screen. Pass a non-nil point to query the element at that specific location.
 func (c *Client) ElementTree(ctx context.Context, point *AccessibilityPoint, opts ...ElementTreeOptions) (string, error) {
-	req := &request{Type: "elementTree", Point: point}
-	if len(opts) > 0 {
-		req.VisibleOnly = opts[0].VisibleOnly
-	}
-	resp, err := c.sendRequest(ctx, req)
+	resp, err := c.sendRequest(ctx, elementTreeRequest(point, opts))
 	if err != nil {
 		return "", err
 	}
 	return resp.JSON, nil
+}
+
+// ReadElementTree returns the parsed element tree with the software keyboard, the alert
+// covering the app, and whether the screen settled.
+func (c *Client) ReadElementTree(ctx context.Context, point *AccessibilityPoint, opts ...ElementTreeOptions) (*ElementTreeRead, error) {
+	resp, err := c.sendRequest(ctx, elementTreeRequest(point, opts))
+	if err != nil {
+		return nil, err
+	}
+	read := &ElementTreeRead{Idle: resp.Idle}
+	if resp.JSON != "" {
+		if err := json.Unmarshal([]byte(resp.JSON), &read.Tree); err != nil {
+			return nil, fmt.Errorf("parse element tree: %w", err)
+		}
+	}
+	if read.KeyboardReported, err = decodeNullable(resp.Keyboard, &read.Keyboard); err != nil {
+		return nil, fmt.Errorf("parse keyboard: %w", err)
+	}
+	if read.ModalReported, err = decodeNullable(resp.Modal, &read.Modal); err != nil {
+		return nil, fmt.Errorf("parse modal: %w", err)
+	}
+	return read, nil
+}
+
+// FocusedElement returns the element typed text would go to, and the software keyboard.
+func (c *Client) FocusedElement(ctx context.Context) (*FocusedElement, error) {
+	var resp struct {
+		JSON     *string        `json:"json"`
+		Keyboard *KeyboardState `json:"keyboard"`
+	}
+	if err := c.call(ctx, "focusedElement", nil, &resp, 0); err != nil {
+		return nil, err
+	}
+	focus := &FocusedElement{Keyboard: resp.Keyboard}
+	if resp.JSON != nil {
+		if err := json.Unmarshal([]byte(*resp.JSON), &focus.Element); err != nil {
+			return nil, fmt.Errorf("parse focused element: %w", err)
+		}
+	}
+	return focus, nil
+}
+
+// decodeNullable decodes a field that is absent when not reported and null when reported empty.
+func decodeNullable[T any](raw json.RawMessage, out **T) (bool, error) {
+	if len(raw) == 0 {
+		return false, nil
+	}
+	if string(raw) == "null" {
+		return true, nil
+	}
+	*out = new(T)
+	return true, json.Unmarshal(raw, *out)
 }
 
 // ElementTreeNodes returns the parsed accessibility hierarchy of the current
