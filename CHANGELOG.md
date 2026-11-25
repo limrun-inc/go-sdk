@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.1](https://github.com/limrun-inc/go-sdk/compare/v0.13.0...v0.13.1) (2026-11-25)
+
+
+### Features
+
+* add support ticket creation ([#33](https://github.com/limrun-inc/go-sdk/issues/33)) ([718c6e1](https://github.com/limrun-inc/go-sdk/commit/718c6e17da8c58d28e51b9951b67599bad899223))
+* macOS instances ([#40](https://github.com/limrun-inc/go-sdk/issues/40)) ([d63ae7a](https://github.com/limrun-inc/go-sdk/commit/d63ae7a7c7a5e431290274481d810adc246a2516))
+
+
+### Chores
+
+* release 0.13.1 as a patch ([#45](https://github.com/limrun-inc/go-sdk/issues/45)) ([142f6ce](https://github.com/limrun-inc/go-sdk/commit/142f6ce40268c1f770156bb9551fab77f210533f))
+
 ## [0.13.0](https://github.com/limrun-inc/go-sdk/compare/v0.12.0...v0.13.0) (2026-11-23)
 
 
