@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/limrun-inc/go-sdk/compare/v0.13.1...v0.14.0) (2026-11-26)
+
+
+### Features
+
+* **ios:** element tree source, idle wait, focused element and command error codes ([#44](https://github.com/limrun-inc/go-sdk/issues/44)) ([0987e3f](https://github.com/limrun-inc/go-sdk/commit/0987e3f0128e913f3d6494e6de381592be2a130f))
+
 ## [0.13.1](https://github.com/limrun-inc/go-sdk/compare/v0.13.0...v0.13.1) (2026-11-25)
 
 
