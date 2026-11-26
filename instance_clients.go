@@ -71,7 +71,7 @@ func (r *MacosInstanceService) CreateClientWithCredentials(apiURL, token string,
 	if err := instanceCredentials(apiURL, token); err != nil {
 		return nil, err
 	}
-	return macos.NewClient(apiURL, token, opts...), nil
+	return macos.NewClient(apiURL, token, opts...)
 }
 
 type AttachedSimulator struct {

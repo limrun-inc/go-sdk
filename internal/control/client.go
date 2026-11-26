@@ -57,6 +57,9 @@ type Client struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	closed    bool
+	// instanceErr is what the instance said in an error frame before closing,
+	// such as a message above the token's grant.
+	instanceErr string
 }
 
 func ID() string {
@@ -183,11 +186,24 @@ func (c *Client) Send(v any) error {
 	return ws.WriteMessage(websocket.TextMessage, data)
 }
 func (c *Client) Call(ctx context.Context, kind string, params any, timeout time.Duration) (json.RawMessage, error) {
-	if timeout <= 0 {
+	return c.CallID(ctx, ID(), kind, params, timeout)
+}
+
+// NoTimeout makes CallID wait for the reply as long as ctx and the connection last.
+const NoTimeout time.Duration = -1
+
+// CallID is Call with a request ID the caller chose, so OnMessage can match
+// messages the instance sends before the reply, such as progress. A zero
+// timeout is 30 seconds; NoTimeout waits as long as ctx and the connection last.
+func (c *Client) CallID(ctx context.Context, id, kind string, params any, timeout time.Duration) (json.RawMessage, error) {
+	if timeout == 0 {
 		timeout = 30 * time.Second
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 	fields := map[string]any{}
 	if params != nil {
 		b, err := json.Marshal(params)
@@ -198,7 +214,6 @@ func (c *Client) Call(ctx context.Context, kind string, params any, timeout time
 			return nil, err
 		}
 	}
-	id := ID()
 	fields["id"] = id
 	fields["type"] = kind
 	ch := make(chan reply, 1)
@@ -272,7 +287,9 @@ func (c *Client) read(ws *websocket.Conn) error {
 			continue
 		}
 		var msg struct {
-			ID string `json:"id"`
+			ID      string `json:"id"`
+			Type    string `json:"type"`
+			Message string `json:"message"`
 		}
 		if json.Unmarshal(data, &msg) != nil {
 			continue
@@ -280,6 +297,9 @@ func (c *Client) read(ws *websocket.Conn) error {
 		c.mu.Lock()
 		ch := c.pending[msg.ID]
 		delete(c.pending, msg.ID)
+		if ch == nil && msg.Type == "error" && msg.Message != "" {
+			c.instanceErr = msg.Message
+		}
 		c.mu.Unlock()
 		if ch != nil {
 			ch <- reply{data: data}
@@ -295,6 +315,10 @@ func (c *Client) run(ws *websocket.Conn) {
 			c.ws = nil
 		}
 		closed := c.closed
+		if c.instanceErr != "" {
+			err = fmt.Errorf("connection closed: %s: %w", c.instanceErr, err)
+			c.instanceErr = ""
+		}
 		c.mu.Unlock()
 		if closed {
 			return
