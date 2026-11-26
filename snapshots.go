@@ -27,6 +27,7 @@ type SnapshotList[T any] struct {
 	NextOffset *int64 `json:"nextOffset,omitempty"`
 }
 type XcodeSnapshot struct {
+	ExpiresAt        string   `json:"expiresAt,omitempty"`
 	Key              string   `json:"key"`
 	DirectoryKey     string   `json:"directoryKey"`
 	RootName         string   `json:"rootName"`
@@ -41,7 +42,8 @@ type XcodeSnapshot struct {
 
 // GradleSnapshot is the snapshot currently published under one Gradle snapshot key.
 type GradleSnapshot struct {
-	Key string `json:"key"`
+	ExpiresAt string `json:"expiresAt,omitempty"`
+	Key       string `json:"key"`
 	// Toolchains label of the image that saved it. An instance whose image carries another label
 	// skips this key and tries its next restore key.
 	CompatKey             string `json:"compatKey"`
