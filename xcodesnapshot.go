@@ -15,7 +15,7 @@ import (
 )
 
 type XcodeSnapshotConfig struct {
-	// TTLSeconds limits the age of the published archive. Omit it to use bucket retention.
+	// TTLSeconds limits the age of the published archive. The default is 30 days.
 	TTLSeconds  param.Opt[int64]  `json:"ttlSeconds,omitzero"`
 	Key         param.Opt[string] `json:"key,omitzero"`
 	RestoreKeys []string          `json:"restoreKeys,omitzero"`
