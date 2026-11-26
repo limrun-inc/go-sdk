@@ -83,3 +83,28 @@ func StartTextStream(ctx context.Context, client *http.Client, url, token string
 	}()
 	return s
 }
+
+// StartFuncStream delivers what run emits until run returns, ctx ends or Stop
+// is called. An error run returns, other than the stream's own cancellation,
+// goes to Err.
+func StartFuncStream[T any](ctx context.Context, run func(ctx context.Context, emit func(T) error) error) *Stream[T] {
+	ctx, cancel := context.WithCancel(ctx)
+	s := &Stream[T]{make(chan T, 32), make(chan error, 1), cancel, make(chan struct{})}
+	go func() {
+		defer close(s.entries)
+		defer close(s.errors)
+		defer close(s.done)
+		err := run(ctx, func(value T) error {
+			select {
+			case s.entries <- value:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			s.errors <- err
+		}
+	}()
+	return s
+}

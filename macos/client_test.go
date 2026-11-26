@@ -3,8 +3,8 @@ package macos_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -27,20 +27,52 @@ type recorded struct {
 	Body               any
 }
 
-func guest(t *testing.T) (*httptest.Server, func() []recorded) {
+// guest stands in for limacvm: HTTP for the routes that stay HTTP, and the
+// signaling WebSocket for commands. signals returns each signaling request,
+// without its client-chosen id.
+func guest(t *testing.T) (srv *httptest.Server, requests func() []recorded, signals func() []string) {
 	t.Helper()
 	var mu sync.Mutex
-	var requests []recorded
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		raw, _ := io.ReadAll(r.Body)
-		var body any
-		if len(raw) > 0 {
-			if err := json.Unmarshal(raw, &body); err != nil {
-				t.Errorf("%s %s: invalid JSON body %q", r.Method, r.URL.Path, raw)
+	var reqs []recorded
+	var sigs []string
+	upgrader := websocket.Upgrader{}
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/signaling" {
+			if r.URL.Query().Get("token") != "control" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			ws, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				return
+			}
+			defer ws.Close()
+			for {
+				var msg map[string]any
+				if err := ws.ReadJSON(&msg); err != nil {
+					return
+				}
+				id := msg["id"]
+				delete(msg, "id")
+				raw, _ := json.Marshal(msg)
+				mu.Lock()
+				sigs = append(sigs, string(raw))
+				mu.Unlock()
+				for _, out := range replies(msg) {
+					out["id"] = id
+					if err := ws.WriteJSON(out); err != nil {
+						return
+					}
+				}
 			}
 		}
+		raw, _ := io.ReadAll(r.Body)
+		var body any
+		if len(raw) > 0 && json.Unmarshal(raw, &body) != nil {
+			body = string(raw)
+		}
 		mu.Lock()
-		requests = append(requests, recorded{r.Method, r.URL.RequestURI(), r.Header.Get("Authorization"), body})
+		reqs = append(reqs, recorded{r.Method, r.URL.RequestURI(), r.Header.Get("Authorization"), body})
 		mu.Unlock()
 		switch {
 		case r.URL.Path == "/exec":
@@ -51,39 +83,87 @@ func guest(t *testing.T) (*httptest.Server, func() []recorded) {
 			_, _ = w.Write([]byte("id: 0\nevent: command\ndata: sw_vers\n\n" +
 				"id: 1\nevent: stdout\ndata: 27.2.1\n\n" +
 				"id: 2\nevent: exitCode\ndata: 3\n\n"))
-		case r.URL.Path == "/ssh":
+		case r.URL.Path == "/app-logs/stream" && r.URL.Query().Get("bundleId") == "com.missing":
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"user":"limrun","port":22}`))
-		case r.URL.Path == "/snapshot":
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"no app com.missing is installed"}`))
+		case r.URL.Path == "/app-logs/stream":
 			w.Header().Set("Content-Type", "text/event-stream")
-			_, _ = w.Write([]byte("event: snapshot\ndata: {\"phase\":\"resolving\"}\n\n" +
-				": keepalive\n\n" +
-				"event: snapshot\ndata: {\"phase\":\"downloading\",\"totalBytes\":10,\"doneBytes\":4}\n\n" +
-				"event: snapshot\ndata: {\"phase\":\"restored\",\"key\":\"my-mac\",\"matchKind\":\"exact_hit\"}\n\n"))
-		case r.URL.Path == "/screenshot.jpg":
-			w.Header().Set("Content-Type", "image/jpeg")
-			_, _ = w.Write([]byte{0xff, 0xd8, 0xff})
-		case r.URL.Path == "/type" && body.(map[string]any)["text"] == "fail":
+			_, _ = w.Write([]byte("data: a\n\n: keepalive\n\ndata: b1\ndata: b2\n\n"))
+		case r.URL.Path == "/files":
+			_, _ = w.Write([]byte("mp4"))
+		case r.URL.Path == "/trusted-cas":
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte(`{"error":true,"reason":"no session"}`))
-		case r.URL.Path == "/type" && body.(map[string]any)["text"] == "busy":
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusConflict)
-			_, _ = w.Write([]byte(`{"message":"the keyboard is busy","reason":"conflict"}`))
+			_, _ = w.Write([]byte(`{"sha256":"abc"}`))
 		default:
-			w.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusNotFound)
 		}
 	}))
 	t.Cleanup(srv.Close)
-	return srv, func() []recorded { mu.Lock(); defer mu.Unlock(); return append([]recorded(nil), requests...) }
+	requests = func() []recorded { mu.Lock(); defer mu.Unlock(); return append([]recorded(nil), reqs...) }
+	signals = func() []string { mu.Lock(); defer mu.Unlock(); return append([]string(nil), sigs...) }
+	return srv, requests, signals
+}
+
+// replies are what limacvm answers a signaling request with, in order.
+func replies(msg map[string]any) []map[string]any {
+	kind, _ := msg["type"].(string)
+	result := map[string]any{"type": kind + "Result"}
+	switch kind {
+	case "screenshot":
+		result["base64"] = base64.StdEncoding.EncodeToString([]byte{0xff, 0xd8, 0xff})
+		result["width"], result["height"] = 3, 1
+	case "typeText":
+		if msg["text"] == "fail" {
+			result["error"] = "no session"
+		}
+	case "enableSsh":
+		result["user"], result["port"] = "limrun", 22
+	case "restoreSnapshot":
+		if msg["key"] == "broken" {
+			return []map[string]any{
+				{"type": "restoreSnapshotProgress", "progress": map[string]any{"phase": "failed", "reason": "download_failed"}},
+				{"type": "restoreSnapshotResult", "error": "download failed"},
+			}
+		}
+		if msg["key"] == nil {
+			return []map[string]any{{"type": "restoreSnapshotResult", "progress": map[string]any{"phase": "skipped"}}}
+		}
+		return []map[string]any{
+			{"type": "restoreSnapshotProgress", "progress": map[string]any{"phase": "resolving"}},
+			{"type": "restoreSnapshotProgress", "progress": map[string]any{"phase": "downloading", "totalBytes": 10, "doneBytes": 4}},
+			{"type": "restoreSnapshotResult", "progress": map[string]any{"phase": "restored", "key": "my-mac", "matchKind": "exact_hit"}},
+		}
+	case "startVideoRecordingSession":
+		result["recordingId"], result["captureId"] = "rec-1", "rec-123"
+	case "stopVideoRecordingSession":
+		result["recordingId"] = "rec-1"
+	case "launchApp":
+		result["bundleId"], result["pid"], result["launched"] = "com.example.app", 42, true
+	case "appLogTail":
+		result["bundleId"], result["logs"] = msg["bundleId"], "one\ntwo"
+	}
+	return []map[string]any{result}
+}
+
+func connect(t *testing.T, apiURL string, opts ...build.Option) *macos.Client {
+	t.Helper()
+	mac, err := macos.NewClient(apiURL, "control", opts...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = mac.Close() })
+	return mac
 }
 
 func TestClientSendsEachRequest(t *testing.T) {
-	srv, requests := guest(t)
+	srv, requests, signals := guest(t)
 	ctx := context.Background()
 	var stdout, command bytes.Buffer
-	mac := macos.NewClient(srv.URL+"/", "control", build.WithExecutionOptions(build.ExecOptions{Stdout: &stdout, Command: &command}))
+	mac := connect(t, srv.URL+"/", build.WithExecutionOptions(build.ExecOptions{Stdout: &stdout, Command: &command}))
+	if mac.ConnectionState() != "connected" {
+		t.Errorf("state = %s", mac.ConnectionState())
+	}
 
 	timeout := float64(30)
 	proc, err := mac.Run(ctx, "sw_vers", &macos.RunOptions{Cwd: "Desktop", Env: []string{"A=b"}, TimeoutSeconds: &timeout})
@@ -135,9 +215,9 @@ func TestClientSendsEachRequest(t *testing.T) {
 	if !reflect.DeepEqual(progress, wantProgress) {
 		t.Errorf("progress = %+v, want %+v", progress, wantProgress)
 	}
-	// Empty fields stay out of the body.
-	if _, err := mac.RestoreSnapshot(ctx, macos.RestoreSnapshotOptions{}); err != nil {
-		t.Fatal(err)
+	// Empty fields stay out of the request.
+	if skipped, err := mac.RestoreSnapshot(ctx, macos.RestoreSnapshotOptions{}); err != nil || skipped.Phase != "skipped" {
+		t.Fatalf("RestoreSnapshot = %+v, %v", skipped, err)
 	}
 	duration := 100
 	for _, err := range []error{
@@ -156,49 +236,39 @@ func TestClientSendsEachRequest(t *testing.T) {
 		}
 	}
 
-	type call struct {
-		Method, Path string
-		Body         any
-	}
-	var got []call
+	var http []string
 	for _, r := range requests() {
 		if r.Auth != "Bearer control" {
 			t.Errorf("%s %s: Authorization = %q", r.Method, r.Path, r.Auth)
 		}
-		got = append(got, call{r.Method, r.Path, r.Body})
+		http = append(http, r.Method+" "+r.Path)
 	}
-	obj := func(s string) any {
-		var v any
-		if err := json.Unmarshal([]byte(s), &v); err != nil {
-			t.Fatal(err)
-		}
-		return v
+	if want := []string{"POST /exec", "GET /exec/run-1/events?follow=true"}; !reflect.DeepEqual(http, want) {
+		t.Errorf("HTTP requests = %v, want %v", http, want)
 	}
-	want := []call{
-		{"POST", "/exec", obj(`{"command":"run","commandLine":"sw_vers","cwd":"Desktop","env":["A=b"],"timeoutSeconds":30}`)},
-		{"GET", "/exec/run-1/events?follow=true", nil},
-		{"POST", "/ssh", obj(`{"publicKey":"ssh-ed25519 AAAA test"}`)},
-		{"GET", "/screenshot.jpg", nil},
-		{"POST", "/snapshot", obj(`{"key":"my-mac","restoreKeys":["my-mac","base-"]}`)},
-		{"POST", "/snapshot", obj(`{}`)},
-		{"POST", "/tap", obj(`{"x":10,"y":20,"button":"right"}`)},
-		{"POST", "/tap", obj(`{"x":7,"y":8}`)},
-		{"POST", "/type", obj(`{"text":"hi"}`)},
-		{"POST", "/press-key", obj(`{"key":"q","modifiers":["command"]}`)},
-		{"POST", "/press-key", obj(`{"key":"enter"}`)},
-		{"POST", "/scroll", obj(`{"dx":0,"dy":300,"x":5,"y":6}`)},
-		{"POST", "/scroll", obj(`{"dx":-4,"dy":0}`)},
-		{"POST", "/drag", obj(`{"fromX":1,"fromY":2,"toX":3,"toY":4,"durationMs":100}`)},
-		{"POST", "/drag", obj(`{"fromX":1,"fromY":2,"toX":3,"toY":4}`)},
+	want := []string{
+		`{"publicKey":"ssh-ed25519 AAAA test","type":"enableSsh"}`,
+		`{"type":"screenshot"}`,
+		`{"key":"my-mac","restoreKeys":["my-mac","base-"],"type":"restoreSnapshot"}`,
+		`{"type":"restoreSnapshot"}`,
+		`{"button":"right","type":"tap","x":10,"y":20}`,
+		`{"type":"tap","x":7,"y":8}`,
+		`{"text":"hi","type":"typeText"}`,
+		`{"key":"q","modifiers":["command"],"type":"pressKey"}`,
+		`{"key":"enter","type":"pressKey"}`,
+		`{"coordinate":[5,6],"dx":0,"dy":300,"type":"scroll"}`,
+		`{"dx":-4,"dy":0,"type":"scroll"}`,
+		`{"durationMs":100,"fromX":1,"fromY":2,"toX":3,"toY":4,"type":"drag"}`,
+		`{"fromX":1,"fromY":2,"toX":3,"toY":4,"type":"drag"}`,
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("requests =\n%+v\nwant\n%+v", got, want)
+	if got := signals(); !reflect.DeepEqual(got, want) {
+		t.Errorf("signals =\n%s\nwant\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
 }
 
 func TestRunDefaultsCwdToHome(t *testing.T) {
-	srv, requests := guest(t)
-	proc, err := macos.NewClient(srv.URL, "control").Run(context.Background(), "true", nil)
+	srv, requests, _ := guest(t)
+	proc, err := connect(t, srv.URL).Run(context.Background(), "true", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,20 +281,62 @@ func TestRunDefaultsCwdToHome(t *testing.T) {
 	}
 }
 
-func TestErrorsCarryTheServerReason(t *testing.T) {
-	srv, _ := guest(t)
-	err := macos.NewClient(srv.URL, "control").TypeText(context.Background(), "fail")
-	var he *limrun.DirectInstanceHTTPError
-	if !errors.As(err, &he) || he.Status != http.StatusBadRequest {
-		t.Fatalf("err = %v, want a 400 DirectInstanceHTTPError", err)
+func TestErrorsCarryTheInstanceMessage(t *testing.T) {
+	srv, _, _ := guest(t)
+	err := connect(t, srv.URL).TypeText(context.Background(), "fail")
+	if err == nil || err.Error() != "no session" {
+		t.Errorf("err = %v, want no session", err)
 	}
-	if err.Error() != "POST /type failed: 400 no session" {
-		t.Errorf("err = %q", err.Error())
+}
+
+func TestNewClientFailsWithoutTheSignalingSocket(t *testing.T) {
+	srv, _, _ := guest(t)
+	if _, err := macos.NewClient(srv.URL, "wrong"); err == nil {
+		t.Error("a refused signaling socket must fail NewClient")
 	}
-	// A message, where a server sends one, is the more useful text.
-	err = macos.NewClient(srv.URL, "control").TypeText(context.Background(), "busy")
-	if err == nil || err.Error() != "POST /type failed: 409 the keyboard is busy" {
+}
+
+func TestRestoreSnapshotReturnsAFailedRestore(t *testing.T) {
+	srv, _, _ := guest(t)
+	last, err := connect(t, srv.URL).RestoreSnapshot(context.Background(), macos.RestoreSnapshotOptions{Key: "broken"})
+	if err != nil || last.Phase != "failed" || last.Reason != "download_failed" {
+		t.Fatalf("RestoreSnapshot = %+v, %v", last, err)
+	}
+}
+
+func TestStreamAppLogFollowsServerSentEvents(t *testing.T) {
+	srv, requests, signals := guest(t)
+	mac := connect(t, srv.URL)
+	stream := mac.StreamAppLog(context.Background(), "com.apple.TextEdit")
+	var lines []string
+	for line := range stream.Entries() {
+		lines = append(lines, line)
+	}
+	if err := <-stream.Err(); err == nil || err.Error() != "the app log stream ended" {
+		t.Errorf("err = %v, want the app log stream ended", err)
+	}
+	if !reflect.DeepEqual(lines, []string{"a", "b1\nb2"}) {
+		t.Errorf("lines = %q", lines)
+	}
+	refused := mac.StreamAppLog(context.Background(), "com.missing")
+	for range refused.Entries() {
+	}
+	if err := <-refused.Err(); err == nil || !strings.Contains(err.Error(), "404 no app com.missing is installed") {
 		t.Errorf("err = %v", err)
+	}
+	var http []string
+	for _, r := range requests() {
+		http = append(http, r.Method+" "+r.Path+" "+r.Auth)
+	}
+	want := []string{
+		"GET /app-logs/stream?bundleId=com.apple.TextEdit Bearer control",
+		"GET /app-logs/stream?bundleId=com.missing Bearer control",
+	}
+	if !reflect.DeepEqual(http, want) {
+		t.Errorf("HTTP requests = %v", http)
+	}
+	if got := signals(); len(got) != 0 {
+		t.Errorf("signals = %v", got)
 	}
 }
 
@@ -251,6 +363,18 @@ func TestStartPortForwardCarriesBytes(t *testing.T) {
 	seen := make(chan handshake, 1)
 	upgrader := websocket.Upgrader{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/signaling" {
+			// The client's signaling socket: accept it and wait.
+			if ws, err := upgrader.Upgrade(w, r, nil); err == nil {
+				defer ws.Close()
+				for {
+					if _, _, err := ws.ReadMessage(); err != nil {
+						return
+					}
+				}
+			}
+			return
+		}
 		seen <- handshake{r.URL.Path, r.URL.Query().Get("port"), r.URL.Query().Get("mode"), r.Header.Get("Authorization")}
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -273,7 +397,7 @@ func TestStartPortForwardCarriesBytes(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mac := macos.NewClient(srv.URL, "control")
+	mac := connect(t, srv.URL)
 	tun, err := mac.StartPortForward(context.Background(), 0, 22, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -304,75 +428,29 @@ func TestStartPortForwardCarriesBytes(t *testing.T) {
 }
 
 func TestStartPortForwardRejectsBadRemotePort(t *testing.T) {
-	if _, err := macos.NewClient("http://127.0.0.1:1", "control").StartPortForward(context.Background(), 0, 0, nil); err == nil {
+	srv, _, _ := guest(t)
+	if _, err := connect(t, srv.URL).StartPortForward(context.Background(), 0, 0, nil); err == nil {
 		t.Error("remote port 0 must fail")
 	}
 }
 
 func TestCreateClientNeedsToken(t *testing.T) {
+	srv, _, _ := guest(t)
 	svc := limrun.NewMacosInstanceService()
-	if _, err := svc.CreateClient(limrun.MacosInstance{Status: limrun.MacosInstanceStatus{APIURL: "https://mac.example.test"}}); err == nil {
+	if _, err := svc.CreateClient(limrun.MacosInstance{Status: limrun.MacosInstanceStatus{APIURL: srv.URL}}); err == nil {
 		t.Error("an instance without a token must fail")
 	}
-	mac, err := svc.CreateClientWithCredentials("https://mac.example.test", "control")
+	mac, err := svc.CreateClientWithCredentials(srv.URL, "control")
 	if err != nil || mac == nil {
-		t.Errorf("CreateClientWithCredentials = %v, %v", mac, err)
+		t.Fatalf("CreateClientWithCredentials = %v, %v", mac, err)
 	}
-}
-
-func TestRestoreSnapshotFailsWhenTheStreamEndsEarly(t *testing.T) {
-	for name, stream := range map[string]string{
-		"downloading": "event: snapshot\ndata: {\"phase\":\"resolving\"}\n\n" +
-			"event: snapshot\ndata: {\"phase\":\"downloading\",\"totalBytes\":10,\"doneBytes\":4}\n\n",
-		"none": ": keepalive\n\n",
-	} {
-		t.Run(name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "text/event-stream")
-				_, _ = w.Write([]byte(stream))
-			}))
-			defer srv.Close()
-			last, err := macos.NewClient(srv.URL, "control").RestoreSnapshot(context.Background(), macos.RestoreSnapshotOptions{Key: "my-mac"})
-			want := "the snapshot stream ended before the restore did (last phase: " + name + ")"
-			if err == nil || err.Error() != want {
-				t.Fatalf("err = %v, want %q", err, want)
-			}
-			if (name == "none") != (last == nil) || (last != nil && last.Phase != "downloading") {
-				t.Errorf("last = %+v", last)
-			}
-		})
-	}
+	_ = mac.Close()
 }
 
 func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
-	var mu sync.Mutex
-	var seen []string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		raw, _ := io.ReadAll(r.Body)
-		mu.Lock()
-		seen = append(seen, strings.TrimSpace(r.Method+" "+r.URL.RequestURI()+" "+string(raw)))
-		mu.Unlock()
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/recordings":
-			_, _ = w.Write([]byte(`{"recordingId":"rec-1","captureId":"rec-123"}`))
-		case "/recordings/stop", "/recordings/rec-1/stop":
-			_, _ = w.Write([]byte(`{"recordingId":"rec-1"}`))
-		case "/files":
-			_, _ = w.Write([]byte("mp4"))
-		case "/app-logs":
-			_, _ = w.Write([]byte(`{"bundleId":"com.apple.TextEdit","logs":"one\ntwo"}`))
-		case "/apps/launch":
-			_, _ = w.Write([]byte(`{"bundleId":"com.example.app","pid":42,"launched":true}`))
-		case "/trusted-cas":
-			_, _ = w.Write([]byte(`{"sha256":"abc"}`))
-		default:
-			w.WriteHeader(http.StatusNoContent)
-		}
-	}))
-	t.Cleanup(srv.Close)
+	srv, requests, signals := guest(t)
 	ctx := context.Background()
-	mac := macos.NewClient(srv.URL, "control")
+	mac := connect(t, srv.URL)
 
 	quality, ttl := 7, int64(600)
 	id, err := mac.StartRecording(ctx, &macos.RecordingOptions{Quality: &quality, Persist: &macos.PersistOption{TTLSeconds: &ttl}})
@@ -384,7 +462,7 @@ func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
 	if err != nil || downloadURL != srv.URL+"/files?name=recording_rec-1.mp4" {
 		t.Fatalf("StopRecording = %q, %v", downloadURL, err)
 	}
-	if _, err := mac.StopRecording(ctx, "rec-1", nil); err != nil {
+	if _, err := mac.StopRecording(ctx, "rec-1", &macos.SaveRecordingTo{PresignedURL: "https://bucket.example/put"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := mac.StopRecording(ctx, "Not Valid", nil); err == nil {
@@ -420,26 +498,29 @@ func TestRecordingsCapturesAndTrustedCAs(t *testing.T) {
 		t.Fatalf("AddCACertificate = %+v, %v", trusted, err)
 	}
 
-	want := []string{
-		`POST /recordings {"persist":true,"quality":7,"ttlSeconds":600}`,
-		`POST /recordings/stop {}`,
-		`GET /files?name=recording_rec-1.mp4`,
-		`POST /recordings/rec-1/stop {}`,
-		`POST /apps/launch {"app":"Example","arguments":["-v"],"env":{"A":"b"},"mode":"RelaunchIfRunning"}`,
-		`POST /apps/terminate {"bundleId":"com.example.app"}`,
-		`GET /app-logs?bundleId=com.apple.TextEdit&lines=50`,
-		`POST /session/applogs/start {"bundleId":"com.apple.TextEdit","persist":true}`,
-		`POST /session/applogs/stop {}`,
-		`POST /session/events/start {}`,
-		`POST /session/events/stop {}`,
-		`POST /session/performance/start {"ttlSeconds":3600}`,
-		`POST /session/performance/stop {}`,
-		`POST /trusted-cas -----BEGIN CERTIFICATE-----`,
+	var http []string
+	for _, r := range requests() {
+		http = append(http, r.Method+" "+r.Path)
 	}
-	mu.Lock()
-	defer mu.Unlock()
-	if !reflect.DeepEqual(seen, want) {
-		t.Errorf("requests =\n%s\nwant\n%s", strings.Join(seen, "\n"), strings.Join(want, "\n"))
+	if want := []string{"GET /files?name=recording_rec-1.mp4", "POST /trusted-cas"}; !reflect.DeepEqual(http, want) {
+		t.Errorf("HTTP requests = %v, want %v", http, want)
+	}
+	want := []string{
+		`{"persist":true,"quality":7,"ttlSeconds":600,"type":"startVideoRecordingSession"}`,
+		`{"type":"stopVideoRecordingSession"}`,
+		`{"recordingId":"rec-1","type":"stopVideoRecordingSession","upload":{"presignedUrl":"https://bucket.example/put"}}`,
+		`{"args":["-v"],"bundleId":"Example","env":{"A":"b"},"mode":"RelaunchIfRunning","type":"launchApp"}`,
+		`{"bundleId":"com.example.app","type":"terminateApp"}`,
+		`{"bundleId":"com.apple.TextEdit","lines":50,"type":"appLogTail"}`,
+		`{"bundleId":"com.apple.TextEdit","persist":true,"type":"startAppLogCapture"}`,
+		`{"type":"stopAppLogCapture"}`,
+		`{"type":"startEventCapture"}`,
+		`{"type":"stopEventCapture"}`,
+		`{"ttlSeconds":3600,"type":"startPerformanceCapture"}`,
+		`{"type":"stopPerformanceCapture"}`,
+	}
+	if got := signals(); !reflect.DeepEqual(got, want) {
+		t.Errorf("signals =\n%s\nwant\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
 }
 

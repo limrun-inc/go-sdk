@@ -1,26 +1,30 @@
 // Package macos works inside a running macOS instance: it runs shell commands
 // as the guest's user, forwards local ports into the guest, and drives the
 // screen with the mouse and keyboard.
+//
+// Commands go over the instance's signaling WebSocket, as on iOS, which
+// NewClient opens and keeps open, reconnecting when it drops. Close it when
+// done.
 package macos
 
 import (
-	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/build"
+	"github.com/limrun-inc/go-sdk/internal/applog"
+	"github.com/limrun-inc/go-sdk/internal/control"
 	"github.com/limrun-inc/go-sdk/internal/direct"
-	"github.com/limrun-inc/go-sdk/internal/stream"
 	"github.com/limrun-inc/go-sdk/session"
 	"github.com/limrun-inc/go-sdk/tunnel"
 )
@@ -97,23 +101,68 @@ type Client struct {
 	daemon *build.DaemonClient
 	http   direct.Client
 	dialer *websocket.Dialer
+	signal *control.Client
+	// restores maps a restore's request ID to its progress callback.
+	restores sync.Map
+
+	keepAliveOnce    sync.Once
+	keepAliveSession string
 }
 
-// NewClient connects to a macOS instance with its API URL and token. Options
-// such as build.WithHTTPClient, build.WithWebSocketDialer and
-// build.WithExecutionOptions (for Run's output writers) apply as for the
-// Xcode and Gradle clients.
-func NewClient(apiURL, token string, opts ...build.Option) *Client {
+// ConnectionState is the state of the client's signaling WebSocket.
+type ConnectionState = control.State
+
+// NewClient connects to a macOS instance with its API URL and token: it opens
+// the instance's signaling WebSocket, which carries the screen, app, capture,
+// SSH and snapshot commands. Options such as build.WithHTTPClient,
+// build.WithWebSocketDialer and build.WithExecutionOptions (for Run's output
+// writers) apply as for the Xcode and Gradle clients.
+func NewClient(apiURL, token string, opts ...build.Option) (*Client, error) {
 	apiURL = strings.TrimRight(apiURL, "/")
 	var o build.ExecOptions
 	for _, f := range opts {
 		f(&o)
 	}
-	return &Client{
+	c := &Client{
 		daemon: build.NewDaemonClient(apiURL, token, opts...),
 		http:   direct.Client{URL: apiURL, Token: token, HTTPClient: o.HTTPClient},
 		dialer: o.WebSocketDialer,
 	}
+	endpoint, err := control.URL(apiURL, token, "signaling")
+	if err != nil {
+		return nil, err
+	}
+	c.signal, err = control.New(context.Background(), endpoint, control.Options{
+		Dialer:               o.WebSocketDialer,
+		MaxReconnectAttempts: 6,
+		OnMessage:            c.handleMessage,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("connecting to the instance: %w", err)
+	}
+	return c, nil
+}
+
+// Close closes the signaling WebSocket. Pending commands fail.
+func (c *Client) Close() error { return c.signal.Close() }
+
+// ConnectionState reports the signaling WebSocket's state.
+func (c *Client) ConnectionState() ConnectionState { return c.signal.State() }
+
+// OnConnectionStateChange calls fn when the signaling WebSocket's state
+// changes, and returns a function that stops it.
+func (c *Client) OnConnectionStateChange(fn func(ConnectionState)) func() {
+	return c.signal.OnStateChange(fn)
+}
+
+// KeepAlive sends an application-level keepAlive message on the signaling WebSocket.
+func (c *Client) KeepAlive() error {
+	return c.signal.Send(map[string]string{"type": "keepAlive", "sessionId": c.keepAliveID()})
+}
+
+func (c *Client) keepAliveID() string {
+	c.keepAliveOnce.Do(func() { c.keepAliveSession = control.ID() })
+	return c.keepAliveSession
 }
 
 // Run runs a shell command line as the guest's user, in its login session,
@@ -129,7 +178,7 @@ func (c *Client) Run(ctx context.Context, commandLine string, opts *RunOptions) 
 // StartPortForward(ctx, localPort, access.Port, nil).
 func (c *Client) EnableSSH(ctx context.Context, publicKey string) (*SSHAccess, error) {
 	var access SSHAccess
-	if err := c.request(ctx, http.MethodPost, "ssh", map[string]string{"publicKey": publicKey}, &access); err != nil {
+	if err := c.call(ctx, "enableSsh", map[string]string{"publicKey": publicKey}, &access, 0); err != nil {
 		return nil, err
 	}
 	return &access, nil
@@ -179,49 +228,50 @@ type SnapshotProgress struct {
 // downloading. A stream that ends before a terminal phase (restored, skipped
 // or failed) is an error, returned with the last event seen.
 func (c *Client) RestoreSnapshot(ctx context.Context, opts RestoreSnapshotOptions) (*SnapshotProgress, error) {
-	body, err := json.Marshal(struct {
-		Key         string   `json:"key,omitempty"`
-		RestoreKeys []string `json:"restoreKeys,omitempty"`
-	}{opts.Key, opts.RestoreKeys})
-	if err != nil {
-		return nil, err
-	}
-	res, err := c.http.Do(ctx, http.MethodPost, c.http.URL+"/snapshot", bytes.NewReader(body), "application/json", -1)
-	if err != nil {
-		return nil, withReason(err)
-	}
-	defer res.Body.Close()
+	id := control.ID()
+	var mu sync.Mutex
 	var last *SnapshotProgress
-	err = stream.Read(res.Body, func(e stream.Event) error {
-		if e.Type != "snapshot" {
-			return nil
-		}
-		var progress SnapshotProgress
-		if err := json.Unmarshal([]byte(e.Data), &progress); err != nil {
-			return fmt.Errorf("decoding snapshot progress %q: %w", e.Data, err)
-		}
+	c.restores.Store(id, func(progress SnapshotProgress) {
+		mu.Lock()
 		last = &progress
+		mu.Unlock()
 		if opts.OnProgress != nil {
 			opts.OnProgress(progress)
 		}
-		return nil
-	}, func() {}, func(time.Duration) {})
-	if err != nil && !errors.Is(err, io.EOF) {
-		return last, err
+	})
+	defer c.restores.Delete(id)
+	params := struct {
+		Key         string   `json:"key,omitempty"`
+		RestoreKeys []string `json:"restoreKeys,omitempty"`
+	}{opts.Key, opts.RestoreKeys}
+	// A restore downloads the whole disk, so it waits as long as ctx and the connection last.
+	data, err := c.signal.CallID(ctx, id, "restoreSnapshot", params, control.NoTimeout)
+	mu.Lock()
+	seen := last
+	mu.Unlock()
+	if err != nil {
+		// A failed restore is an outcome, as it was reported in its progress, not an error.
+		if seen != nil && seen.Phase == "failed" {
+			return seen, nil
+		}
+		return seen, err
 	}
-	switch phase := lastPhase(last); phase {
-	case "restored", "skipped", "failed":
-		return last, nil
-	default:
-		return last, fmt.Errorf("the snapshot stream ended before the restore did (last phase: %s)", phase)
+	var result struct {
+		Progress *SnapshotProgress `json:"progress"`
 	}
-}
-
-func lastPhase(p *SnapshotProgress) string {
-	if p == nil {
-		return "none"
+	if err := json.Unmarshal(data, &result); err != nil {
+		return seen, err
 	}
-	return p.Phase
+	if result.Progress != nil {
+		if opts.OnProgress != nil && (seen == nil || *seen != *result.Progress) {
+			opts.OnProgress(*result.Progress)
+		}
+		return result.Progress, nil
+	}
+	if seen == nil {
+		return nil, errors.New("the instance finished the restore without reporting its progress")
+	}
+	return seen, nil
 }
 
 // DerivePortForwardURL returns the WebSocket URL that carries TCP connections
@@ -309,56 +359,56 @@ func (c *Client) StopTunnel(ctx context.Context, id string) error {
 // Screenshot returns a JPEG of the screen. Its pixels are the coordinates the
 // input methods take.
 func (c *Client) Screenshot(ctx context.Context) ([]byte, error) {
-	res, err := c.http.Do(ctx, http.MethodGet, c.http.URL+"/screenshot.jpg", nil, "", -1)
-	if err != nil {
-		return nil, withReason(err)
+	var out struct {
+		Base64 string `json:"base64"`
 	}
-	defer res.Body.Close()
-	return io.ReadAll(res.Body)
+	if err := c.call(ctx, "screenshot", nil, &out, 0); err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(out.Base64)
 }
 
 // Tap clicks at a point.
 func (c *Client) Tap(ctx context.Context, point Point, opts *TapOptions) error {
-	body := map[string]any{"x": point.X, "y": point.Y}
+	params := map[string]any{"x": point.X, "y": point.Y}
 	if opts != nil && opts.Button != "" {
-		body["button"] = opts.Button
+		params["button"] = opts.Button
 	}
-	return c.request(ctx, http.MethodPost, "tap", body, nil)
+	return c.call(ctx, "tap", params, nil, 0)
 }
 
 // TypeText types text with key presses on the US layout.
 func (c *Client) TypeText(ctx context.Context, text string) error {
-	return c.request(ctx, http.MethodPost, "type", map[string]string{"text": text}, nil)
+	return c.call(ctx, "typeText", map[string]string{"text": text}, nil, 0)
 }
 
 // PressKey presses one key, such as "enter", "tab", "escape", "up", "f5" or
 // "a", while holding the given modifiers.
 func (c *Client) PressKey(ctx context.Context, key string, modifiers ...Modifier) error {
-	body := map[string]any{"key": key}
+	params := map[string]any{"key": key}
 	if len(modifiers) > 0 {
-		body["modifiers"] = modifiers
+		params["modifiers"] = modifiers
 	}
-	return c.request(ctx, http.MethodPost, "press-key", body, nil)
+	return c.call(ctx, "pressKey", params, nil, 0)
 }
 
 // Scroll scrolls by DY and DX pixels over opts.At, or wherever the pointer is
 // when At is nil.
 func (c *Client) Scroll(ctx context.Context, opts ScrollOptions) error {
-	body := map[string]any{"dx": opts.DX, "dy": opts.DY}
+	params := map[string]any{"dx": opts.DX, "dy": opts.DY}
 	if opts.At != nil {
-		body["x"] = opts.At.X
-		body["y"] = opts.At.Y
+		params["coordinate"] = []int{opts.At.X, opts.At.Y}
 	}
-	return c.request(ctx, http.MethodPost, "scroll", body, nil)
+	return c.call(ctx, "scroll", params, nil, 0)
 }
 
 // Drag presses at from, moves to to over opts.DurationMs, and releases.
 func (c *Client) Drag(ctx context.Context, from, to Point, opts *DragOptions) error {
-	body := map[string]any{"fromX": from.X, "fromY": from.Y, "toX": to.X, "toY": to.Y}
+	params := map[string]any{"fromX": from.X, "fromY": from.Y, "toX": to.X, "toY": to.Y}
 	if opts != nil && opts.DurationMs != nil {
-		body["durationMs"] = *opts.DurationMs
+		params["durationMs"] = *opts.DurationMs
 	}
-	return c.request(ctx, http.MethodPost, "drag", body, nil)
+	return c.call(ctx, "drag", params, nil, 0)
 }
 
 // TrustedCACertificate is a CA certificate the guest now trusts.
@@ -422,7 +472,7 @@ func (c *Client) StartRecording(ctx context.Context, opts *RecordingOptions) (st
 	var out struct {
 		RecordingID string `json:"recordingId"`
 	}
-	if err := c.request(ctx, http.MethodPost, "recordings", body, &out); err != nil {
+	if err := c.call(ctx, "startVideoRecordingSession", body, &out, 0); err != nil {
 		return "", err
 	}
 	return out.RecordingID, nil
@@ -432,21 +482,20 @@ func (c *Client) StartRecording(ctx context.Context, opts *RecordingOptions) (st
 // when id is empty, and returns its download URL, which takes the instance
 // token and lasts while the instance runs.
 func (c *Client) StopRecording(ctx context.Context, id string, saveTo *SaveRecordingTo) (string, error) {
-	path := "recordings/stop"
+	params := map[string]any{}
 	if id != "" {
 		if err := validateRecordingID(id); err != nil {
 			return "", err
 		}
-		path = "recordings/" + id + "/stop"
+		params["recordingId"] = id
 	}
-	body := map[string]any{}
 	if saveTo != nil && saveTo.PresignedURL != "" {
-		body["presignedUrl"] = saveTo.PresignedURL
+		params["upload"] = map[string]string{"presignedUrl": saveTo.PresignedURL}
 	}
 	var out struct {
 		RecordingID string `json:"recordingId"`
 	}
-	if err := c.request(ctx, http.MethodPost, path, body, &out); err != nil {
+	if err := c.call(ctx, "stopVideoRecordingSession", params, &out, recordingStopTimeout); err != nil {
 		return "", err
 	}
 	if out.RecordingID == "" {
@@ -506,28 +555,31 @@ type LaunchAppResult struct {
 // other way writes them nowhere. Arguments and Env apply only when the app
 // starts, not when it already runs.
 func (c *Client) LaunchApp(ctx context.Context, app string, opts *LaunchAppOptions) (*LaunchAppResult, error) {
-	body := map[string]any{"app": app}
+	params := map[string]any{"bundleId": app}
 	if opts != nil {
 		if opts.Mode != "" {
-			body["mode"] = opts.Mode
+			params["mode"] = opts.Mode
 		}
 		if opts.Arguments != nil {
-			body["arguments"] = opts.Arguments
+			params["args"] = opts.Arguments
 		}
 		if opts.Env != nil {
-			body["env"] = opts.Env
+			params["env"] = opts.Env
 		}
 	}
 	var out LaunchAppResult
-	if err := c.request(ctx, http.MethodPost, "apps/launch", body, &out); err != nil {
+	if err := c.call(ctx, "launchApp", params, &out, launchAppTimeout); err != nil {
 		return nil, err
+	}
+	if out.BundleID == "" {
+		out.BundleID = app
 	}
 	return &out, nil
 }
 
 // TerminateApp stops every process of an app. It succeeds when the app is not running.
 func (c *Client) TerminateApp(ctx context.Context, bundleID string) error {
-	return c.request(ctx, http.MethodPost, "apps/terminate", map[string]string{"bundleId": bundleID}, nil)
+	return c.call(ctx, "terminateApp", map[string]string{"bundleId": bundleID}, nil, 0)
 }
 
 // AppLogTail returns the last lines of an app's log: its stdout and stderr
@@ -538,17 +590,24 @@ func (c *Client) AppLogTail(ctx context.Context, bundleID string, lines int) (st
 	var out struct {
 		Logs string `json:"logs"`
 	}
-	path := "app-logs?" + url.Values{"bundleId": {bundleID}, "lines": {strconv.Itoa(lines)}}.Encode()
-	if err := c.request(ctx, http.MethodGet, path, nil, &out); err != nil {
+	if err := c.call(ctx, "appLogTail", map[string]any{"bundleId": bundleID, "lines": lines}, &out, 0); err != nil {
 		return "", err
 	}
 	return out.Logs, nil
 }
 
-// StreamAppLog follows an app's log, as AppLogTail reads it, one line per entry.
+// StreamAppLog follows an app's log, as AppLogTail reads it, one line per
+// entry, over the instance's /app-logs/stream server-sent events. A refused
+// request, or the instance ending the stream, ends it with an error on Err.
 func (c *Client) StreamAppLog(ctx context.Context, bundleID string) *session.Stream[string] {
-	return session.StartTextStream(ctx, c.http.HTTPClient,
-		c.http.URL+"/app-logs/stream?"+url.Values{"bundleId": {bundleID}}.Encode(), c.http.Token)
+	return session.StartFuncStream(ctx, func(ctx context.Context, emit func(string) error) error {
+		body, err := applog.Open(ctx, c.http, bundleID)
+		if err != nil {
+			return withReason(err)
+		}
+		defer body.Close()
+		return applog.Read(body, emit)
+	})
 }
 
 // StartAppLogCapture starts capturing an app's logs. One app log capture runs
@@ -563,12 +622,12 @@ func (c *Client) StartAppLogCapture(ctx context.Context, bundleID string, persis
 		return err
 	}
 	params["bundleId"] = bundleID
-	return c.request(ctx, http.MethodPost, "session/applogs/start", params, nil)
+	return c.call(ctx, "startAppLogCapture", params, nil, 0)
 }
 
 // StopAppLogCapture stops the active app log capture.
 func (c *Client) StopAppLogCapture(ctx context.Context) error {
-	return c.request(ctx, http.MethodPost, "session/applogs/stop", map[string]any{}, nil)
+	return c.call(ctx, "stopAppLogCapture", nil, nil, captureStopTimeout)
 }
 
 // StartEventCapture starts capturing the coalesced event log of clicks,
@@ -579,12 +638,12 @@ func (c *Client) StartEventCapture(ctx context.Context, persist *PersistOption) 
 	if err != nil {
 		return err
 	}
-	return c.request(ctx, http.MethodPost, "session/events/start", params, nil)
+	return c.call(ctx, "startEventCapture", params, nil, 0)
 }
 
 // StopEventCapture stops the active event capture.
 func (c *Client) StopEventCapture(ctx context.Context) error {
-	return c.request(ctx, http.MethodPost, "session/events/stop", map[string]any{}, nil)
+	return c.call(ctx, "stopEventCapture", nil, nil, captureStopTimeout)
 }
 
 // StartPerformanceCapture starts saving the running apps' performance samples.
@@ -598,12 +657,12 @@ func (c *Client) StartPerformanceCapture(ctx context.Context, ttlSeconds *int64)
 		}
 		params["ttlSeconds"] = *ttlSeconds
 	}
-	return c.request(ctx, http.MethodPost, "session/performance/start", params, nil)
+	return c.call(ctx, "startPerformanceCapture", params, nil, 0)
 }
 
 // StopPerformanceCapture stops the active performance capture and uploads it.
 func (c *Client) StopPerformanceCapture(ctx context.Context) error {
-	return c.request(ctx, http.MethodPost, "session/performance/stop", map[string]any{}, nil)
+	return c.call(ctx, "stopPerformanceCapture", nil, nil, captureStopTimeout)
 }
 
 // StreamAppLogCapture tails the live app log capture. On connect the instance
@@ -623,8 +682,41 @@ func (c *Client) StreamPerformance(ctx context.Context) *session.Stream[session.
 	return session.StartStream[session.PerformanceSample](ctx, c.http.HTTPClient, c.http.URL+"/session/performance/events", c.http.Token)
 }
 
-func (c *Client) request(ctx context.Context, method, path string, params, out any) error {
-	return withReason(c.http.JSON(ctx, method, path, params, out))
+// A stop answers once its persisted capture or recording is uploaded, which
+// grows with its length.
+const (
+	captureStopTimeout   = 300 * time.Second
+	recordingStopTimeout = 180 * time.Second
+	// A first launch or a relaunch can take longer than the default, as on iOS.
+	launchAppTimeout = 90 * time.Second
+)
+
+// call sends a command on the signaling WebSocket and decodes its reply into out.
+func (c *Client) call(ctx context.Context, kind string, params, out any, timeout time.Duration) error {
+	data, err := c.signal.Call(ctx, kind, params, timeout)
+	if err != nil {
+		return err
+	}
+	if out != nil {
+		return json.Unmarshal(data, out)
+	}
+	return nil
+}
+
+// handleMessage passes a restore's progress to its RestoreSnapshot call.
+func (c *Client) handleMessage(data json.RawMessage) bool {
+	var msg struct {
+		Type     string            `json:"type"`
+		ID       string            `json:"id"`
+		Progress *SnapshotProgress `json:"progress"`
+	}
+	if json.Unmarshal(data, &msg) != nil || msg.Type != "restoreSnapshotProgress" {
+		return false
+	}
+	if f, ok := c.restores.Load(msg.ID); ok && msg.Progress != nil {
+		f.(func(SnapshotProgress))(*msg.Progress)
+	}
+	return true
 }
 
 // withReason replaces a JSON error body with the message or reason it carries,

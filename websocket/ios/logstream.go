@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"sync/atomic"
 
+	"github.com/limrun-inc/go-sdk/internal/applog"
+	"github.com/limrun-inc/go-sdk/internal/direct"
 	"github.com/limrun-inc/go-sdk/internal/proxy"
 
 	"github.com/gorilla/websocket"
@@ -24,7 +27,10 @@ import (
 // cases the Lines channel is closed when the stream ends, so ranging over it
 // terminates.
 type LogStream struct {
-	ws             *websocket.Conn
+	ws *websocket.Conn
+	// events is the app log's server-sent event body, when it is not a WebSocket.
+	events         io.ReadCloser
+	cancelEvents   context.CancelFunc
 	subscriptionID string
 	terminateType  string
 
@@ -46,8 +52,52 @@ type logStreamMessage struct {
 
 // StreamAppLog streams logs for the given bundle ID. The provided context
 // governs only the initial connection; use Stop to end the stream.
+//
+// App logs arrive over the instance's /app-logs/stream server-sent events, one
+// line per batch; the stream ends, closing Lines without an error, when the
+// instance ends it.
 func (c *Client) StreamAppLog(ctx context.Context, bundleID string) (*LogStream, error) {
-	return c.startLogStream(ctx, map[string]any{"type": "streamAppLog", "bundleId": bundleID}, "streamAppLogTerminate")
+	life, cancel := context.WithCancel(context.Background())
+	stop := context.AfterFunc(ctx, cancel)
+	body, err := applog.Open(life, direct.Client{URL: c.apiURL, Token: c.token, HTTPClient: c.httpClient}, bundleID)
+	if !stop() || err != nil {
+		cancel()
+		if err == nil {
+			body.Close()
+			err = ctx.Err()
+		}
+		return nil, err
+	}
+	s := &LogStream{
+		events:       body,
+		cancelEvents: cancel,
+		linesCh:      make(chan []string, 16),
+		errCh:        make(chan error, 1),
+		done:         make(chan struct{}),
+	}
+	go s.readEvents()
+	return s, nil
+}
+
+func (s *LogStream) readEvents() {
+	defer close(s.linesCh)
+	defer close(s.errCh)
+	err := applog.Read(s.events, func(line string) error {
+		select {
+		case s.linesCh <- []string{line}:
+			return nil
+		case <-s.done:
+			return context.Canceled
+		}
+	})
+	if !s.closed.Swap(true) {
+		if !errors.Is(err, applog.ErrEnded) {
+			s.emitErr(err)
+		}
+		s.shutdown()
+		s.cancelEvents()
+		s.events.Close()
+	}
 }
 
 // StreamSyslog streams the device syslog. The provided context governs only
@@ -172,6 +222,10 @@ func (s *LogStream) Stop() error {
 		return nil
 	}
 	s.shutdown()
+	if s.events != nil {
+		s.cancelEvents()
+		return s.events.Close()
+	}
 
 	// Best-effort terminate message before closing.
 	term, err := json.Marshal(map[string]any{"type": s.terminateType, "id": s.subscriptionID})
