@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -23,9 +22,9 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/limrun-inc/go-sdk/build"
+	"github.com/limrun-inc/go-sdk/internal/applog"
 	"github.com/limrun-inc/go-sdk/internal/control"
 	"github.com/limrun-inc/go-sdk/internal/direct"
-	"github.com/limrun-inc/go-sdk/internal/proxy"
 	"github.com/limrun-inc/go-sdk/session"
 	"github.com/limrun-inc/go-sdk/tunnel"
 )
@@ -598,64 +597,17 @@ func (c *Client) AppLogTail(ctx context.Context, bundleID string, lines int) (st
 }
 
 // StreamAppLog follows an app's log, as AppLogTail reads it, one line per
-// entry, on a WebSocket of its own. An error the instance reports, such as the
-// app not running, ends the stream; Err receives it.
+// entry, over the instance's /app-logs/stream server-sent events. A refused
+// request, or the instance ending the stream, ends it with an error on Err.
 func (c *Client) StreamAppLog(ctx context.Context, bundleID string) *session.Stream[string] {
-	endpoint, err := control.URL(c.http.URL, c.http.Token, "signaling")
 	return session.StartFuncStream(ctx, func(ctx context.Context, emit func(string) error) error {
+		body, err := applog.Open(ctx, c.http, bundleID)
 		if err != nil {
-			return err
+			return withReason(err)
 		}
-		return streamAppLog(ctx, c.dialer, endpoint, bundleID, emit)
+		defer body.Close()
+		return applog.Read(body, emit)
 	})
-}
-
-func streamAppLog(ctx context.Context, dialer *websocket.Dialer, endpoint, bundleID string, emit func(string) error) error {
-	if dialer == nil {
-		dialer = proxy.WebSocketDialer(endpoint)
-	}
-	ws, res, err := dialer.DialContext(ctx, endpoint, http.Header{})
-	if err != nil {
-		if res != nil && res.Body != nil {
-			res.Body.Close()
-		}
-		return fmt.Errorf("websocket dial: %w", err)
-	}
-	defer ws.Close()
-	id := control.ID()
-	if err := ws.WriteJSON(map[string]string{"type": "streamAppLog", "id": id, "bundleId": bundleID}); err != nil {
-		return err
-	}
-	stop := context.AfterFunc(ctx, func() {
-		_ = ws.WriteJSON(map[string]string{"type": "streamAppLogTerminate", "id": id})
-		ws.Close()
-	})
-	defer stop()
-	for {
-		var msg struct {
-			Type  string   `json:"type"`
-			ID    string   `json:"id"`
-			Lines []string `json:"lines"`
-			Error string   `json:"error"`
-		}
-		if err := ws.ReadJSON(&msg); err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			return fmt.Errorf("the app log stream ended: %w", err)
-		}
-		if msg.ID != id || msg.Type != "appLogStream" {
-			continue
-		}
-		if msg.Error != "" {
-			return errors.New(msg.Error)
-		}
-		for _, line := range msg.Lines {
-			if err := emit(line); err != nil {
-				return err
-			}
-		}
-	}
 }
 
 // StartAppLogCapture starts capturing an app's logs. One app log capture runs

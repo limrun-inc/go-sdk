@@ -83,6 +83,13 @@ func guest(t *testing.T) (srv *httptest.Server, requests func() []recorded, sign
 			_, _ = w.Write([]byte("id: 0\nevent: command\ndata: sw_vers\n\n" +
 				"id: 1\nevent: stdout\ndata: 27.2.1\n\n" +
 				"id: 2\nevent: exitCode\ndata: 3\n\n"))
+		case r.URL.Path == "/app-logs/stream" && r.URL.Query().Get("bundleId") == "com.missing":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"no app com.missing is installed"}`))
+		case r.URL.Path == "/app-logs/stream":
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = w.Write([]byte("data: a\n\n: keepalive\n\ndata: b1\ndata: b2\n\n"))
 		case r.URL.Path == "/files":
 			_, _ = w.Write([]byte("mp4"))
 		case r.URL.Path == "/trusted-cas":
@@ -135,13 +142,6 @@ func replies(msg map[string]any) []map[string]any {
 		result["bundleId"], result["pid"], result["launched"] = "com.example.app", 42, true
 	case "appLogTail":
 		result["bundleId"], result["logs"] = msg["bundleId"], "one\ntwo"
-	case "streamAppLog":
-		return []map[string]any{
-			{"type": "appLogStream", "bundleId": msg["bundleId"], "lines": []string{"a", "b"}},
-			{"type": "appLogStream", "bundleId": msg["bundleId"], "lines": []string{}, "error": "app quit"},
-		}
-	case "streamAppLogTerminate":
-		return nil
 	}
 	return []map[string]any{result}
 }
@@ -304,20 +304,38 @@ func TestRestoreSnapshotReturnsAFailedRestore(t *testing.T) {
 	}
 }
 
-func TestStreamAppLogEndsWithTheInstanceError(t *testing.T) {
-	srv, _, signals := guest(t)
-	stream := connect(t, srv.URL).StreamAppLog(context.Background(), "com.apple.TextEdit")
+func TestStreamAppLogFollowsServerSentEvents(t *testing.T) {
+	srv, requests, signals := guest(t)
+	mac := connect(t, srv.URL)
+	stream := mac.StreamAppLog(context.Background(), "com.apple.TextEdit")
 	var lines []string
 	for line := range stream.Entries() {
 		lines = append(lines, line)
 	}
-	if err := <-stream.Err(); err == nil || err.Error() != "app quit" {
-		t.Errorf("err = %v, want app quit", err)
+	if err := <-stream.Err(); err == nil || err.Error() != "the app log stream ended" {
+		t.Errorf("err = %v, want the app log stream ended", err)
 	}
-	if !reflect.DeepEqual(lines, []string{"a", "b"}) {
-		t.Errorf("lines = %v", lines)
+	if !reflect.DeepEqual(lines, []string{"a", "b1\nb2"}) {
+		t.Errorf("lines = %q", lines)
 	}
-	if got := signals(); !reflect.DeepEqual(got, []string{`{"bundleId":"com.apple.TextEdit","type":"streamAppLog"}`}) {
+	refused := mac.StreamAppLog(context.Background(), "com.missing")
+	for range refused.Entries() {
+	}
+	if err := <-refused.Err(); err == nil || !strings.Contains(err.Error(), "404 no app com.missing is installed") {
+		t.Errorf("err = %v", err)
+	}
+	var http []string
+	for _, r := range requests() {
+		http = append(http, r.Method+" "+r.Path+" "+r.Auth)
+	}
+	want := []string{
+		"GET /app-logs/stream?bundleId=com.apple.TextEdit Bearer control",
+		"GET /app-logs/stream?bundleId=com.missing Bearer control",
+	}
+	if !reflect.DeepEqual(http, want) {
+		t.Errorf("HTTP requests = %v", http)
+	}
+	if got := signals(); len(got) != 0 {
 		t.Errorf("signals = %v", got)
 	}
 }
