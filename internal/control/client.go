@@ -315,8 +315,15 @@ func (c *Client) run(ws *websocket.Conn) {
 			c.ws = nil
 		}
 		closed := c.closed
-		if c.instanceErr != "" {
-			err = fmt.Errorf("connection closed: %s: %w", c.instanceErr, err)
+		// A policy close, or the instance's error frame before it, refuses the
+		// token for good, such as a command above its grant, so reconnecting
+		// cannot help.
+		refusal := c.instanceErr
+		if refusal == "" && websocket.IsCloseError(err, websocket.ClosePolicyViolation) {
+			refusal = "the instance closed the session"
+		}
+		if refusal != "" {
+			err = fmt.Errorf("connection closed: %s: %w", refusal, err)
 			c.instanceErr = ""
 		}
 		c.mu.Unlock()
@@ -325,6 +332,12 @@ func (c *Client) run(ws *websocket.Conn) {
 		}
 		c.fail(err)
 		c.setState(Disconnected)
+		if refusal != "" {
+			if c.opts.OnPermanentDisconnect != nil {
+				c.opts.OnPermanentDisconnect()
+			}
+			return
+		}
 		reconnected := false
 		for attempt := 0; attempt < c.opts.MaxReconnectAttempts; attempt++ {
 			c.setState(Reconnecting)

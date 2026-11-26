@@ -54,9 +54,9 @@ func TestStreamAppLogFollowsServerSentEvents(t *testing.T) {
 
 func TestStreamAppLogRefusedIsAnError(t *testing.T) {
 	srv, _ := appLogServer(t, func(w http.ResponseWriter) { w.WriteHeader(http.StatusForbidden) })
-	c := &Client{apiURL: srv.URL, token: "tok", httpClient: srv.Client()}
-	if _, err := c.StreamAppLog(context.Background(), "com.example.app"); err == nil || !strings.Contains(err.Error(), "404") {
-		t.Errorf("err = %v, want the 404", err)
+	c := &Client{apiURL: srv.URL + "/api", token: "tok", httpClient: srv.Client()}
+	if _, err := c.StreamAppLog(context.Background(), "com.example.app"); err == nil || !strings.Contains(err.Error(), "403") {
+		t.Errorf("err = %v, want the 403", err)
 	}
 }
 

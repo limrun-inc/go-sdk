@@ -568,7 +568,7 @@ func (c *Client) LaunchApp(ctx context.Context, app string, opts *LaunchAppOptio
 		}
 	}
 	var out LaunchAppResult
-	if err := c.call(ctx, "launchApp", params, &out, 0); err != nil {
+	if err := c.call(ctx, "launchApp", params, &out, launchAppTimeout); err != nil {
 		return nil, err
 	}
 	if out.BundleID == "" {
@@ -687,6 +687,8 @@ func (c *Client) StreamPerformance(ctx context.Context) *session.Stream[session.
 const (
 	captureStopTimeout   = 300 * time.Second
 	recordingStopTimeout = 180 * time.Second
+	// A first launch or a relaunch can take longer than the default, as on iOS.
+	launchAppTimeout = 90 * time.Second
 )
 
 // call sends a command on the signaling WebSocket and decodes its reply into out.
