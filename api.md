@@ -80,7 +80,7 @@ exit details and syslog streaming. Existing examples cover
 | Package | Operations |
 | --- | --- |
 | `session` | Artifact, log, and event models; persistence TTLs; resumable SSE streams with `Entries`, `Err`, `Stop`, and `Done` |
-| `syncfolder` | Folder manifests, nested gitignore rules, additional files, symlinks, gzip and zstd, VCDIFF deltas, basis caches, missing-basis recovery, file watching, app archives, and Android basis downloads |
+| `syncfolder` | Folder manifests, nested gitignore rules, additional files, symlinks, gzip and zstd, VCDIFF deltas, basis caches, missing-basis recovery, file watching, app archives, Android basis downloads, and Git project identity for folder names shared across worktrees |
 | `tunnel` | TCP forwarding, reverse forwarding, destination selectors and protocol codecs, private connectors, HTTP proxies, TLS inspection events, and HAR assembly |
 | `build` | Build-setting validation, RBE retries and readiness, Bazel workspace discovery, target inference, and workspace configuration files |
 

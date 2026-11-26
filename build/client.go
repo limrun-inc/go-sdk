@@ -71,6 +71,10 @@ type SyncOptions struct {
 	Ignore, Include func(string) bool
 	AdditionalFiles []syncfolder.AdditionalFile
 	OnSyncComplete  func(syncfolder.CompleteEvent)
+	// RootName is the folder the project syncs into on the instance. An Xcode sync defaults to a
+	// name taken from the Git repository, so every clone and worktree of a project shares one
+	// folder and its build state. Other syncs, and a project outside Git, use the local folder's name.
+	RootName string
 }
 
 func (c *DaemonClient) Sync(ctx context.Context, local string, opts *SyncOptions) (*syncfolder.Result, error) {
@@ -103,7 +107,13 @@ func (c *DaemonClient) Sync(ctx context.Context, local string, opts *SyncOptions
 	if err != nil {
 		return nil, err
 	}
-	return syncfolder.Sync(ctx, local, syncfolder.Options{APIURL: c.options.APIURL, Token: c.options.Token, HTTPClient: c.options.HTTPClient, UDID: key, BasisCacheDir: cache, Install: &install, Watch: watch, SyncSymlinks: true, LaunchMode: syncfolder.LaunchForegroundIfRunning, Ignore: ignore, AdditionalFiles: opts.AdditionalFiles, OnSyncComplete: opts.OnSyncComplete, Log: c.options.Log})
+	rootName := opts.RootName
+	if rootName == "" && c.platform == "xcode" {
+		// Build state on the instance is tied to this folder's path. A name taken from the local
+		// folder gives each worktree its own path, so none could reuse another's snapshot.
+		rootName, _ = syncfolder.ProjectFolderName(local)
+	}
+	return syncfolder.Sync(ctx, local, syncfolder.Options{APIURL: c.options.APIURL, Token: c.options.Token, HTTPClient: c.options.HTTPClient, UDID: key, BasisCacheDir: cache, Install: &install, Watch: watch, SyncSymlinks: true, LaunchMode: syncfolder.LaunchForegroundIfRunning, Ignore: ignore, AdditionalFiles: opts.AdditionalFiles, OnSyncComplete: opts.OnSyncComplete, Log: c.options.Log, RootName: rootName})
 }
 func (c *DaemonClient) PullFile(ctx context.Context, remote, local string) error {
 	destination, err := filepath.Abs(local)

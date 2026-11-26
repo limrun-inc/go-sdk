@@ -49,6 +49,8 @@ type Options struct {
 	Compression                        string
 	Log                                func(string, string)
 	OnSyncComplete                     func(CompleteEvent)
+	// RootName is the folder the files sync into on the instance. Empty uses the local folder's name.
+	RootName string
 }
 type CompleteEvent struct {
 	BytesSent                           int64
@@ -406,7 +408,11 @@ func syncOnce(ctx context.Context, root string, opts Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	meta := manifest{ID: control.ID(), RootName: filepath.Base(absolute), Install: opts.Install, LaunchMode: opts.LaunchMode, Files: files, Payloads: payloads}
+	rootName := opts.RootName
+	if rootName == "" {
+		rootName = filepath.Base(absolute)
+	}
+	meta := manifest{ID: control.ID(), RootName: rootName, Install: opts.Install, LaunchMode: opts.LaunchMode, Files: files, Payloads: payloads}
 	compression := opts.Compression
 	if compression == "" {
 		compression = "zstd"
