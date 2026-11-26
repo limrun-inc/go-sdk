@@ -57,6 +57,10 @@ type PerformActionResult struct {
 	ElementLabel string `json:"elementLabel,omitempty"`
 	ElementType  string `json:"elementType,omitempty"`
 	Error        string `json:"error,omitempty"`
+	// Code is why the action failed; see CommandError.Code.
+	Code string `json:"code,omitempty"`
+	// Written says whether a failed text action's input reached the app; see CommandError.Written.
+	Written string `json:"written,omitempty"`
 }
 
 // PerformActionsResult is the aggregate result of a successful PerformActions

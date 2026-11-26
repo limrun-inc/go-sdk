@@ -20,6 +20,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// CommandError is a command the instance rejected. Code and Written are empty when the server
+// predates them; the instance packages expose it under their own names.
+type CommandError struct {
+	Message string
+	Code    string
+	Written string
+}
+
+func (e *CommandError) Error() string { return e.Message }
+
 var ErrNotConnected = errors.New("websocket: not connected")
 var ErrClosed = errors.New("websocket: connection closed")
 
@@ -221,7 +231,14 @@ func (c *Client) Call(ctx context.Context, kind string, params any, timeout time
 			return nil, r.err
 		}
 		var e struct {
-			Error json.RawMessage `json:"error"`
+			Error   json.RawMessage `json:"error"`
+			Code    string          `json:"code"`
+			Written string          `json:"written"`
+			Results []struct {
+				Error   string `json:"error"`
+				Code    string `json:"code"`
+				Written string `json:"written"`
+			} `json:"results"`
 		}
 		if err := json.Unmarshal(r.data, &e); err != nil {
 			return nil, err
@@ -237,7 +254,15 @@ func (c *Client) Call(ctx context.Context, kind string, params any, timeout time
 				}
 			}
 			if message != "" {
-				return nil, errors.New(message)
+				code, written := e.Code, e.Written
+				// A failed batch reports its error at the top level; the failing action carries the code.
+				for _, result := range e.Results {
+					if result.Error != "" {
+						code, written = result.Code, result.Written
+						break
+					}
+				}
+				return nil, &CommandError{Message: message, Code: code, Written: written}
 			}
 		}
 		return r.data, nil
