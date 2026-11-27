@@ -354,10 +354,19 @@ type XcodeSelectionUnsupportedError struct{ Operation string }
 func (e *XcodeSelectionUnsupportedError) Error() string {
 	return e.Operation + " returned 404: this instance may predate Xcode selection support; recreate the instance"
 }
+
+type MacOSAttachUnsupportedError struct{ Operation string }
+
+func (e *MacOSAttachUnsupportedError) Error() string {
+	return e.Operation + " returned 404: this instance may predate macOS instance support; recreate the instance"
+}
 func (c *XcodeClient) request(ctx context.Context, method, path string, params, out any) error {
 	err := c.http.JSON(ctx, method, path, params, out)
 	var he *direct.HTTPError
 	if errors.As(err, &he) && he.Status == 404 {
+		if path == "macos" {
+			return &MacOSAttachUnsupportedError{method + " /" + path}
+		}
 		if path == "xcode" {
 			return &XcodeSelectionUnsupportedError{method + " /" + path}
 		}
@@ -375,6 +384,29 @@ func (c *XcodeClient) GetSimulator(ctx context.Context) (*SimulatorStatus, error
 func (c *XcodeClient) AttachSimulator(ctx context.Context, apiURL, token string) (*SimulatorAttachResult, error) {
 	var r SimulatorAttachResult
 	err := c.request(ctx, http.MethodPost, "simulator", map[string]any{"apiUrl": apiURL, "token": token}, &r)
+	return &r, err
+}
+
+// AttachMacOS attaches a macOS instance, given its API URL and a token that controls it. Builds
+// for the macosx sdk then install on it and launch, sending only what changed since the
+// previous install.
+func (c *XcodeClient) AttachMacOS(ctx context.Context, apiURL, token string) (*MacOSStatus, error) {
+	var r MacOSStatus
+	err := c.request(ctx, http.MethodPost, "macos", map[string]any{"apiUrl": apiURL, "token": token}, &r)
+	return &r, err
+}
+
+// GetMacOS returns the attached macOS instance, if any.
+func (c *XcodeClient) GetMacOS(ctx context.Context) (*MacOSStatus, error) {
+	var r MacOSStatus
+	err := c.request(ctx, http.MethodGet, "macos", nil, &r)
+	return &r, err
+}
+
+// DetachMacOS disconnects the macOS instance, keeping both instances and installed apps.
+func (c *XcodeClient) DetachMacOS(ctx context.Context) (*MacOSStatus, error) {
+	var r MacOSStatus
+	err := c.request(ctx, http.MethodDelete, "macos", nil, &r)
 	return &r, err
 }
 func (c *XcodeClient) GetXcode(ctx context.Context) (*XcodeStatus, error) {

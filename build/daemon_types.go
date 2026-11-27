@@ -44,6 +44,18 @@ type SimulatorAttachResult struct {
 	InstallError       *string               `json:"installError,omitempty"`
 }
 
+type MacOSAttachment struct {
+	APIURL          string  `json:"apiUrl"`
+	MacosInstanceID *string `json:"macosInstanceId,omitempty"`
+}
+
+// MacOSStatus is the macOS instance attached to an Xcode instance. Builds for the macosx sdk
+// install on it and launch.
+type MacOSStatus struct {
+	Attached bool             `json:"attached"`
+	Macos    *MacOSAttachment `json:"macos,omitempty"`
+}
+
 type RbeStatus struct {
 	State        string   `json:"state"`
 	FrontendPort *float64 `json:"frontendPort,omitempty"`
