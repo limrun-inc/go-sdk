@@ -275,6 +275,13 @@ func (c *XcodeClient) Xcodebuild(ctx context.Context, settings *XcodeProjectConf
 		if settings.Configuration != nil && *settings.Configuration == "Release" && req.ReactNative != nil && req.ReactNative.DevServerURL != nil && *req.ReactNative.DevServerURL != "" {
 			return nil, errors.New("reactNative.devServerURL is only supported for Debug builds")
 		}
+		hotReload := req.HotReload != nil && *req.HotReload
+		if hotReload && settings.Configuration != nil && *settings.Configuration == "Release" {
+			return nil, errors.New("hotReload is only supported for Debug builds")
+		}
+		if hotReload && settings.SDK != nil && *settings.SDK != "iphonesimulator" {
+			return nil, errors.New("hotReload requires the iphonesimulator sdk")
+		}
 		if len(settings.OnlyTesting) > 0 && len(settings.SkipTesting) > 0 {
 			return nil, errors.New("onlyTesting and skipTesting are mutually exclusive; pass one")
 		}
