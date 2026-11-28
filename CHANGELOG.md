@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.15.0](https://github.com/limrun-inc/go-sdk/compare/v0.14.0...v0.15.0) (2026-11-28)
+
+
+### Features
+
+* **macos:** send macOS commands over the signaling WebSocket ([#46](https://github.com/limrun-inc/go-sdk/issues/46)) ([e5f2ff8](https://github.com/limrun-inc/go-sdk/commit/e5f2ff889a5c8931f15c91a44d6915a918054d01))
+* **xcode:** add the hot reload build option ([#52](https://github.com/limrun-inc/go-sdk/issues/52)) ([f99b71c](https://github.com/limrun-inc/go-sdk/commit/f99b71caaf2e0fa1c36ed6576da71d185f583f60))
+* **xcode:** attach a macOS instance to an Xcode client ([#51](https://github.com/limrun-inc/go-sdk/issues/51)) ([be381a4](https://github.com/limrun-inc/go-sdk/commit/be381a4dbd3e68ee97a180aa9cbe4c75a56a074d))
+
+
+### Bug Fixes
+
+* **xcode:** sync a project into the same folder from every worktree ([#47](https://github.com/limrun-inc/go-sdk/issues/47)) ([80779f7](https://github.com/limrun-inc/go-sdk/commit/80779f7de7d7854a85dc51d6a31dc2c440b249f4))
+
 ## [0.14.0](https://github.com/limrun-inc/go-sdk/compare/v0.13.1...v0.14.0) (2026-11-26)
 
 
