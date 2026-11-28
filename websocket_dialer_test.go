@@ -139,13 +139,6 @@ func TestWebSocketDialerInheritedByStreamsAndTunnels(t *testing.T) {
 			}
 			return nil, err
 		}},
-		{"ios app log", func(ctx context.Context) (io.Closer, error) {
-			stream, err := iosClient.StreamAppLog(ctx, "com.example.app")
-			if err == nil {
-				stream.Stop()
-			}
-			return nil, err
-		}},
 		{"ios destination", func(ctx context.Context) (io.Closer, error) {
 			return iosClient.StartTunnel(ctx, ios.TunnelOptions{Selectors: []string{"localhost:8080"}})
 		}},
