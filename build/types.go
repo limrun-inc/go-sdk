@@ -2,16 +2,29 @@
 package build
 
 type XcodeBuildExecRequest struct {
-	Command            string                                   `json:"command"`
-	Xcodebuild         *XcodeBuildExecRequestXcodebuild         `json:"xcodebuild,omitempty"`
-	Xcodegen           *XcodeBuildExecRequestXcodegen           `json:"xcodegen,omitempty"`
-	ReactNative        *XcodeBuildExecRequestReactNative        `json:"reactNative,omitempty"`
-	Signing            *XcodeBuildExecRequestSigning            `json:"signing,omitempty"`
-	CloudSigning       *XcodeBuildExecRequestCloudSigning       `json:"cloudSigning,omitempty"`
-	Testflight         *AppStoreUploadConfig                    `json:"testflight,omitempty"`
-	BuildSettings      map[string]string                        `json:"buildSettings,omitempty"`
-	Env                []string                                 `json:"env,omitempty"`
-	GitInit            *bool                                    `json:"gitInit,omitempty"`
+	Command       string                             `json:"command"`
+	Xcodebuild    *XcodeBuildExecRequestXcodebuild   `json:"xcodebuild,omitempty"`
+	Xcodegen      *XcodeBuildExecRequestXcodegen     `json:"xcodegen,omitempty"`
+	ReactNative   *XcodeBuildExecRequestReactNative  `json:"reactNative,omitempty"`
+	Signing       *XcodeBuildExecRequestSigning      `json:"signing,omitempty"`
+	CloudSigning  *XcodeBuildExecRequestCloudSigning `json:"cloudSigning,omitempty"`
+	Testflight    *AppStoreUploadConfig              `json:"testflight,omitempty"`
+	BuildSettings map[string]string                  `json:"buildSettings,omitempty"`
+	Env           []string                           `json:"env,omitempty"`
+	GitInit       *bool                              `json:"gitInit,omitempty"`
+	// HotReload builds a Debug iOS simulator app whose Swift code later builds can replace
+	// while it runs. When a later build with it changed only Swift code, the app on the
+	// attached simulator shows the edit as the build ends and keeps its state; any other
+	// build is installed and launched as usual. Lines starting with "Hot reload:" in the
+	// build output say which happened.
+	//
+	// It needs an attached simulator; without one the build is a normal Debug build. Only the
+	// iphonesimulator sdk and the Debug configuration are supported, and the configuration
+	// defaults to Debug. React Native and Expo projects are built normally: Fast Refresh
+	// already shows their JavaScript edits. Code that already ran, such as app startup, and
+	// closures created before a reload keep their old behavior until the app restarts. Older
+	// limbuild servers ignore it.
+	HotReload          *bool                                    `json:"hotReload,omitempty"`
 	LogProcessor       *string                                  `json:"logProcessor,omitempty"`
 	AssetUpload        *AssetUpload                             `json:"assetUpload,omitempty"`
 	SignedUploadURL    *string                                  `json:"signedUploadUrl,omitempty"`
